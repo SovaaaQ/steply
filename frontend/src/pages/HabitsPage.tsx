@@ -78,7 +78,7 @@ export function HabitsPage() {
             Новая привычка
           </Button>
         </div>
-        <p className="habit-motivation">Выполни привычку, чтобы поддержать питомца.</p>
+        <p className="habit-motivation">Выполни привычку, чтобы поддержать питомца</p>
 
         <Button
           className="mobile-habit-create"

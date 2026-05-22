@@ -30,7 +30,7 @@ const emptyGamificationSummary: GamificationSummary = {
   profile: {
     level: 1,
     title: "Старт маршрута",
-    milestone: "Создайте первую привычку и закройте первый шаг.",
+    milestone: "Создайте первую привычку и закройте первый шаг",
     total_xp: 0,
     current_level_xp: 0,
     current_level_min_xp: 0,
@@ -60,7 +60,7 @@ const emptyGamificationSummary: GamificationSummary = {
     best: 0,
     status: "empty",
     label: "Серия еще не началась",
-    next_step: "Создайте привычку и закройте первый короткий шаг.",
+    next_step: "Создайте привычку и закройте первый короткий шаг",
     is_at_risk: false,
     last_active_date: null,
     completed_today: 0,
@@ -71,7 +71,7 @@ const emptyGamificationSummary: GamificationSummary = {
   recent_events: [],
   next_best_action: {
     title: "Соберите первый маршрут",
-    description: "Создайте первую привычку, чтобы появились XP, серия и задания.",
+    description: "Создайте первую привычку, чтобы появились XP, серия и задания",
     cta_label: "Создать привычку",
     cta_section: "habits"
   }

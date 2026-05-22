@@ -33,7 +33,7 @@ export function NextHabitCard({
       <section className="next-habit-card">
         <span className="page-kicker">Ближайшая привычка</span>
         <h3>На сегодня нет активных привычек</h3>
-        <p>Создай одну небольшую привычку, чтобы собрать маршрут дня.</p>
+        <p>Создай одну небольшую привычку, чтобы собрать маршрут дня</p>
         <Button type="button" variant="cta" onClick={onOpenHabits}>
           Перейти к привычкам
         </Button>

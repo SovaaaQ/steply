@@ -68,7 +68,7 @@ export function PetScreen() {
       <Card className="pet-account-link" tone="soft">
         <span className="page-kicker">Следующий шаг</span>
         <h3>Поддержать питомца через привычки</h3>
-        <p>Открой список привычек и отметь ближайшее реальное действие.</p>
+        <p>Открой список привычек и отметь ближайшее реальное действие</p>
         <button type="button" className="button button-secondary" onClick={() => setActiveSection("habits")}>
           Перейти к привычкам
         </button>

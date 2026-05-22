@@ -417,6 +417,7 @@ p {
 .marker-highlight,
 .sketch-circle {
   position: relative;
+  max-width: 100%;
   isolation: isolate;
 }
 
@@ -428,13 +429,15 @@ p {
 .hand-underline::after {
   position: absolute;
   z-index: -1;
-  right: -5px;
-  bottom: -8px;
-  left: -4px;
-  height: 8px;
-  border-top: 3px solid var(--sketch-ink, var(--color-forest));
-  border-radius: 50%;
+  right: 0.04em;
+  bottom: -0.28em;
+  left: 0.02em;
+  height: 0.36em;
+  border-top: 3px solid var(--sketch-ink, var(--color-lime));
+  border-radius: 48% 42% 50% 45% / 78% 62% 70% 58%;
+  box-shadow: none;
   content: "";
+  filter: none;
   pointer-events: none;
   transform: rotate(-1.4deg);
 }
@@ -442,13 +445,15 @@ p {
 .marker-highlight::before {
   position: absolute;
   z-index: -1;
-  right: -7px;
-  bottom: 1px;
-  left: -7px;
-  height: 0.58em;
-  border-radius: 11px 6px 12px 8px;
+  right: -0.04em;
+  bottom: 0.06em;
+  left: -0.04em;
+  height: 0.56em;
+  border-radius: 0.26em 0.16em 0.3em 0.18em;
   background: rgba(183, 239, 22, 0.5);
+  box-shadow: none;
   content: "";
+  filter: none;
   pointer-events: none;
   transform: rotate(-1.6deg);
 }
@@ -462,21 +467,103 @@ p {
 .sketch-circle::after {
   position: absolute;
   z-index: -1;
-  inset: -6px -10px -5px;
-  border: 2px solid var(--sketch-ink, var(--color-forest));
+  inset: -0.2em -0.24em -0.17em;
+  border: 2px solid var(--sketch-ink, var(--color-lime));
   border-radius: 49% 42% 47% 43%;
+  box-shadow: none;
   content: "";
+  filter: none;
   pointer-events: none;
   transform: rotate(-2.2deg);
 }
 
 .sketch-arrow {
   fill: none;
-  stroke: var(--sketch-ink, var(--color-forest));
+  stroke: var(--sketch-ink, var(--color-lime));
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 3;
+  filter: none;
   pointer-events: none;
+}
+
+.habit-card-accent {
+  display: block;
+  width: 100%;
+  height: 28px;
+  max-width: 100%;
+  overflow: hidden;
+  fill: none;
+  stroke: var(--color-lime);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+  opacity: 0.9;
+  filter: none;
+  pointer-events: none;
+}
+
+.habit-card-accent path,
+.habit-card-accent line {
+  vector-effect: non-scaling-stroke;
+}
+
+.habit-action-button {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.habit-action-complete {
+  padding-inline: 58px;
+}
+
+.habit-action-miss {
+  padding-inline: 68px;
+}
+
+.habit-action-label {
+  position: relative;
+  z-index: 1;
+}
+
+.habit-button-accent {
+  position: absolute;
+  z-index: 0;
+  display: block;
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: none;
+  pointer-events: none;
+}
+
+.habit-button-accent path {
+  vector-effect: non-scaling-stroke;
+}
+
+.habit-button-complete-accent {
+  top: 50%;
+  left: clamp(14px, 2vw, 28px);
+  width: 31px;
+  height: 31px;
+  stroke: var(--color-forest);
+  stroke-width: 2.5;
+  opacity: 0.72;
+  transform: translateY(-50%) rotate(-8deg);
+}
+
+.habit-button-miss-accent {
+  top: 50%;
+  right: clamp(13px, 2vw, 26px);
+  width: 58px;
+  height: 24px;
+  stroke: var(--color-danger);
+  stroke-width: 2.4;
+  opacity: 0.9;
+  transform: translateY(-50%) rotate(-3deg);
 }
 
 .dashboard-hero {
@@ -782,6 +869,12 @@ p {
   gap: 16px;
 }
 
+.habit-card-intro {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
 .habit-completed {
   border-color: rgba(94, 122, 0, 0.28);
 }
@@ -791,6 +884,8 @@ p {
 }
 
 .habit-card-main {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1537,7 +1632,6 @@ textarea.field-control {
 }
 
 .risk-sketch-badge {
-  --sketch-ink: var(--color-forest);
   z-index: 0;
 }
 
@@ -2550,10 +2644,6 @@ textarea.field-control {
   width: fit-content;
 }
 
-.profile-kicker-sketch {
-  --sketch-ink: var(--color-forest);
-}
-
 .settings-list span {
   border: 1px solid rgba(11, 15, 13, 0.08);
   border-radius: var(--radius-small);
@@ -2660,7 +2750,7 @@ textarea.field-control {
     left: calc(100% - 8px);
     width: clamp(88px, 9vw, 128px);
     color: var(--color-lime);
-    filter: drop-shadow(0 5px 0 rgba(94, 122, 0, 0.12));
+    filter: none;
   }
 
   .auth-qr-card {
@@ -3146,5 +3236,42 @@ textarea.field-control {
   .mobile-nav button {
     min-height: 50px;
     font-size: 9px;
+  }
+
+  .habit-card-accent {
+    width: min(100%, 320px);
+    height: 20px;
+  }
+
+  .habit-action-complete {
+    padding-inline: 48px;
+  }
+
+  .habit-action-miss {
+    padding-inline: 50px;
+  }
+
+  .habit-button-complete-accent {
+    left: 13px;
+    width: 25px;
+    height: 25px;
+    stroke-width: 2.3;
+  }
+
+  .habit-button-miss-accent {
+    right: 12px;
+    width: 40px;
+    height: 18px;
+    stroke-width: 2.2;
+  }
+}
+
+@media (max-width: 360px) {
+  .habit-action-miss {
+    padding-inline: 17px;
+  }
+
+  .habit-button-miss-accent {
+    display: none;
   }
 }

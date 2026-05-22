@@ -128,30 +128,41 @@ export function HabitCard({
 
   return (
     <Card className={`habit-card ${isCompletedToday || isRecoveredToday ? "habit-completed" : ""} ${isMissedToday ? "habit-missed" : ""}`}>
-      <div className="habit-card-main">
-        <div>
-          <div className="habit-title-row">
-            <h3>{habit.title}</h3>
-            <RiskBadge prediction={prediction} stats={stats} />
-            {todayEntry && <HabitStatusBadge status={todayEntry.status} />}
+      <div className="habit-card-intro">
+        <div className="habit-card-main">
+          <div>
+            <div className="habit-title-row">
+              <h3>{habit.title}</h3>
+              <RiskBadge prediction={prediction} stats={stats} />
+              {todayEntry && <HabitStatusBadge status={todayEntry.status} />}
+            </div>
+            <p>{habit.description || "Короткая привычка без описания"}</p>
           </div>
-          <p>{habit.description || "Короткая привычка без описания"}</p>
+
+          {!compact && (
+            <div className="habit-card-actions">
+              {onEdit && (
+                <Button variant="text" onClick={() => onEdit(habit)}>
+                  Редактировать
+                </Button>
+              )}
+              {onDelete && (
+                <Button variant="text" className="danger-text" onClick={() => onDelete(habit.id)}>
+                  Удалить
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
-        {!compact && (
-          <div className="habit-card-actions">
-            {onEdit && (
-              <Button variant="text" onClick={() => onEdit(habit)}>
-                Редактировать
-              </Button>
-            )}
-            {onDelete && (
-              <Button variant="text" className="danger-text" onClick={() => onDelete(habit.id)}>
-                Удалить
-              </Button>
-            )}
-          </div>
-        )}
+        <svg className="habit-card-accent" viewBox="0 0 760 34" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M4 19 C68 11 116 25 180 18 C246 10 294 25 358 18 C423 10 472 25 536 18 C584 13 627 21 660 18" />
+          <g className="habit-card-accent-burst">
+            <line x1="694" y1="14" x2="708" y2="3" />
+            <line x1="707" y1="20" x2="732" y2="15" />
+            <line x1="699" y1="27" x2="720" y2="31" />
+          </g>
+        </svg>
       </div>
 
       <div className="habit-progress">
@@ -264,11 +275,39 @@ export function HabitCard({
       )}
 
       <div className="habit-actions">
-        <Button variant="cta" disabled={!isAvailableToday || isCompletedToday || isRecoveredToday} onClick={() => onMark(habit.id, "completed")}>
-          {isCompletedToday || isRecoveredToday ? "Выполнено сегодня" : "Закрыть шаг"}
+        <Button
+          className="habit-action-button habit-action-complete"
+          variant="cta"
+          disabled={!isAvailableToday || isCompletedToday || isRecoveredToday}
+          onClick={() => onMark(habit.id, "completed")}
+        >
+          <svg
+            className="habit-button-accent habit-button-complete-accent"
+            viewBox="0 0 34 34"
+            aria-hidden="true"
+          >
+            <path d="M17 3 L15 14 L5 9 M15 14 L29 11 M15 14 L26 24 M15 14 L7 27" />
+          </svg>
+          <span className="habit-action-label">
+            {isCompletedToday || isRecoveredToday ? "Выполнено сегодня" : "Закрыть шаг"}
+          </span>
         </Button>
-        <Button variant="danger" disabled={!isAvailableToday || isMissedToday} onClick={() => onMark(habit.id, "missed")}>
-          {isMissedToday ? "Пропуск отмечен" : "Зафиксировать пропуск"}
+        <Button
+          className="habit-action-button habit-action-miss"
+          variant="danger"
+          disabled={!isAvailableToday || isMissedToday}
+          onClick={() => onMark(habit.id, "missed")}
+        >
+          <span className="habit-action-label">
+            {isMissedToday ? "Пропуск отмечен" : "Зафиксировать пропуск"}
+          </span>
+          <svg
+            className="habit-button-accent habit-button-miss-accent"
+            viewBox="0 0 56 24"
+            aria-hidden="true"
+          >
+            <path d="M3 17 C12 11 18 7 23 12 C27 17 34 7 39 10 C43 13 48 12 53 8" />
+          </svg>
         </Button>
       </div>
     </Card>

@@ -40,7 +40,7 @@ export function RecoverySuggestion({
         <strong>{isRecoveredToday ? "Минимальная версия выполнена" : getRecoveryTask(habit)}</strong>
         <p>
           {isRecoveredToday
-            ? "Отлично, ты вернулся к привычке без лишнего давления."
+            ? "Отлично, ты вернулся к привычке без лишнего давления"
             : `Риск пропуска ${percent(predictedRisk)}. Выполни короткий вариант и получи +${recoveryXP} XP.`}
         </p>
       </div>
