@@ -430,7 +430,7 @@ p {
   position: absolute;
   z-index: -1;
   right: 0.04em;
-  bottom: -0.28em;
+  bottom: -0.45em;
   left: 0.02em;
   height: 0.36em;
   border-top: 3px solid var(--sketch-ink, var(--color-lime));
@@ -2617,9 +2617,6 @@ textarea.field-control {
   color: var(--color-muted-strong);
 }
 
-.pet-screen .page-intro .hand-underline::after {
-  bottom: -7px;
-}
 
 .pet-setup-card {
   max-width: 620px;
