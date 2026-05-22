@@ -96,64 +96,27 @@ docker-compose.yml       локальный запуск PostgreSQL, backend и 
 
 ## Настройка переменных окружения
 
-Корневой `.env` для Docker Compose:
+Все `.env`-файлы исключены из репозитория (`.gitignore`). Готовые шаблоны лежат рядом — скопируйте их и при необходимости отредактируйте значения.
+
+Корневой `.env` для Docker Compose (PostgreSQL + backend + frontend):
 
 ```bash
 cp .env.example .env
 ```
 
-Основные переменные:
+Шаблон: [`.env.example`](.env.example) — содержит все доступные переменные с комментариями.
 
-```env
-POSTGRES_USER=steply_user
-POSTGRES_PASSWORD=steply_password
-POSTGRES_DB=steply_db
-POSTGRES_PORT=5432
-DATABASE_URL=postgresql://steply_user:steply_password@postgres:5432/steply_db
+Обязательно задайте уникальный `SECRET_KEY` перед любым развёртыванием.
 
-APP_NAME=Steply
-ENVIRONMENT=local
-AUTO_INIT_DB=true
-SECRET_KEY=change-this-secret-key-in-production
-ACCESS_TOKEN_EXPIRE_MINUTES=10080
-BACKEND_PORT=8000
-BACKEND_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-BACKEND_CORS_ORIGIN_REGEX=^https?://(?:localhost|127\.0\.0\.1|10(?:\.[0-9]+)+|192\.168(?:\.[0-9]+)+|172\.(?:1[6-9]|2[0-9]|3[01])(?:\.[0-9]+)+)(?::[0-9]+)?$
-
-FRONTEND_PORT=5173
-STEPLY_LAN_HOST=
-VITE_PUBLIC_APP_URL=
-VITE_API_PORT=8000
-VITE_API_URL=
-```
-
-В Docker `DATABASE_URL` должен использовать hostname `postgres`, потому что backend подключается к базе по имени сервиса docker-compose. Для ручного запуска backend без Docker используется отдельный `backend/.env` с `localhost`.
-
-Backend без Docker:
+Backend без Docker (отдельный процесс):
 
 ```bash
 cp backend/.env.example backend/.env
 ```
 
-Основные переменные:
+Шаблон: [`backend/.env.example`](backend/.env.example).
 
-```env
-APP_NAME=Steply
-ENVIRONMENT=local
-AUTO_INIT_DB=true
-SECRET_KEY=change-this-secret-key
-ACCESS_TOKEN_EXPIRE_MINUTES=10080
-
-POSTGRES_USER=steply_user
-POSTGRES_PASSWORD=steply_password
-POSTGRES_DB=steply_db
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-DATABASE_URL=postgresql+psycopg://steply_user:steply_password@localhost:5432/steply_db
-
-BACKEND_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-BACKEND_CORS_ORIGIN_REGEX=^https?://(?:localhost|127\.0\.0\.1|10(?:\.[0-9]+)+|192\.168(?:\.[0-9]+)+|172\.(?:1[6-9]|2[0-9]|3[01])(?:\.[0-9]+)+)(?::[0-9]+)?$
-```
+В Docker `DATABASE_URL` использует hostname `postgres` (имя сервиса Compose). Для ручного запуска backend без Docker в `backend/.env` используется `localhost`.
 
 Frontend:
 
@@ -161,12 +124,7 @@ Frontend:
 cp frontend/.env.example frontend/.env
 ```
 
-```env
-VITE_API_PORT=8000
-VITE_PUBLIC_APP_URL=
-STEPLY_LAN_HOST=
-VITE_API_URL=
-```
+Шаблон: [`frontend/.env.example`](frontend/.env.example).
 
 Backend также принимает формат `postgresql://...`: приложение автоматически нормализует его к драйверу `postgresql+psycopg://...`, который используется SQLAlchemy с установленным пакетом `psycopg`.
 
@@ -194,21 +152,15 @@ make logs
 
 ## Подключение к локальному PostgreSQL без Docker
 
-Это опциональный ручной сценарий. Для обычного локального запуска PostgreSQL отдельно настраивать не нужно: контейнер, пользователь, пароль и база создаются через Docker Compose. Если всё же используется установленный PostgreSQL, создайте пользователя и базу вручную:
+Это опциональный ручной сценарий. Для обычного локального запуска PostgreSQL отдельно настраивать не нужно: контейнер, пользователь, пароль и база создаются через Docker Compose. Если всё же используется установленный PostgreSQL, создайте пользователя и базу вручную, подставив значения из вашего `backend/.env`:
 
 ```bash
-createuser steply_user
-createdb steply_db -O steply_user
-psql -d steply_db -c "ALTER USER steply_user WITH PASSWORD 'steply_password';"
+createuser <POSTGRES_USER>
+createdb <POSTGRES_DB> -O <POSTGRES_USER>
+psql -d <POSTGRES_DB> -c "ALTER USER <POSTGRES_USER> WITH PASSWORD '<POSTGRES_PASSWORD>';"
 ```
 
-Затем проверьте `backend/.env`:
-
-```env
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-DATABASE_URL=postgresql+psycopg://steply_user:steply_password@localhost:5432/steply_db
-```
+Затем проверьте `backend/.env` — убедитесь, что `POSTGRES_HOST=localhost` и `DATABASE_URL` указывают на локальный сервер. Шаблон: [`backend/.env.example`](backend/.env.example).
 
 ## Миграции базы данных
 
