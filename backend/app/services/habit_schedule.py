@@ -36,20 +36,10 @@ def is_habit_scheduled_on(habit: Any, target_date: date) -> bool:
 
 
 def is_habit_available_at(habit: Any, now: datetime) -> bool:
-    if not is_habit_scheduled_on(habit, now.date()):
-        return False
-
-    preferred_time = getattr(habit, "preferred_time", None)
-    if preferred_time is None:
-        return True
-
-    # Habit time is entered in minute precision, so the scheduled minute is inclusive.
-    return (now.hour, now.minute) <= (preferred_time.hour, preferred_time.minute)
+    return is_habit_scheduled_on(habit, now.date())
 
 
 def get_today_unavailability_detail(habit: Any, now: datetime) -> Optional[str]:
     if not is_habit_scheduled_on(habit, now.date()):
         return "Привычка не запланирована на сегодня"
-    if not is_habit_available_at(habit, now):
-        return "Время выполнения привычки сегодня уже прошло"
     return None

@@ -22,13 +22,13 @@ def make_habit(
     )
 
 
-def test_timed_daily_habit_is_unavailable_after_its_time() -> None:
+def test_timed_daily_habit_stays_available_after_its_preferred_time() -> None:
     now = datetime(2026, 5, 22, 11, 30)
     habit = make_habit(["mon", "tue", "wed", "thu", "fri", "sat", "sun"], time(7, 40))
 
     assert is_habit_scheduled_on(habit, now.date())
-    assert not is_habit_available_at(habit, now)
-    assert get_today_unavailability_detail(habit, now) == "Время выполнения привычки сегодня уже прошло"
+    assert is_habit_available_at(habit, now)
+    assert get_today_unavailability_detail(habit, now) is None
 
 
 def test_habit_for_wednesday_and_thursday_is_not_available_on_friday() -> None:

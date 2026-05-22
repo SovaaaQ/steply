@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { SketchArrow } from "./SketchArrow";
+
 export function EmptyState({
   title,
   children,
@@ -11,8 +13,9 @@ export function EmptyState({
 }) {
   return (
     <div className="empty-state">
+      <SketchArrow className="empty-state-arrow" />
       <span className="empty-state-mark" aria-hidden="true" />
-      <strong>{title}</strong>
+      <strong className="hand-underline empty-state-title">{title}</strong>
       {children && <p>{children}</p>}
       {action}
     </div>

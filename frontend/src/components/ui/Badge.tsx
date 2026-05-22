@@ -4,9 +4,11 @@ import { cn } from "../../utils/cn";
 
 export function Badge({
   children,
+  className,
   tone = "neutral"
 }: {
   children: ReactNode;
+  className?: string;
   tone?:
     | "neutral"
     | "risk-low"
@@ -16,5 +18,5 @@ export function Badge({
     | "missed"
     | "recovery";
 }) {
-  return <span className={cn("badge", `badge-${tone}`)}>{children}</span>;
+  return <span className={cn("badge", `badge-${tone}`, className)}>{children}</span>;
 }

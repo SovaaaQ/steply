@@ -36,7 +36,7 @@ export function HabitList({
         action={
           onCreate ? (
             <Button type="button" variant="cta" onClick={onCreate}>
-              Создать привычку
+              Новая привычка
             </Button>
           ) : undefined
         }

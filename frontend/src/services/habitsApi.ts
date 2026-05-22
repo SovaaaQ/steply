@@ -21,10 +21,10 @@ export const habitsApi = {
       method: "DELETE"
     }),
 
-  mark: (habitId: number, status: EntryStatus) =>
+  mark: (habitId: number, status: EntryStatus, entryDate: string) =>
     request<HabitEntry>(`/habits/${habitId}/entries`, {
       method: "POST",
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status, entry_date: entryDate })
     }),
 
   entries: (habitId: number) => request<HabitEntry[]>(`/habits/${habitId}/entries`)

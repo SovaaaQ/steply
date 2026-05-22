@@ -12,11 +12,12 @@ const weekdayLabels: Record<WeekdayKey, string> = {
   sun: "Вс"
 };
 
-export type HabitUnavailableReason = "not-scheduled" | "time-passed";
+export type HabitUnavailableReason = "not-scheduled";
 
 export interface HabitScheduleAvailability {
   isScheduledToday: boolean;
   isAvailableToday: boolean;
+  isPastPreferredTime: boolean;
   reason?: HabitUnavailableReason;
 }
 
@@ -67,15 +68,21 @@ export function getHabitScheduleAvailability(
 ): HabitScheduleAvailability {
   const isScheduledToday = getEffectiveScheduleDays(habit).includes(getWeekdayKey(now));
   if (!isScheduledToday) {
-    return { isScheduledToday, isAvailableToday: false, reason: "not-scheduled" };
+    return {
+      isScheduledToday,
+      isAvailableToday: false,
+      isPastPreferredTime: false,
+      reason: "not-scheduled"
+    };
   }
 
   const preferredMinutes = getTimeMinutes(habit.preferred_time);
-  if (preferredMinutes !== undefined && getDateMinutes(now) > preferredMinutes) {
-    return { isScheduledToday, isAvailableToday: false, reason: "time-passed" };
-  }
-
-  return { isScheduledToday, isAvailableToday: true };
+  return {
+    isScheduledToday,
+    isAvailableToday: true,
+    isPastPreferredTime:
+      preferredMinutes !== undefined && getDateMinutes(now) > preferredMinutes
+  };
 }
 
 export function getNextScheduledOccurrence(
@@ -87,16 +94,12 @@ export function getNextScheduledOccurrence(
     return undefined;
   }
 
-  const preferredMinutes = getTimeMinutes(habit.preferred_time);
   for (let dayOffset = 0; dayOffset <= 7; dayOffset += 1) {
     const date = startOfLocalDay(now);
     date.setDate(date.getDate() + dayOffset);
     const weekday = getWeekdayKey(date);
 
     if (!scheduleDays.has(weekday)) {
-      continue;
-    }
-    if (dayOffset === 0 && preferredMinutes !== undefined && getDateMinutes(now) > preferredMinutes) {
       continue;
     }
 

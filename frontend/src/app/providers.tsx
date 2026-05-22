@@ -77,6 +77,28 @@ const emptyGamificationSummary: GamificationSummary = {
   }
 };
 
+const ONBOARDING_STORAGE_PREFIX = "steply:onboarding:";
+
+function getOnboardingKey(userId: number) {
+  return `${ONBOARDING_STORAGE_PREFIX}${userId}`;
+}
+
+function getOnboardingStatus(userId: number) {
+  try {
+    return localStorage.getItem(getOnboardingKey(userId));
+  } catch {
+    return null;
+  }
+}
+
+function setOnboardingStatus(userId: number, status: "pending" | "completed") {
+  try {
+    localStorage.setItem(getOnboardingKey(userId), status);
+  } catch {
+    // The onboarding can still finish for this session when storage is unavailable.
+  }
+}
+
 interface AppDataContextValue {
   token: string | null;
   activeSection: AppSection;
@@ -100,11 +122,12 @@ interface AppDataContextValue {
   noticeDetail: string;
   noticeReward?: RewardPreview;
   isLoading: boolean;
+  isOnboardingOpen: boolean;
   isHabitFormOpen: boolean;
   habitForm: HabitFormState;
   setHabitForm: React.Dispatch<React.SetStateAction<HabitFormState>>;
   editingHabitId: number | null;
-  handleAuth: (response: AuthResponse) => void;
+  handleAuth: (response: AuthResponse, options?: { isNewRegistration?: boolean }) => void;
   login: (payload: { email: string; password: string }) => Promise<AuthResponse>;
   register: (payload: { email: string; full_name: string; password: string }) => Promise<AuthResponse>;
   logout: () => void;
@@ -116,6 +139,7 @@ interface AppDataContextValue {
   startEditHabit: (habit: Habit) => void;
   markHabit: (habitId: number, status: EntryStatus) => Promise<void>;
   updatePet: (payload: { pet_type: PetType; pet_name: string }) => Promise<void>;
+  completeOnboarding: () => void;
   deleteHabit: (habitId: number) => Promise<void>;
   refreshRecommendations: () => Promise<void>;
   markRecommendationRead: (recommendationId: number) => Promise<void>;
@@ -140,6 +164,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [noticeDetail, setNoticeDetail] = useState("");
   const [noticeReward, setNoticeReward] = useState<RewardPreview | undefined>();
   const [isLoading, setIsLoading] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isHabitFormOpen, setIsHabitFormOpen] = useState(false);
   const [editingHabitId, setEditingHabitId] = useState<number | null>(null);
   const [habitForm, setHabitForm] = useState<HabitFormState>(defaultHabitForm);
@@ -180,11 +205,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const recommendationOfDay = useMemo(
     () =>
-      [...recommendations].sort((left, right) => {
+      [...recommendations]
+        .filter((recommendation) => {
+          if (!recommendation.habit_id) {
+            return true;
+          }
+
+          return !habitEntries[recommendation.habit_id]?.some(
+            (entry) =>
+              entry.entry_date === todayISO &&
+              (entry.status === "completed" || entry.status === "recovery_completed")
+          );
+        })
+        .sort((left, right) => {
         const weights: Record<string, number> = { high: 3, normal: 2, low: 1 };
         return (weights[right.priority] ?? 0) - (weights[left.priority] ?? 0);
       })[0],
-    [recommendations]
+    [habitEntries, recommendations, todayISO]
   );
 
   useEffect(() => {
@@ -231,6 +268,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setHabitEntries(Object.fromEntries(entryPairs) as Record<number, HabitEntry[]>);
       setRecommendations(recommendationsData);
       setGamification(gamificationData);
+      setIsOnboardingOpen(
+        (isOpen) => isOpen || getOnboardingStatus(currentUser.id) === "pending"
+      );
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "Ошибка загрузки данных";
       setError(message);
@@ -275,10 +315,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setNoticeReward(reward);
   }
 
-  function handleAuth(response: AuthResponse) {
+  function handleAuth(response: AuthResponse, options?: { isNewRegistration?: boolean }) {
+    if (options?.isNewRegistration) {
+      setOnboardingStatus(response.user.id, "pending");
+    }
+
     storeToken(response.access_token);
     setToken(response.access_token);
     setUser(response.user);
+    setIsOnboardingOpen(
+      Boolean(options?.isNewRegistration) || getOnboardingStatus(response.user.id) === "pending"
+    );
     showNotice("Вы вошли в Steply", "Сегодня можно начать с ближайшей привычки");
     setActiveSection("dashboard");
   }
@@ -294,6 +341,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setRecommendations([]);
     setSummary(emptySummary);
     setGamification(emptyGamificationSummary);
+    setIsOnboardingOpen(false);
     clearNotice();
     setActiveSection("dashboard");
   }
@@ -378,12 +426,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     clearNotice();
     const habit = activeHabits.find((item) => item.id === habitId);
     if (habit && !getHabitScheduleAvailability(habit, new Date()).isAvailableToday) {
-      setError("Эта привычка сейчас недоступна по расписанию");
+      setError("Эта привычка сегодня не запланирована");
       return;
     }
 
     try {
-      const entry = await habitsApi.mark(habitId, status);
+      const entry = await habitsApi.mark(habitId, status, todayISO);
       await recommendationsApi.generate().catch(() => []);
       const reward =
         entry.xp_awarded > 0
@@ -437,6 +485,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch (petError) {
       setError(petError instanceof Error ? petError.message : "Не удалось сохранить питомца");
     }
+  }
+
+  function completeOnboarding() {
+    if (user) {
+      setOnboardingStatus(user.id, "completed");
+    }
+    setIsOnboardingOpen(false);
+
+    if (!gamification.pet.is_configured) {
+      setActiveSection("pet");
+      return;
+    }
+    if (activeHabits.length === 0) {
+      openHabitCreator();
+      return;
+    }
+    setActiveSection("dashboard");
   }
 
   async function refreshRecommendations() {
@@ -504,6 +569,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     noticeDetail,
     noticeReward,
     isLoading,
+    isOnboardingOpen,
     isHabitFormOpen,
     habitForm,
     setHabitForm,
@@ -520,6 +586,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     startEditHabit,
     markHabit,
     updatePet,
+    completeOnboarding,
     deleteHabit,
     refreshRecommendations,
     markRecommendationRead,

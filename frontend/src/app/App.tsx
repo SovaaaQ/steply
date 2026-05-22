@@ -10,6 +10,7 @@ import {
 import { LoginPage } from "../pages/LoginPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { AppLayout } from "../components/layout/AppLayout";
+import { FirstLoginOnboarding } from "../components/onboarding/FirstLoginOnboarding";
 import { ErrorState } from "../components/ui/ErrorState";
 import { LoadingState } from "../components/ui/LoadingState";
 import { SuccessState } from "../components/ui/SuccessState";
@@ -56,7 +57,15 @@ function AuthGate() {
 
 function AppContent() {
   const { token } = useAuth();
-  const { error, notice, noticeDetail, noticeReward, isLoading } = useAppData();
+  const {
+    completeOnboarding,
+    error,
+    notice,
+    noticeDetail,
+    noticeReward,
+    isLoading,
+    isOnboardingOpen
+  } = useAppData();
 
   if (!token) {
     return <AuthGate />;
@@ -70,6 +79,7 @@ function AppContent() {
         {notice && <SuccessState message={notice} detail={noticeDetail} reward={noticeReward} />}
       </div>
       <AppRouter />
+      {isOnboardingOpen && <FirstLoginOnboarding onComplete={completeOnboarding} />}
     </AppLayout>
   );
 }

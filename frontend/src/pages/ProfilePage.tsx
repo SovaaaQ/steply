@@ -23,7 +23,7 @@ export function ProfilePage() {
     <section className="profile-page page-stack">
       <div className="page-intro">
         <div>
-          <span className="page-kicker">Профиль</span>
+          <span className="page-kicker sketch-circle profile-kicker-sketch">Профиль</span>
           <h2>{user?.full_name ?? "Пользователь Steply"}</h2>
           <p>
             Данные аккаунта, базовые настройки и короткая статистика без

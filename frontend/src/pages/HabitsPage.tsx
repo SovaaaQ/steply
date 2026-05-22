@@ -13,6 +13,7 @@ export function HabitsPage() {
     error,
     gamification,
     isHabitFormOpen,
+    openHabitCreator,
     setActiveSection
   } = useAppData();
   const drawerRef = useRef<HTMLElement>(null);
@@ -68,6 +69,14 @@ export function HabitsPage() {
             <span className="page-kicker">Привычки</span>
             <h2>Управление привычками</h2>
           </div>
+          <Button
+            className="habit-page-create"
+            type="button"
+            variant="cta"
+            onClick={openHabitCreator}
+          >
+            Новая привычка
+          </Button>
         </div>
         <p className="habit-motivation">Выполни привычку, чтобы поддержать питомца.</p>
 
@@ -76,6 +85,7 @@ export function HabitsPage() {
           predictions={predictions}
           stats={habitStats}
           getTodayEntry={getTodayEntry}
+          onCreate={openHabitCreator}
           onEdit={startEditHabit}
           onDelete={(habitId) => void deleteHabit(habitId)}
           onMark={(habitId, status) => void markHabit(habitId, status)}

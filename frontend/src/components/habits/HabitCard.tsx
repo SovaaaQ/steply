@@ -75,10 +75,7 @@ export function HabitCard({
   const scheduleAvailability = getHabitScheduleAvailability(habit, new Date());
   const nextOccurrence = getNextScheduledOccurrence(habit, new Date());
   const isAvailableToday = scheduleAvailability.isAvailableToday;
-  const unavailableMessage =
-    scheduleAvailability.reason === "time-passed"
-      ? "Время выполнения сегодня уже прошло"
-      : "Не запланировано на сегодня";
+  const unavailableMessage = "Не запланировано на сегодня";
   const rewardLabel =
     isCompletedToday || isRecoveredToday ? "Питомец поддержан" : "Связь с питомцем";
 
@@ -166,7 +163,9 @@ export function HabitCard({
         </div>
         <div>
           <dt>
-            <span>Риск пропуска</span>
+            <span>
+              {isCompletedToday || isRecoveredToday ? "Риск следующего шага" : "Риск пропуска"}
+            </span>
             <span className={`risk-info ${isRiskPopoverOpen ? "open" : ""}`} ref={riskInfoRef}>
               <button
                 className="risk-help-button"
@@ -199,7 +198,11 @@ export function HabitCard({
       </dl>
 
       <p className="risk-explanation">
-        {riskLevel ? riskDescriptions[riskLevel] : "Нужно еще несколько выполнений"}
+        {isCompletedToday || isRecoveredToday
+          ? "Сегодня привычка уже выполнена. Следите за регулярностью на следующем выполнении."
+          : riskLevel
+            ? riskDescriptions[riskLevel]
+            : "Нужно еще несколько выполнений"}
       </p>
 
       <RecoverySuggestion
@@ -210,6 +213,13 @@ export function HabitCard({
         isAvailableToday={isAvailableToday}
         onRecover={() => onMark(habit.id, "recovery_completed")}
       />
+
+      {scheduleAvailability.isPastPreferredTime && !todayEntry && (
+        <div className="habit-schedule-hint habit-late-hint">
+          <strong>Предпочтительное время прошло</strong>
+          <span>Отметка доступна до конца запланированного дня.</span>
+        </div>
+      )}
 
       {!isAvailableToday && !todayEntry ? (
         <div className="habit-schedule-hint">

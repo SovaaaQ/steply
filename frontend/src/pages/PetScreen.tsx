@@ -22,7 +22,9 @@ export function PetScreen() {
         <div className="page-intro">
           <div>
             <span className="page-kicker">Питомец</span>
-            <h2>Выберите спокойного спутника</h2>
+            <h2>
+              Выберите спокойного <span className="marker-highlight">спутника</span>
+            </h2>
             <p>
               Питомец будет показывать мягкую обратную связь: регулярность помогает
               ему развиваться, а пропуски включают подсказки восстановления.
@@ -41,7 +43,9 @@ export function PetScreen() {
       <div className="page-intro">
         <div>
           <span className="page-kicker">Питомец</span>
-          <h2>Связь привычек и поддержки</h2>
+          <h2>
+            Связь привычек и <span className="hand-underline">поддержки</span>
+          </h2>
           <p>
             Выполняешь привычки — питомцу хорошо, растут XP и уровень. Если были
             пропуски, Steply предлагает мягкий возврат через минимальный шаг.

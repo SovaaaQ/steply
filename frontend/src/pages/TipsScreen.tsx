@@ -1,5 +1,6 @@
 import { RecommendationCard } from "../components/recommendations/RecommendationCard";
 import { Button } from "../components/ui/Button";
+import { SketchArrow } from "../components/ui/SketchArrow";
 import { useAppData } from "../app/providers";
 import { useRecommendations } from "../hooks/useRecommendations";
 import type { EntryStatus, Habit } from "../types/habit";
@@ -20,6 +21,9 @@ interface AdviceItem {
   markStatus?: EntryStatus;
   recommendationId?: number;
 }
+
+const todayFollowUpAdvice =
+  "Сегодня привычка уже выполнена. Следите за регулярностью на следующем выполнении.";
 
 function TipsEmptyState({ children }: { children: string }) {
   return <p className="tips-empty-state">{children}</p>;
@@ -109,17 +113,16 @@ export function TipsScreen() {
     .map((habit): AdviceItem | null => {
       const stats = habitStats[habit.id];
       const prediction = predictions[habit.id];
+      const todayEntry = getTodayEntry(habit.id);
+      const isDone =
+        todayEntry?.status === "completed" || todayEntry?.status === "recovery_completed";
       const hasRiskData = hasEnoughRiskData(prediction, stats);
       const isUrgent =
         (hasRiskData && prediction.risk_level === "high") ||
         shouldActivateRecoveryMode(stats, hasRiskData ? prediction.miss_risk : 0);
-      if (!isUrgent) {
+      if (!isUrgent || isDone) {
         return null;
       }
-
-      const todayEntry = getTodayEntry(habit.id);
-      const isDone =
-        todayEntry?.status === "completed" || todayEntry?.status === "recovery_completed";
 
       return {
         id: `urgent-${habit.id}`,
@@ -128,8 +131,8 @@ export function TipsScreen() {
         habitTitle: habit.title,
         advice: "Выполните минимальную версию привычки сегодня, чтобы сохранить регулярность.",
         reason: getPredictionRiskReason(stats, prediction),
-        ctaLabel: isDone ? "Перейти к привычке" as const : "Отметить" as const,
-        markStatus: isDone ? undefined : "recovery_completed" as const
+        ctaLabel: "Отметить" as const,
+        markStatus: "recovery_completed" as const
       };
     })
     .filter(isAdviceItem)
@@ -154,8 +157,12 @@ export function TipsScreen() {
         tone: "data" as const,
         habit,
         habitTitle: habit.title,
-        advice: "Отметьте привычку несколько раз, чтобы Steply точнее оценивал риск пропуска.",
-        reason: `Сейчас есть ${formatMarks(totalEntries)}, для уверенного прогноза нужно больше истории.`,
+        advice: isDone
+          ? todayFollowUpAdvice
+          : "Отметьте привычку несколько раз, чтобы Steply точнее оценивал риск пропуска.",
+        reason: isDone
+          ? `Сегодняшняя отметка уже учтена; сейчас есть ${formatMarks(totalEntries)}.`
+          : `Сейчас есть ${formatMarks(totalEntries)}, для уверенного прогноза нужно больше истории.`,
         ctaLabel: isDone ? "Перейти к привычке" as const : "Отметить" as const,
         markStatus: isDone ? undefined : "completed" as const
       };
@@ -175,14 +182,17 @@ export function TipsScreen() {
       }
       const prediction = habit ? predictions[habit.id] : undefined;
       const stats = habit ? habitStats[habit.id] : undefined;
+      const todayEntry = habit ? getTodayEntry(habit.id) : undefined;
+      const isDone =
+        todayEntry?.status === "completed" || todayEntry?.status === "recovery_completed";
       return {
         id: `recommendation-${recommendation.id}`,
         tone: "normal" as const,
         habit,
         habitTitle: getHabitTitle(habit),
-        advice: getRecommendationAdvice(recommendation, habit),
+        advice: isDone ? todayFollowUpAdvice : getRecommendationAdvice(recommendation, habit),
         reason: prediction
-          ? getPredictionRiskReason(stats, prediction)
+          ? `${isDone ? "Риск относится к следующему выполнению. " : ""}${getPredictionRiskReason(stats, prediction)}`
           : "Совет сформирован по истории привычек и последним отметкам.",
         ctaLabel: "Перейти к привычке" as const,
         recommendationId: recommendation.id
@@ -220,7 +230,8 @@ export function TipsScreen() {
 
       <div className="tips-hint-grid">
         <article className="tips-hint-card tips-hint-primary">
-          <strong>Как работают советы</strong>
+          <SketchArrow className="tips-hint-arrow" />
+          <strong><span className="marker-highlight">Как работают советы</span></strong>
           <p>
             Steply анализирует отметки привычек, регулярность и риск пропуска.
             Чем больше выполнений, тем точнее рекомендации.

@@ -12,7 +12,7 @@ export function RegisterPage({
   onAuth,
   onSwitchMode
 }: {
-  onAuth: (response: AuthResponse) => void;
+  onAuth: (response: AuthResponse, options?: { isNewRegistration?: boolean }) => void;
   onSwitchMode: () => void;
 }) {
   const [email, setEmail] = useState("");
@@ -26,7 +26,9 @@ export function RegisterPage({
     setError("");
     setIsLoading(true);
     try {
-      onAuth(await authApi.register({ email, full_name: fullName, password }));
+      onAuth(await authApi.register({ email, full_name: fullName, password }), {
+        isNewRegistration: true
+      });
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Ошибка регистрации");
     } finally {
