@@ -38,7 +38,7 @@ export const petStateShortLabels: Record<PetState, string> = {
 export const petMiniPhrases: Record<PetState, string> = {
   happy: "Так держать, питомец доволен",
   neutral: "Выполни привычку, чтобы поддержать питомца",
-  sad: "Питомец скучает — пора вернуться к привычкам"
+  sad: "Питомец скучает – пора вернуться к привычкам"
 };
 
 const difficultyXP: Record<Difficulty, number> = {
@@ -82,6 +82,6 @@ export function shouldActivateRecoveryMode(
 export function getRecoveryTask(habit: Pick<Habit, "recovery_task">) {
   return (
     habit.recovery_task?.trim() ||
-    "Выполни минимальную версию привычки, чтобы сохранить регулярность."
+    "Выполни минимальную версию привычки, чтобы сохранить регулярность"
   );
 }

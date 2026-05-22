@@ -235,7 +235,7 @@ export function HabitCard({
       {scheduleAvailability.isPastPreferredTime && isAvailableToday && !todayEntry && (
         <div className="habit-schedule-hint habit-late-hint">
           <strong>Предпочтительное время прошло</strong>
-          <span>Отметка доступна до конца запланированного дня.</span>
+          <span>Отметка доступна до конца запланированного дня</span>
         </div>
       )}
 

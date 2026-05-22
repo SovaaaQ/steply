@@ -44,7 +44,7 @@ Docker Compose version v2.x.x
 docker info
 ```
 
-Если видите `ERROR: Cannot connect to the Docker daemon` — **запустите Docker Desktop** (значок Docker в трее/строке меню).
+Если видите `ERROR: Cannot connect to the Docker daemon` – **запустите Docker Desktop** (значок Docker в трее/строке меню).
 
 Дождитесь, пока статус в Docker Desktop станет **Running**, затем повторите `docker info`.
 
@@ -65,7 +65,7 @@ docker info
 cp .env.example .env
 ```
 
-Значения по умолчанию подходят для локального запуска — ничего менять не нужно.
+Значения по умолчанию подходят для локального запуска – ничего менять не нужно.
 
 > Если хотите свой `SECRET_KEY`, откройте `.env` и замените строку.
 
@@ -93,7 +93,7 @@ docker compose up --build
 steply_backend    ... (healthy)
 steply_frontend   ... (healthy)
 ```
-— проект готов.
+– проект готов.
 
 ### Шаг 3. Откройте приложение
 
@@ -137,7 +137,7 @@ docker compose up -d
 docker compose down
 ```
 
-### Полный сброс — остановить и удалить данные PostgreSQL
+### Полный сброс – остановить и удалить данные PostgreSQL
 
 ```bash
 docker compose down -v

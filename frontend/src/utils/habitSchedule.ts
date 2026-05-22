@@ -62,15 +62,19 @@ function startOfLocalDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
+function parseAsUTC(isoString: string): Date {
+  // Backend stores naive UTC datetimes without 'Z'. Force UTC interpretation so that
+  // getFullYear/getMonth/getDate return LOCAL calendar values, not UTC calendar values.
+  const hasZone = isoString.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(isoString);
+  return new Date(hasZone ? isoString : isoString + "Z");
+}
+
 function shouldDeferFirstOccurrence(habit: Habit, now: Date, hasEntries: boolean) {
   const preferredMinutes = getTimeMinutes(habit.preferred_time);
+  if (hasEntries || preferredMinutes === undefined) return false;
 
-  return (
-    !hasEntries &&
-    preferredMinutes !== undefined &&
-    habit.created_at.slice(0, 10) === formatLocalDate(now) &&
-    getDateMinutes(now) > preferredMinutes
-  );
+  const createdLocalDate = formatLocalDate(parseAsUTC(habit.created_at));
+  return createdLocalDate === formatLocalDate(now) && getDateMinutes(now) > preferredMinutes;
 }
 
 export function getHabitScheduleAvailability(

@@ -26,8 +26,7 @@ export function ProfilePage() {
           <span className="page-kicker sketch-circle profile-kicker-sketch">Профиль</span>
           <h2>{user?.full_name ?? "Пользователь Steply"}</h2>
           <p>
-            Данные аккаунта, базовые настройки и короткая статистика без
-            дублирования экрана питомца.
+            Данные профиля, основные настройки и краткая статистика
           </p>
         </div>
         <Button variant="ghost" type="button" onClick={logout}>

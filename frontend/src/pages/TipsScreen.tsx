@@ -225,7 +225,7 @@ export function TipsScreen() {
     <section className="recommendations-page page-stack">
       <div className="tips-topbar">
         <p className="tips-subtitle">
-          Рекомендации по привычкам, риску пропуска и восстановлению.
+          Рекомендации по привычкам, риску пропуска и восстановлению
         </p>
         <Button
           className="tips-refresh-button"

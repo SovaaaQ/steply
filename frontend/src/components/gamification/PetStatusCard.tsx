@@ -65,9 +65,9 @@ export function PetStatusCard({ pet, onEdit }: PetStatusCardProps) {
       <div className="pet-help-list">
         <span>Как помочь питомцу</span>
         <ul>
-          <li>Выполнить ближайшую привычку.</li>
-          <li>Выполнить минимальную версию привычки.</li>
-          <li>Вернуться к регулярности без давления.</li>
+          <li>Выполнить ближайшую привычку</li>
+          <li>Выполнить минимальную версию привычки</li>
+          <li>Вернуться к регулярности без давления</li>
         </ul>
       </div>
     </section>

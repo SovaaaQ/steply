@@ -104,7 +104,7 @@ export function DashboardPage() {
               })}
             </div>
           ) : (
-            <p className="muted-panel">На сегодня пока нет активных привычек.</p>
+            <p className="muted-panel">На сегодня пока нет активных привычек</p>
           )}
         </section>
 
