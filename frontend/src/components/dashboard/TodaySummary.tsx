@@ -19,7 +19,7 @@ export function TodaySummary({
     <section className="today-summary">
       <span className="stamp-label">Маршрут дня</span>
       <h2>
-        {firstName}, сегодня фокус на <span className="hand-underline">привычках</span>.
+        {firstName}, сегодня фокус на <span className="hand-underline">привычках</span>
       </h2>
       <p>
         Закрой ближайший шаг или выбери минимальную версию, если день идет тяжело.
