@@ -1,0 +1,37 @@
+import { percent } from "../../utils/formatDate";
+
+interface TodaySummaryProps {
+  userName?: string;
+  completedToday: number;
+  totalToday: number;
+  progress: number;
+}
+
+export function TodaySummary({
+  userName,
+  completedToday,
+  totalToday,
+  progress
+}: TodaySummaryProps) {
+  const firstName = userName?.split(" ")[0] || "Пользователь";
+
+  return (
+    <section className="today-summary">
+      <span className="stamp-label">Маршрут дня</span>
+      <h2>{firstName}, сегодня фокус на привычках.</h2>
+      <p>
+        Закрой ближайший шаг или выбери минимальную версию, если день идет тяжело.
+      </p>
+      <div className="summary-metrics">
+        <div>
+          <span>Сегодня</span>
+          <strong>{completedToday}/{totalToday}</strong>
+        </div>
+        <div>
+          <span>Прогресс дня</span>
+          <strong>{percent(progress)}</strong>
+        </div>
+      </div>
+    </section>
+  );
+}

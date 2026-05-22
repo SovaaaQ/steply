@@ -1,0 +1,74 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: steply_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-steply_db}
+      POSTGRES_USER: ${POSTGRES_USER:-steply_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-steply_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - steply_postgres_data:/var/lib/postgresql/data
+    networks:
+      - steply
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: steply_backend
+    environment:
+      APP_NAME: ${APP_NAME:-Steply}
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      AUTO_INIT_DB: ${AUTO_INIT_DB:-true}
+      SECRET_KEY: ${SECRET_KEY:-change-this-secret-key-in-production}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-10080}
+      POSTGRES_USER: ${POSTGRES_USER:-steply_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-steply_password}
+      POSTGRES_DB: ${POSTGRES_DB:-steply_db}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      DATABASE_URL: ${DATABASE_URL:-postgresql://steply_user:steply_password@postgres:5432/steply_db}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - steply
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
+    container_name: steply_frontend
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - steply
+    restart: unless-stopped
+
+volumes:
+  steply_postgres_data:
+
+networks:
+  steply:
+    driver: bridge
