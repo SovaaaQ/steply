@@ -93,7 +93,8 @@ class HabitRead(HabitBase):
 
 
 class HabitEntryCreate(BaseModel):
-    entry_date: Optional[date] = None
+    entry_date: date
+    client_time: Optional[time] = None
     status: EntryStatus
     note: Optional[str] = Field(default=None, max_length=1000)
     completion_value: Optional[float] = Field(default=None, ge=0)

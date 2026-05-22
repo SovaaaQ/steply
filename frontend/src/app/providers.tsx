@@ -23,7 +23,7 @@ import type { GamificationSummary, RewardPreview } from "../types/gamification";
 import type { AppSection } from "../types/navigation";
 import { formatLocalDate } from "../utils/formatDate";
 import { buildHabitPayload, defaultHabitForm, weekdayKeys } from "../utils/habitForm";
-import { getHabitScheduleAvailability } from "../utils/habitSchedule";
+import { getHabitScheduleAvailability, getNextScheduledOccurrence } from "../utils/habitSchedule";
 import { emptySummary } from "../utils/risk";
 
 const emptyGamificationSummary: GamificationSummary = {
@@ -177,7 +177,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const habitsForToday = useMemo(
     () =>
       activeHabits.filter((habit) => {
-        const availability = getHabitScheduleAvailability(habit, now);
+        const availability = getHabitScheduleAvailability(
+          habit,
+          now,
+          (habitEntries[habit.id]?.length ?? 0) > 0
+        );
         const isCompletedToday = habitEntries[habit.id]?.some(
           (entry) =>
             entry.entry_date === todayISO &&
@@ -243,16 +247,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ]);
 
       const active = habitsData.filter((habit) => habit.is_active);
-      const [predictionPairs, statsPairs, entryPairs, initialRecommendations] = await Promise.all([
-        Promise.all(
-          active.map(async (habit) => [habit.id, await statisticsApi.prediction(habit.id)] as const)
-        ),
+      const dashboardNow = new Date();
+      const dashboardTodayISO = formatLocalDate(dashboardNow);
+      const [statsPairs, entryPairs, initialRecommendations] = await Promise.all([
         Promise.all(
           active.map(async (habit) => [habit.id, await statisticsApi.habitStats(habit.id)] as const)
         ),
         Promise.all(active.map(async (habit) => [habit.id, await habitsApi.entries(habit.id)] as const)),
         recommendationsApi.list()
       ]);
+      const entriesByHabit = Object.fromEntries(entryPairs) as Record<number, HabitEntry[]>;
+      const predictionPairs = await Promise.all(
+        active.map(async (habit) => {
+          const isCompletedToday = entriesByHabit[habit.id]?.some(
+            (entry) =>
+              entry.entry_date === dashboardTodayISO &&
+              (entry.status === "completed" || entry.status === "recovery_completed")
+          );
+          const nextOccurrence = isCompletedToday
+            ? getNextScheduledOccurrence(habit, dashboardNow, 1)
+            : undefined;
+          const targetDate = nextOccurrence
+            ? formatLocalDate(nextOccurrence.date)
+            : dashboardTodayISO;
+
+          return [habit.id, await statisticsApi.prediction(habit.id, targetDate)] as const;
+        })
+      );
 
       let recommendationsData = initialRecommendations;
       if (active.length > 0 && recommendationsData.length === 0) {
@@ -265,7 +286,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSummary(summaryData);
       setPredictions(Object.fromEntries(predictionPairs) as Record<number, Prediction>);
       setHabitStats(Object.fromEntries(statsPairs) as Record<number, HabitStats>);
-      setHabitEntries(Object.fromEntries(entryPairs) as Record<number, HabitEntry[]>);
+      setHabitEntries(entriesByHabit);
       setRecommendations(recommendationsData);
       setGamification(gamificationData);
       setIsOnboardingOpen(
@@ -425,7 +446,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setError("");
     clearNotice();
     const habit = activeHabits.find((item) => item.id === habitId);
-    if (habit && !getHabitScheduleAvailability(habit, new Date()).isAvailableToday) {
+    if (
+      habit &&
+      !getHabitScheduleAvailability(
+        habit,
+        new Date(),
+        (habitEntries[habit.id]?.length ?? 0) > 0
+      ).isAvailableToday
+    ) {
       setError("Эта привычка сегодня не запланирована");
       return;
     }

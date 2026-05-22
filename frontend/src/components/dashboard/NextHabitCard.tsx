@@ -3,6 +3,10 @@ import type { Prediction } from "../../types/recommendation";
 import type { HabitStats } from "../../types/statistics";
 import { formatPreferredTime } from "../../utils/formatDate";
 import { getRecoveryTask, shouldActivateRecoveryMode } from "../../utils/gamification";
+import {
+  formatNextScheduledOccurrence,
+  getNextScheduledOccurrence
+} from "../../utils/habitSchedule";
 import { formatRiskDisplay, hasEnoughRiskData } from "../../utils/risk";
 import { Button } from "../ui/Button";
 import { HabitStatusBadge } from "../habits/HabitStatusBadge";
@@ -40,6 +44,7 @@ export function NextHabitCard({
   const isDone = todayEntry?.status === "completed" || todayEntry?.status === "recovery_completed";
   const hasRiskData = hasEnoughRiskData(prediction, stats);
   const recoveryActive = shouldActivateRecoveryMode(stats, hasRiskData ? prediction.miss_risk : 0);
+  const nextOccurrence = isDone ? getNextScheduledOccurrence(habit, new Date(), 1) : undefined;
 
   return (
     <section className="next-habit-card">
@@ -48,7 +53,11 @@ export function NextHabitCard({
         {todayEntry && <HabitStatusBadge status={todayEntry.status} />}
       </div>
       <h3>{habit.title}</h3>
-      <p>{habit.description || "Короткий шаг на сегодня."}</p>
+      <p>
+        {isDone
+          ? `Сегодня привычка уже выполнена. ${formatNextScheduledOccurrence(nextOccurrence)}.`
+          : habit.description || "Короткий шаг на сегодня."}
+      </p>
 
       <dl className="next-habit-facts">
         <div>
@@ -56,7 +65,7 @@ export function NextHabitCard({
           <dd>{formatPreferredTime(habit.preferred_time)}</dd>
         </div>
         <div>
-          <dt>Риск</dt>
+          <dt>{isDone ? "Риск следующего шага" : "Риск"}</dt>
           <dd>{formatRiskDisplay(prediction, stats)}</dd>
         </div>
       </dl>

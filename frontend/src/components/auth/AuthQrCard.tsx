@@ -46,9 +46,11 @@ function normalizeAppUrl(value: string | undefined) {
   return trimmed.replace(/\/$/, "");
 }
 
-function getConfiguredAppUrl() {
-  return normalizeAppUrl(import.meta.env.VITE_APP_URL) ??
-    normalizeAppUrl(import.meta.env.VITE_PUBLIC_APP_URL);
+function getConfiguredAppUrls() {
+  return [
+    normalizeAppUrl(import.meta.env.VITE_PUBLIC_APP_URL),
+    normalizeAppUrl(import.meta.env.VITE_APP_URL)
+  ];
 }
 
 function getWindowOrigin() {
@@ -59,9 +61,28 @@ function getWindowOrigin() {
   return normalizeAppUrl(window.location.origin);
 }
 
+function isPhoneReachableUrl(value: string) {
+  try {
+    const url = new URL(value);
+    const hostname = url.hostname.toLowerCase();
+
+    return (
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      hostname !== "localhost" &&
+      hostname !== "127.0.0.1" &&
+      hostname !== "0.0.0.0" &&
+      hostname !== "[::1]" &&
+      hostname !== "::1"
+    );
+  } catch {
+    return false;
+  }
+}
+
 function getQrCandidates() {
-  return [getConfiguredAppUrl(), getWindowOrigin()].filter(
-    (url, index, urls): url is string => Boolean(url) && urls.indexOf(url) === index
+  return [...getConfiguredAppUrls(), getWindowOrigin()].filter(
+    (url, index, urls): url is string =>
+      typeof url === "string" && isPhoneReachableUrl(url) && urls.indexOf(url) === index
   );
 }
 
@@ -323,9 +344,23 @@ function createQrSvgData(value: string): QrSvgData {
   return { path, size };
 }
 
+function copyTextFallback(value: string) {
+  const input = document.createElement("textarea");
+  input.value = value;
+  input.setAttribute("readonly", "");
+  input.style.position = "fixed";
+  input.style.opacity = "0";
+  document.body.append(input);
+  input.select();
+  const copied = document.execCommand("copy");
+  input.remove();
+  return copied;
+}
+
 export function AuthQrCard() {
   const [appUrl, setAppUrl] = useState<string | null>(null);
   const [qr, setQr] = useState<QrSvgData | null>(null);
+  const [copyStatus, setCopyStatus] = useState("");
 
   useEffect(() => {
     const candidates = getQrCandidates();
@@ -344,7 +379,34 @@ export function AuthQrCard() {
   }, []);
 
   if (!appUrl) {
-    return null;
+    return (
+      <aside className="auth-qr-card auth-qr-card-hint" aria-label="Открытие Steply на телефоне">
+        <div className="auth-qr-copy">
+          <strong>Телефон не откроет localhost</strong>
+          <span>
+            Запустите <code>make start</code> для автоопределения LAN-адреса или задайте
+            <code>VITE_PUBLIC_APP_URL=http://IP:5173</code>.
+          </span>
+        </div>
+      </aside>
+    );
+  }
+
+  async function copyAppUrl() {
+    if (!appUrl) {
+      return;
+    }
+
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(appUrl);
+      } else if (!copyTextFallback(appUrl)) {
+        throw new Error("Copy fallback failed");
+      }
+      setCopyStatus("Скопировано");
+    } catch {
+      setCopyStatus(copyTextFallback(appUrl) ? "Скопировано" : "Скопируйте ссылку вручную");
+    }
   }
 
   return (
@@ -362,6 +424,13 @@ export function AuthQrCard() {
       <div className="auth-qr-copy">
         <strong>Откройте на телефоне</strong>
         <span>Сканируйте QR-код</span>
+        <a className="auth-qr-link" href={appUrl}>
+          {appUrl}
+        </a>
+        <button className="auth-qr-copy-button" type="button" onClick={() => void copyAppUrl()}>
+          Скопировать
+        </button>
+        {copyStatus && <small>{copyStatus}</small>}
       </div>
     </aside>
   );

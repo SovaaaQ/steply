@@ -569,7 +569,11 @@ p {
   font-size: var(--type-title);
 }
 
-.habit-page-create {
+.button.habit-page-create {
+  display: none;
+}
+
+.button.mobile-habit-create {
   display: none;
 }
 
@@ -2670,6 +2674,13 @@ textarea.field-control {
     padding: 10px 12px;
   }
 
+  .auth-qr-card-hint {
+    min-height: 110px;
+    align-items: center;
+    border-style: dashed;
+    padding-inline: 16px;
+  }
+
   .auth-qr-code {
     display: grid;
     width: 128px;
@@ -2728,6 +2739,38 @@ textarea.field-control {
     font-weight: 800;
     line-height: 1.25;
   }
+
+  .auth-qr-copy code,
+  .auth-qr-link {
+    overflow-wrap: anywhere;
+    color: var(--color-primary-strong);
+    font-size: var(--type-xs);
+    font-weight: 900;
+    line-height: 1.35;
+  }
+
+  .auth-qr-link {
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+
+  .auth-qr-copy-button {
+    width: fit-content;
+    min-height: 31px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-small);
+    background: var(--color-surface);
+    color: var(--color-heading);
+    font-size: var(--type-xs);
+    font-weight: 950;
+    padding: 0 10px;
+  }
+
+  .auth-qr-copy small {
+    color: var(--color-muted-strong);
+    font-size: var(--type-xs);
+    font-weight: 850;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2784,9 +2827,14 @@ textarea.field-control {
     display: none;
   }
 
-  .habit-page-create {
+  .button.mobile-habit-create {
+    position: sticky;
+    z-index: 25;
+    top: 10px;
     display: inline-flex;
-    width: fit-content;
+    width: 100%;
+    margin: 0 0 12px;
+    box-shadow: 0 15px 35px rgba(11, 15, 13, 0.28);
   }
 
   .dashboard-hero {

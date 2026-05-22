@@ -80,6 +80,15 @@ export function HabitsPage() {
         </div>
         <p className="habit-motivation">Выполни привычку, чтобы поддержать питомца.</p>
 
+        <Button
+          className="mobile-habit-create"
+          type="button"
+          variant="cta"
+          onClick={openHabitCreator}
+        >
+          Новая привычка
+        </Button>
+
         <HabitList
           habits={activeHabits}
           predictions={predictions}

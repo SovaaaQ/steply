@@ -35,7 +35,13 @@ make start
 make stop
 ```
 
-Если Docker сообщает, что порт занят, остановите конфликтующий процесс или измените `POSTGRES_PORT`, `BACKEND_PORT` и/или `FRONTEND_PORT` в `.env`, затем выполните `make restart`. При смене backend-порта обновите `VITE_API_URL`; при смене frontend-порта добавьте новый origin в `BACKEND_CORS_ORIGINS`.
+Если Docker сообщает, что порт занят, остановите конфликтующий процесс или измените `POSTGRES_PORT`, `BACKEND_PORT` и/или `FRONTEND_PORT` в `.env`, затем выполните `make restart`. При смене backend-порта обновите `VITE_API_PORT`; default CORS regex уже пропускает private LAN frontend origins с новым frontend-портом.
+
+### Телефон через QR
+
+`make start` пытается определить private LAN IPv4 хоста и печатает `phone frontend: http://<LAN-IP>:5173`. Desktop по-прежнему открывается на `http://localhost:5173`; QR на экране входа ведет на напечатанный LAN URL, а frontend на телефоне сам обращается к API на том же hostname и `VITE_API_PORT`.
+
+Если auto-detect выбрал не тот interface или не нашел Wi-Fi IP, задайте в root `.env` `STEPLY_LAN_HOST=<LAN-IP>` и выполните `make restart`. Для прямого `docker compose up --build` задайте полный `VITE_PUBLIC_APP_URL=http://<LAN-IP>:5173`. Проверка с телефона: `http://<LAN-IP>:5173` и `http://<LAN-IP>:8000/api/health`.
 
 ---
 
@@ -112,9 +118,13 @@ SECRET_KEY=change-this-secret-key-in-production
 ACCESS_TOKEN_EXPIRE_MINUTES=10080
 BACKEND_PORT=8000
 BACKEND_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+BACKEND_CORS_ORIGIN_REGEX=^https?://(?:localhost|127\.0\.0\.1|10(?:\.[0-9]+)+|192\.168(?:\.[0-9]+)+|172\.(?:1[6-9]|2[0-9]|3[01])(?:\.[0-9]+)+)(?::[0-9]+)?$
 
 FRONTEND_PORT=5173
-VITE_API_URL=http://localhost:8000/api
+STEPLY_LAN_HOST=
+VITE_PUBLIC_APP_URL=
+VITE_API_PORT=8000
+VITE_API_URL=
 ```
 
 В Docker `DATABASE_URL` должен использовать hostname `postgres`, потому что backend подключается к базе по имени сервиса docker-compose. Для ручного запуска backend без Docker используется отдельный `backend/.env` с `localhost`.
@@ -142,6 +152,7 @@ POSTGRES_PORT=5432
 DATABASE_URL=postgresql+psycopg://steply_user:steply_password@localhost:5432/steply_db
 
 BACKEND_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+BACKEND_CORS_ORIGIN_REGEX=^https?://(?:localhost|127\.0\.0\.1|10(?:\.[0-9]+)+|192\.168(?:\.[0-9]+)+|172\.(?:1[6-9]|2[0-9]|3[01])(?:\.[0-9]+)+)(?::[0-9]+)?$
 ```
 
 Frontend:
@@ -151,7 +162,10 @@ cp frontend/.env.example frontend/.env
 ```
 
 ```env
-VITE_API_URL=http://localhost:8000/api
+VITE_API_PORT=8000
+VITE_PUBLIC_APP_URL=
+STEPLY_LAN_HOST=
+VITE_API_URL=
 ```
 
 Backend также принимает формат `postgresql://...`: приложение автоматически нормализует его к драйверу `postgresql+psycopg://...`, который используется SQLAlchemy с установленным пакетом `psycopg`.
@@ -214,7 +228,7 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --host 0.0.0.0
 ```
 
 Backend:
@@ -258,12 +272,14 @@ npm run build
 
 ## Экраны приложения
 
-- Вход и регистрация.
 - Главная: прогресс дня, ближайшие привычки, уровень, серия и рекомендация дня.
 - Привычки: список, создание, редактирование, удаление и отметка выполнения/пропуска.
 - Питомец: первичный выбор спутника и его состояние.
 - Советы: персонализированные подсказки по риску и регулярности.
 - Профиль: сводка аккаунта, прогресса и режима восстановления.
+
+Регистрация, вход и onboarding открывают эти пять разделов, но не считаются отдельными
+разделами приложения в демонстрационном сценарии.
 
 ## Дизайн-концепция Steply
 
@@ -303,15 +319,13 @@ Mobile-интерфейс использует компактный header, ка
 | `desktop-dashboard.png` | Главный экран desktop | Рисунок 1 — Главный экран Steply в desktop-версии после редизайна. |
 | `desktop-habits-list.png` | Страница привычек | Рисунок 2 — Страница управления привычками. |
 | `desktop-recommendations.png` | Советы | Рисунок 3 — Персонализированные советы пользователя. |
-| `desktop-auth-login.png` | Экран входа | Рисунок 4 — Экран входа в Steply после редизайна. |
-| `desktop-auth-register.png` | Экран регистрации | Рисунок 5 — Экран регистрации пользователя в Steply. |
-| `mobile-dashboard-390.png` | Mobile-главная | Рисунок 6 — Мобильная версия главного экрана Steply. |
-| `mobile-habits-390.png` | Mobile-привычки | Рисунок 7 — Мобильная версия списка привычек. |
-| `mobile-recommendations-430.png` | Mobile-советы | Рисунок 8 — Мобильная версия персонализированных советов. |
-| `desktop-habit-form.png` | Форма привычки | Рисунок 9 — Форма создания и редактирования привычки. |
-| `desktop-profile.png` | Профиль | Рисунок 10 — Профиль пользователя и сводка прогресса. |
-| `tablet-dashboard-768.png` | Tablet-главная | Рисунок 11 — Адаптация главного экрана Steply под планшетную ширину. |
-| `desktop-dashboard-1024.png` | Desktop 1024px | Рисунок 12 — Главный экран Steply на промежуточной desktop-ширине. |
+| `mobile-dashboard-390.png` | Mobile-главная | Рисунок 4 — Мобильная версия главного экрана Steply. |
+| `mobile-habits-390.png` | Mobile-привычки | Рисунок 5 — Мобильная версия списка привычек. |
+| `mobile-recommendations-430.png` | Mobile-советы | Рисунок 6 — Мобильная версия персонализированных советов. |
+| `desktop-habit-form.png` | Форма привычки | Рисунок 7 — Форма создания и редактирования привычки. |
+| `desktop-profile.png` | Профиль | Рисунок 8 — Профиль пользователя и сводка прогресса. |
+| `tablet-dashboard-768.png` | Tablet-главная | Рисунок 9 — Адаптация главного экрана Steply под планшетную ширину. |
+| `desktop-dashboard-1024.png` | Desktop 1024px | Рисунок 10 — Главный экран Steply на промежуточной desktop-ширине. |
 
 ## Демо-сценарий для защиты
 
@@ -321,7 +335,8 @@ Mobile-интерфейс использует компактный header, ка
 4. На “Главной” показать прогресс дня, ближайший шаг, уровень и серию.
 5. Отметить выполнение и показать, что XP и прогресс обновились.
 6. Открыть “Советы” и показать follow-up после отметки или риск для следующего выполнения.
-7. Открыть “Профиль” и завершить показ нижней навигацией: Главная, Привычки, Питомец, Советы, Профиль.
+7. На mobile пройти навигацию `Главная` -> `Привычки` -> `Советы` -> `Питомец` -> `Профиль` и проверить, что каждый раздел начинается сверху.
+8. На desktop показать QR на экране входа: ссылка рядом с ним должна совпадать с LAN URL и копироваться кнопкой.
 
 ## Команды проверки
 
@@ -339,7 +354,7 @@ Backend:
 cd backend
 source .venv/bin/activate
 PYTHONPYCACHEPREFIX=/private/tmp/steply-pycache python3 -m compileall app
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --host 0.0.0.0
 ```
 
 PostgreSQL:

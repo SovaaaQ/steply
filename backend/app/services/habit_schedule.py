@@ -35,11 +35,30 @@ def is_habit_scheduled_on(habit: Any, target_date: date) -> bool:
     return WEEKDAY_KEYS[target_date.weekday()] in get_schedule_days(habit)
 
 
+def is_first_occurrence_deferred(habit: Any, now: datetime) -> bool:
+    created_at = getattr(habit, "created_at", None)
+    preferred_time = getattr(habit, "preferred_time", None)
+    entries = getattr(habit, "entries", [])
+
+    return bool(
+        isinstance(created_at, datetime)
+        and preferred_time is not None
+        and created_at.date() == now.date()
+        and now.time() > preferred_time
+        and not entries
+    )
+
+
 def is_habit_available_at(habit: Any, now: datetime) -> bool:
-    return is_habit_scheduled_on(habit, now.date())
+    return is_habit_scheduled_on(habit, now.date()) and not is_first_occurrence_deferred(
+        habit,
+        now,
+    )
 
 
 def get_today_unavailability_detail(habit: Any, now: datetime) -> Optional[str]:
     if not is_habit_scheduled_on(habit, now.date()):
         return "Привычка не запланирована на сегодня"
+    if is_first_occurrence_deferred(habit, now):
+        return "Первое выполнение перенесено на следующий запланированный день"
     return None

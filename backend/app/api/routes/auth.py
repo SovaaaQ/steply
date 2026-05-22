@@ -1,8 +1,10 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_client_today, get_current_user
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.db.session import get_db
 from app.models import User
@@ -20,7 +22,11 @@ def build_auth_response(user: User) -> AuthResponse:
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: UserCreate, db: Session = Depends(get_db)) -> AuthResponse:
+def register(
+    payload: UserCreate,
+    db: Session = Depends(get_db),
+    client_today: date = Depends(get_client_today),
+) -> AuthResponse:
     existing_user = db.scalar(select(User).where(User.email == payload.email.lower()))
     if existing_user:
         raise HTTPException(
@@ -35,7 +41,7 @@ def register(payload: UserCreate, db: Session = Depends(get_db)) -> AuthResponse
     )
     db.add(user)
     db.flush()
-    refresh_user_gamification(db, user)
+    refresh_user_gamification(db, user, today=client_today)
     db.commit()
     db.refresh(user)
     return build_auth_response(user)

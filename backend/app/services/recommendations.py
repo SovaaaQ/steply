@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -137,7 +138,12 @@ def _upsert_recommendation(
     return recommendation
 
 
-def generate_recommendations(db: Session, user: User) -> list[Recommendation]:
+def generate_recommendations(
+    db: Session,
+    user: User,
+    today: Optional[date] = None,
+) -> list[Recommendation]:
+    today = today or date.today()
     habits = list(
         db.scalars(
             select(Habit)
@@ -147,7 +153,7 @@ def generate_recommendations(db: Session, user: User) -> list[Recommendation]:
     )
     recommendations: list[Recommendation] = []
     for habit in habits:
-        _ = calculate_habit_stats(db, habit)
-        prediction = create_prediction(db, user, habit, date.today())
+        _ = calculate_habit_stats(db, habit, today)
+        prediction = create_prediction(db, user, habit, today)
         recommendations.append(_upsert_recommendation(db, user, habit, prediction))
     return recommendations

@@ -8,6 +8,10 @@ import type { Prediction, Recommendation } from "../types/recommendation";
 import type { HabitStats } from "../types/statistics";
 import { percent } from "../utils/formatDate";
 import { shouldActivateRecoveryMode } from "../utils/gamification";
+import {
+  formatNextScheduledOccurrence,
+  getNextScheduledOccurrence
+} from "../utils/habitSchedule";
 import { formatRiskDisplay, hasEnoughRiskData } from "../utils/risk";
 
 interface AdviceItem {
@@ -22,8 +26,15 @@ interface AdviceItem {
   recommendationId?: number;
 }
 
-const todayFollowUpAdvice =
-  "Сегодня привычка уже выполнена. Следите за регулярностью на следующем выполнении.";
+function getTodayFollowUpAdvice(habit?: Habit) {
+  if (!habit) {
+    return "Сегодня шаг уже отмечен. Следующий совет появится после новой истории.";
+  }
+
+  return `Сегодня привычка уже выполнена. ${formatNextScheduledOccurrence(
+    getNextScheduledOccurrence(habit, new Date(), 1)
+  )}.`;
+}
 
 function TipsEmptyState({ children }: { children: string }) {
   return <p className="tips-empty-state">{children}</p>;
@@ -158,7 +169,7 @@ export function TipsScreen() {
         habit,
         habitTitle: habit.title,
         advice: isDone
-          ? todayFollowUpAdvice
+          ? getTodayFollowUpAdvice(habit)
           : "Отметьте привычку несколько раз, чтобы Steply точнее оценивал риск пропуска.",
         reason: isDone
           ? `Сегодняшняя отметка уже учтена; сейчас есть ${formatMarks(totalEntries)}.`
@@ -172,7 +183,6 @@ export function TipsScreen() {
 
   const recommendationItems: AdviceItem[] = recommendations
     .filter((recommendation) => recommendation.type !== "data_collection")
-    .filter((recommendation) => recommendation.priority !== "high")
     .map((recommendation): AdviceItem | null => {
       const habit = recommendation.habit_id
         ? activeHabitById.get(recommendation.habit_id)
@@ -190,7 +200,7 @@ export function TipsScreen() {
         tone: "normal" as const,
         habit,
         habitTitle: getHabitTitle(habit),
-        advice: isDone ? todayFollowUpAdvice : getRecommendationAdvice(recommendation, habit),
+        advice: isDone ? getTodayFollowUpAdvice(habit) : getRecommendationAdvice(recommendation, habit),
         reason: prediction
           ? `${isDone ? "Риск относится к следующему выполнению. " : ""}${getPredictionRiskReason(stats, prediction)}`
           : "Совет сформирован по истории привычек и последним отметкам.",

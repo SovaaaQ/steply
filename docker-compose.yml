@@ -36,6 +36,7 @@ services:
       POSTGRES_PORT: 5432
       DATABASE_URL: ${DATABASE_URL:-postgresql://steply_user:steply_password@postgres:5432/steply_db}
       BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      BACKEND_CORS_ORIGIN_REGEX: ${BACKEND_CORS_ORIGIN_REGEX:-^https?://(?:localhost|127\.0\.0\.1|10(?:\.[0-9]+)+|192\.168(?:\.[0-9]+)+|172\.(?:1[6-9]|2[0-9]|3[01])(?:\.[0-9]+)+)(?::[0-9]+)?$}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -55,7 +56,9 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
+        VITE_API_PORT: ${VITE_API_PORT:-8000}
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_PUBLIC_APP_URL: ${VITE_PUBLIC_APP_URL:-}
     container_name: steply_frontend
     ports:
       - "${FRONTEND_PORT:-5173}:80"

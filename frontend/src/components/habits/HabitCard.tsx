@@ -5,6 +5,7 @@ import type { Prediction } from "../../types/recommendation";
 import { formatPreferredTime, percent } from "../../utils/formatDate";
 import { getXPForCompletion } from "../../utils/gamification";
 import {
+  formatFirstScheduledOccurrence,
   formatNextScheduledOccurrence,
   getHabitScheduleAvailability,
   getNextScheduledOccurrence
@@ -72,10 +73,27 @@ export function HabitCard({
   const isRecoveredToday = todayEntry?.status === "recovery_completed";
   const isMissedToday = todayEntry?.status === "missed";
   const completionXP = getXPForCompletion("completed", habit.difficulty);
-  const scheduleAvailability = getHabitScheduleAvailability(habit, new Date());
-  const nextOccurrence = getNextScheduledOccurrence(habit, new Date());
+  const now = new Date();
+  const hasEntries = (stats?.total_entries ?? 0) > 0;
+  const scheduleAvailability = getHabitScheduleAvailability(habit, now, hasEntries);
+  const nextOccurrence = getNextScheduledOccurrence(
+    habit,
+    now,
+    isCompletedToday || isRecoveredToday ? 1 : 0
+  );
+  const firstOccurrence = !hasEntries
+    ? getNextScheduledOccurrence(
+        habit,
+        now,
+        scheduleAvailability.reason === "first-after-preferred-time" ? 1 : 0
+      )
+    : undefined;
   const isAvailableToday = scheduleAvailability.isAvailableToday;
-  const unavailableMessage = "Не запланировано на сегодня";
+  const isLateCompletion = todayEntry?.meta?.late_completion === true;
+  const unavailableMessage =
+    scheduleAvailability.reason === "first-after-preferred-time"
+      ? "Первое выполнение перенесено"
+      : "Не запланировано на сегодня";
   const rewardLabel =
     isCompletedToday || isRecoveredToday ? "Питомец поддержан" : "Связь с питомцем";
 
@@ -199,7 +217,7 @@ export function HabitCard({
 
       <p className="risk-explanation">
         {isCompletedToday || isRecoveredToday
-          ? "Сегодня привычка уже выполнена. Следите за регулярностью на следующем выполнении."
+          ? `Сегодня привычка уже выполнена. ${formatNextScheduledOccurrence(nextOccurrence)}.`
           : riskLevel
             ? riskDescriptions[riskLevel]
             : "Нужно еще несколько выполнений"}
@@ -214,7 +232,7 @@ export function HabitCard({
         onRecover={() => onMark(habit.id, "recovery_completed")}
       />
 
-      {scheduleAvailability.isPastPreferredTime && !todayEntry && (
+      {scheduleAvailability.isPastPreferredTime && isAvailableToday && !todayEntry && (
         <div className="habit-schedule-hint habit-late-hint">
           <strong>Предпочтительное время прошло</strong>
           <span>Отметка доступна до конца запланированного дня.</span>
@@ -224,14 +242,20 @@ export function HabitCard({
       {!isAvailableToday && !todayEntry ? (
         <div className="habit-schedule-hint">
           <strong>{unavailableMessage}</strong>
-          <span>{formatNextScheduledOccurrence(nextOccurrence)}</span>
+          <span>
+            {firstOccurrence
+              ? formatFirstScheduledOccurrence(firstOccurrence)
+              : formatNextScheduledOccurrence(nextOccurrence)}
+          </span>
         </div>
       ) : (
         <div className="habit-reward-row">
           <span>{rewardLabel}</span>
           <strong>
-            {isCompletedToday || isRecoveredToday
-              ? "Сегодня шаг уже учтен"
+            {isLateCompletion
+              ? "Отмечено после рекомендованного времени"
+              : isCompletedToday || isRecoveredToday
+                ? "Сегодня шаг уже учтен"
               : isMissedToday
                 ? "Доступно восстановление"
                 : `Выполнение даст +${completionXP} XP`}
@@ -241,7 +265,7 @@ export function HabitCard({
 
       <div className="habit-actions">
         <Button variant="cta" disabled={!isAvailableToday || isCompletedToday || isRecoveredToday} onClick={() => onMark(habit.id, "completed")}>
-          {isCompletedToday ? "Выполнено сегодня" : "Закрыть шаг"}
+          {isCompletedToday || isRecoveredToday ? "Выполнено сегодня" : "Закрыть шаг"}
         </Button>
         <Button variant="danger" disabled={!isAvailableToday || isMissedToday} onClick={() => onMark(habit.id, "missed")}>
           {isMissedToday ? "Пропуск отмечен" : "Зафиксировать пропуск"}

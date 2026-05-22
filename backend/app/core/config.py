@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     database_url: Optional[str] = None
     backend_cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    backend_cors_origin_regex: str = (
+        r"^https?://(?:localhost|127\.0\.0\.1|10(?:\.[0-9]+)+|"
+        r"192\.168(?:\.[0-9]+)+|172\.(?:1[6-9]|2[0-9]|3[01])"
+        r"(?:\.[0-9]+)+)(?::[0-9]+)?$"
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",

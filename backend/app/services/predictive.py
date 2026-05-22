@@ -46,8 +46,8 @@ def calculate_risk(
     target_date: Optional[date] = None,
 ) -> RiskCalculation:
     target_date = target_date or date.today()
-    stats = calculate_habit_stats(db, habit)
-    user_activity = calculate_user_activity_summary(db, user)
+    stats = calculate_habit_stats(db, habit, target_date)
+    user_activity = calculate_user_activity_summary(db, user, target_date)
     entries = [entry for entry in habit.entries if entry.user_id == user.id]
 
     completion_rate = stats.completion_rate

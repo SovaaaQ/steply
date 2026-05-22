@@ -1,5 +1,5 @@
 import type { Habit, WeekdayKey } from "../types/habit";
-import { formatPreferredTime } from "./formatDate";
+import { formatLocalDate, formatPreferredTime } from "./formatDate";
 import { weekdayKeys } from "./habitForm";
 
 const weekdayLabels: Record<WeekdayKey, string> = {
@@ -12,7 +12,7 @@ const weekdayLabels: Record<WeekdayKey, string> = {
   sun: "Вс"
 };
 
-export type HabitUnavailableReason = "not-scheduled";
+export type HabitUnavailableReason = "not-scheduled" | "first-after-preferred-time";
 
 export interface HabitScheduleAvailability {
   isScheduledToday: boolean;
@@ -62,9 +62,21 @@ function startOfLocalDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
+function shouldDeferFirstOccurrence(habit: Habit, now: Date, hasEntries: boolean) {
+  const preferredMinutes = getTimeMinutes(habit.preferred_time);
+
+  return (
+    !hasEntries &&
+    preferredMinutes !== undefined &&
+    habit.created_at.slice(0, 10) === formatLocalDate(now) &&
+    getDateMinutes(now) > preferredMinutes
+  );
+}
+
 export function getHabitScheduleAvailability(
   habit: Habit,
-  now: Date
+  now: Date,
+  hasEntries = false
 ): HabitScheduleAvailability {
   const isScheduledToday = getEffectiveScheduleDays(habit).includes(getWeekdayKey(now));
   if (!isScheduledToday) {
@@ -77,24 +89,36 @@ export function getHabitScheduleAvailability(
   }
 
   const preferredMinutes = getTimeMinutes(habit.preferred_time);
+  const isPastPreferredTime =
+    preferredMinutes !== undefined && getDateMinutes(now) > preferredMinutes;
+
+  if (shouldDeferFirstOccurrence(habit, now, hasEntries)) {
+    return {
+      isScheduledToday,
+      isAvailableToday: false,
+      isPastPreferredTime,
+      reason: "first-after-preferred-time"
+    };
+  }
+
   return {
     isScheduledToday,
     isAvailableToday: true,
-    isPastPreferredTime:
-      preferredMinutes !== undefined && getDateMinutes(now) > preferredMinutes
+    isPastPreferredTime
   };
 }
 
 export function getNextScheduledOccurrence(
   habit: Habit,
-  now: Date
+  now: Date,
+  startDayOffset = 0
 ): ScheduledOccurrence | undefined {
   const scheduleDays = new Set(getEffectiveScheduleDays(habit));
   if (scheduleDays.size === 0) {
     return undefined;
   }
 
-  for (let dayOffset = 0; dayOffset <= 7; dayOffset += 1) {
+  for (let dayOffset = startDayOffset; dayOffset <= startDayOffset + 7; dayOffset += 1) {
     const date = startOfLocalDay(now);
     date.setDate(date.getDate() + dayOffset);
     const weekday = getWeekdayKey(date);
@@ -113,10 +137,26 @@ export function getNextScheduledOccurrence(
   return undefined;
 }
 
-export function formatNextScheduledOccurrence(occurrence: ScheduledOccurrence | undefined): string {
+function formatScheduledOccurrence(
+  label: string,
+  occurrence: ScheduledOccurrence | undefined
+): string {
   if (!occurrence) {
-    return "Следующее выполнение не запланировано";
+    return `${label} не запланировано`;
   }
 
-  return `Следующее выполнение: ${weekdayLabels[occurrence.weekday]}, ${formatPreferredTime(occurrence.time)}`;
+  const dateLabel = occurrence.date.toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long"
+  });
+
+  return `${label}: ${weekdayLabels[occurrence.weekday]}, ${dateLabel}, ${formatPreferredTime(occurrence.time)}`;
+}
+
+export function formatNextScheduledOccurrence(occurrence: ScheduledOccurrence | undefined): string {
+  return formatScheduledOccurrence("Следующее выполнение", occurrence);
+}
+
+export function formatFirstScheduledOccurrence(occurrence: ScheduledOccurrence | undefined): string {
+  return formatScheduledOccurrence("Первое выполнение", occurrence);
 }

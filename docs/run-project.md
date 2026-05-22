@@ -50,8 +50,8 @@ http://localhost:8000/api/health
 Если Docker пишет `port is already allocated`, остановите процесс на конфликтующем порту или исправьте root `.env` и выполните `make restart`:
 
 - `POSTGRES_PORT` для PostgreSQL, default `5432`;
-- `BACKEND_PORT` для API, default `8000`; при смене обновите `VITE_API_URL`;
-- `FRONTEND_PORT` для UI, default `5173`; при смене добавьте новый origin в `BACKEND_CORS_ORIGINS`.
+- `BACKEND_PORT` для API, default `8000`; при смене обновите `VITE_API_PORT`;
+- `FRONTEND_PORT` для UI, default `5173`; QR URL пересоберется после `make restart`.
 
 ## Адреса
 
@@ -63,6 +63,60 @@ http://localhost:8000/api/health
 | Swagger | `http://localhost:8000/docs` |
 
 При нестандартных `BACKEND_PORT`/`FRONTEND_PORT` адреса меняются вместе с портами.
+
+## Открыть на телефоне через QR
+
+Рекомендуемый dev/demo сценарий:
+
+```bash
+make start
+```
+
+Сценарий пробует определить private LAN IPv4 адрес компьютера до Docker build и печатает строку вида:
+
+```text
+phone frontend: http://192.168.1.50:5173
+```
+
+Desktop оставьте на `http://localhost:5173`. На экране входа QR кодирует `phone frontend` URL, а рядом с ним отображается та же ссылка и кнопка `Скопировать`. На телефоне должны открываться оба адреса:
+
+| Что проверить | URL |
+|---|---|
+| Mobile frontend | `http://<LAN-IP>:5173` |
+| Backend health с телефона | `http://<LAN-IP>:8000/api/health` |
+
+API URL не привязан к `localhost`: если frontend открыт как `http://<LAN-IP>:5173`, browser client по умолчанию вызывает `http://<LAN-IP>:8000/api`. Старый loopback override `VITE_API_URL=http://localhost:8000/api` игнорируется на LAN странице, но продолжает работать на desktop localhost. Backend принимает localhost origins и HTTP origins из private IPv4 LAN через `BACKEND_CORS_ORIGIN_REGEX`.
+
+### Настроить LAN адрес вручную
+
+Если auto-detect не нашел нужный Wi-Fi interface, узнайте адрес компьютера:
+
+```bash
+# macOS, обычно Wi-Fi en0
+ipconfig getifaddr en0
+
+# Linux
+ip route get 1.1.1.1
+hostname -I
+```
+
+Для `make start` добавьте только host в root `.env`, затем пересоберите frontend:
+
+```env
+STEPLY_LAN_HOST=192.168.1.50
+```
+
+```bash
+make restart
+```
+
+Для ручного `docker compose up --build` startup auto-detect не выполняется, поэтому задайте полный QR URL:
+
+```env
+VITE_PUBLIC_APP_URL=http://192.168.1.50:5173
+```
+
+Для локального Vite эти же `STEPLY_LAN_HOST` или `VITE_PUBLIC_APP_URL` задаются в `frontend/.env`; без них dev server пытается найти private LAN IPv4 сам. Если LAN URL все равно отсутствует, desktop QR card не кодирует `localhost` и показывает подсказку рядом с местом QR.
 
 ## Локальный запуск без Docker
 
@@ -87,7 +141,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 alembic upgrade head
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --host 0.0.0.0
 ```
 
 `AUTO_INIT_DB=true` оставлен по умолчанию: backend также проверит `alembic upgrade head` на startup и засеет справочники достижений и заданий. Manual `alembic upgrade head` выше полезен как явный шаг перед стартом приложения.
@@ -111,7 +165,7 @@ npm install
 npm run dev
 ```
 
-Vite откроет frontend на `http://localhost:5173`. Значение `VITE_API_URL` должно указывать на API backend, обычно `http://localhost:8000/api`.
+Vite откроет frontend на `http://localhost:5173` и слушает внешние interfaces. По умолчанию `VITE_API_PORT=8000`, поэтому телефон, открывший LAN frontend, вызывает LAN backend; задавайте `VITE_API_URL` только если API находится на другом hostname или protocol.
 
 ## Запуск через Docker
 
@@ -198,11 +252,15 @@ alembic upgrade head
 | `SECRET_KEY` | JWT signing key | dev placeholder |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | TTL access token | `10080` |
 | `BACKEND_CORS_ORIGINS` | Разрешенные browser origins | localhost frontend |
+| `BACKEND_CORS_ORIGIN_REGEX` | Local/private LAN browser origins | localhost + private IPv4 LAN |
 | `BACKEND_PORT` | Host port API | `8000` |
 | `FRONTEND_PORT` | Host port nginx frontend | `5173` |
-| `VITE_API_URL` | API URL, встроенный во frontend build | `http://localhost:8000/api` |
+| `STEPLY_LAN_HOST` | Host/IP для QR auto URL в `make start` | auto-detect |
+| `VITE_PUBLIC_APP_URL` | Полный public frontend URL для QR | value from `make start` or empty |
+| `VITE_API_PORT` | API port для URL на page hostname | `8000` |
+| `VITE_API_URL` | Опциональный полный API URL override | empty |
 
-В compose hostname БД для backend равен имени сервиса `postgres`. Если изменили `VITE_API_URL`, пересоберите frontend image: `docker compose up --build -d frontend`.
+В compose hostname БД для backend равен имени сервиса `postgres`. Если изменили `VITE_PUBLIC_APP_URL`, `VITE_API_PORT` или `VITE_API_URL`, пересоберите frontend image: `docker compose up --build -d frontend`.
 
 ### Backend `.env`
 
@@ -211,6 +269,7 @@ alembic upgrade head
 ```env
 DATABASE_URL=postgresql+psycopg://steply_user:steply_password@localhost:5432/steply_db
 BACKEND_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+BACKEND_CORS_ORIGIN_REGEX=^https?://(?:localhost|127\.0\.0\.1|10(?:\.[0-9]+)+|192\.168(?:\.[0-9]+)+|172\.(?:1[6-9]|2[0-9]|3[01])(?:\.[0-9]+)+)(?::[0-9]+)?$
 ```
 
 Backend также принимает `postgresql://...` и нормализует DSN к драйверу `postgresql+psycopg://...`.
@@ -218,10 +277,25 @@ Backend также принимает `postgresql://...` и нормализуе
 ### Frontend `.env`
 
 ```env
-VITE_API_URL=http://localhost:8000/api
+VITE_API_PORT=8000
+STEPLY_LAN_HOST=
+VITE_PUBLIC_APP_URL=
+VITE_API_URL=
 ```
 
-## Smoke-сценарий
+## Разделы для показа
+
+В предзащите показываются только реальные разделы приложения:
+
+1. `Главная`.
+2. `Привычки`.
+3. `Питомец`.
+4. `Советы`.
+5. `Профиль`.
+
+Регистрация, вход и onboarding нужны для входа в сценарий, но не подменяют эти разделы.
+
+## Демо-сценарий предзащиты
 
 После старта проверьте в UI или через API:
 
@@ -231,8 +305,9 @@ VITE_API_URL=http://localhost:8000/api
 4. Отметить `completed`, `missed` и `recovery_completed`.
 5. Проверить XP/level в gamification summary.
 6. Открыть `Советы` и убедиться, что после выполнения сегодня показывается follow-up, а не urgent recovery.
-7. Пройти навигацию `Главная` -> `Привычки` -> `Питомец` -> `Советы` -> `Профиль`.
-8. Проверить dashboard на новой пустой базе без server error.
+7. Пройти навигацию `Главная` -> `Привычки` -> `Советы` -> `Питомец` -> `Профиль`: каждый раздел должен открываться сверху.
+8. На desktop сравнить LAN URL из строки `phone frontend` с текстовой ссылкой у QR и открыть его со скана на телефоне.
+9. Проверить dashboard на новой пустой базе без server error.
 
 Создание привычки до выбора питомца возвращает `400` намеренно.
 
@@ -243,6 +318,10 @@ VITE_API_URL=http://localhost:8000/api
 | `connection refused` или healthcheck backend unhealthy | PostgreSQL не запущен или DSN использует неверный host | Локально проверьте `DATABASE_URL`; в compose используйте host `postgres` и дождитесь `postgres` healthy. |
 | `port is already allocated` | `8000`, `5173` или `5432` заняты | Остановите конфликтующий процесс или задайте `BACKEND_PORT`, `FRONTEND_PORT`, `POSTGRES_PORT` в `.env`. |
 | Alembic сообщает о partial legacy schema | В БД осталась неполная схема до миграций | В dev восстановите backup или создайте чистую БД/volume; не смешивайте manual tables с Alembic. |
-| Frontend обращается к старому API URL | `VITE_API_URL` встраивается на этапе build | Обновите env и пересоберите Vite/Docker frontend. |
-| Browser CORS error | Frontend origin не входит в `BACKEND_CORS_ORIGINS` | Добавьте точный origin, например `http://localhost:5174`, и перезапустите backend. |
+| Телефон не открывает LAN frontend | Телефон не в той же Wi-Fi сети или firewall блокирует `5173` | Сравните подсеть LAN IP телефона/компьютера, разрешите входящие соединения и откройте `http://<LAN-IP>:5173` вручную. |
+| На телефоне frontend есть, API health не открывается | Firewall или неверный API port блокирует `8000` | Откройте `http://<LAN-IP>:8000/api/health`; при другом `BACKEND_PORT` задайте такой же `VITE_API_PORT` и пересоберите frontend. |
+| QR показывает подсказку вместо URL | LAN URL не настроен или auto-detect не нашел private IPv4 | Задайте `STEPLY_LAN_HOST` для `make start` или полный `VITE_PUBLIC_APP_URL`, затем пересоберите frontend. |
+| QR ведет на `localhost` после старого build | Frontend image собран до настройки public URL | Проверьте `VITE_PUBLIC_APP_URL`, выполните `make restart` и используйте URL из строки `phone frontend`. |
+| Frontend обращается к старому API URL | Не-loopback `VITE_API_URL` встраивается на этапе build | Обновите env или очистите override и пересоберите Vite/Docker frontend. |
+| Browser CORS error | Origin не попал в explicit origins или private LAN regex | Для localhost добавьте точный origin в `BACKEND_CORS_ORIGINS`; для другого LAN/domain уточните `BACKEND_CORS_ORIGIN_REGEX` и перезапустите backend. |
 | `Сначала выберите питомца` при POST habit | Бизнес-правило onboarding | Сохраните питомца и повторите создание привычки. |

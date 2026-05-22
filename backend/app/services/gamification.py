@@ -147,7 +147,7 @@ def sync_habit_entry_reward(db: Session, user: User, habit: Habit, entry: HabitE
             if existing_event is not None:
                 db.delete(existing_event)
         entry.xp_awarded = 0
-        refresh_user_gamification(db, user)
+        refresh_user_gamification(db, user, today=entry.entry_date)
         return
 
     xp_amount = getXPForCompletion(entry.status, habit.difficulty)
@@ -164,7 +164,7 @@ def sync_habit_entry_reward(db: Session, user: User, habit: Habit, entry: HabitE
             if existing_event is not None:
                 db.delete(existing_event)
         entry.xp_awarded = 0
-        refresh_user_gamification(db, user)
+        refresh_user_gamification(db, user, today=entry.entry_date)
         return
 
     reason = "recovery_completed" if entry.status == "recovery_completed" else "completed_on_time"
@@ -190,7 +190,7 @@ def sync_habit_entry_reward(db: Session, user: User, habit: Habit, entry: HabitE
         )
         if entry.status == "recovery_completed":
             _set_recovery_metadata(entry, habit)
-        refresh_user_gamification(db, user)
+        refresh_user_gamification(db, user, today=entry.entry_date)
         return
 
     history = XPHistory(
@@ -216,7 +216,7 @@ def sync_habit_entry_reward(db: Session, user: User, habit: Habit, entry: HabitE
         xp_amount=xp_amount,
     )
 
-    refresh_user_gamification(db, user)
+    refresh_user_gamification(db, user, today=entry.entry_date)
 
 
 def _set_recovery_metadata(entry: HabitEntry, habit: Habit) -> None:
@@ -272,7 +272,12 @@ def _sync_habit_reward_event(
     event.meta = meta
 
 
-def record_recommendation_read(db: Session, user: User, recommendation: Recommendation) -> None:
+def record_recommendation_read(
+    db: Session,
+    user: User,
+    recommendation: Recommendation,
+    today: Optional[date] = None,
+) -> None:
     rule = XP_REWARDS["recommendation_read"]
     award_xp_once(
         db,
@@ -285,7 +290,7 @@ def record_recommendation_read(db: Session, user: User, recommendation: Recommen
         source_id=str(recommendation.id),
         meta={"recommendation_type": recommendation.type},
     )
-    refresh_user_gamification(db, user)
+    refresh_user_gamification(db, user, today=today)
 
 
 def refresh_user_gamification(
@@ -293,9 +298,11 @@ def refresh_user_gamification(
     user: User,
     *,
     award_milestones: bool = True,
+    today: Optional[date] = None,
 ) -> dict[str, Any]:
     profile = get_or_create_profile(db, user)
-    metrics = collect_gamification_metrics(db, user)
+    metrics_today = today or date.today()
+    metrics = collect_gamification_metrics(db, user, today=metrics_today)
     can_award_milestones = award_milestones and _has_configured_pet(user)
     user.pet_state = calculatePetState(
         {
@@ -309,10 +316,10 @@ def refresh_user_gamification(
     profile.streak_status = str(metrics["streak_status"])
 
     sync_achievements(db, user, metrics, award_rewards=can_award_milestones)
-    sync_quests(db, user, metrics, award_rewards=can_award_milestones)
+    sync_quests(db, user, metrics, today=metrics_today, award_rewards=can_award_milestones)
     sync_profile_xp(db, user, profile)
     db.flush()
-    return build_gamification_summary(db, user, profile, metrics)
+    return build_gamification_summary(db, user, profile, metrics, metrics_today)
 
 
 def collect_gamification_metrics(
@@ -561,6 +568,7 @@ def sync_quests(
     user: User,
     metrics: dict[str, Any],
     *,
+    today: date,
     award_rewards: bool = True,
 ) -> None:
     quests = list(
@@ -571,7 +579,6 @@ def sync_quests(
         )
     )
     now = datetime.utcnow()
-    today = date.today()
     for quest in quests:
         if quest.active_when == "recovery_mode" and not metrics["recovery_mode"]:
             continue
@@ -659,10 +666,11 @@ def build_gamification_summary(
     user: User,
     profile: UserGamificationProfile,
     metrics: dict[str, Any],
+    today: date,
 ) -> dict[str, Any]:
     level_state = get_level_state(profile.total_xp)
     achievements = build_achievement_items(db, user)
-    quests = build_quest_items(db, user, metrics)
+    quests = build_quest_items(db, user, metrics, today)
     recent_events = list(
         db.scalars(
             select(RewardEvent)
@@ -737,8 +745,12 @@ def build_achievement_items(db: Session, user: User) -> list[dict[str, Any]]:
     return items
 
 
-def build_quest_items(db: Session, user: User, metrics: dict[str, Any]) -> list[dict[str, Any]]:
-    today = date.today()
+def build_quest_items(
+    db: Session,
+    user: User,
+    metrics: dict[str, Any],
+    today: date,
+) -> list[dict[str, Any]]:
     quests = list(
         db.scalars(
             select(Quest)

@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -67,13 +68,18 @@ def get_entries_for_habit(db: Session, habit_id: int, user_id: int) -> list[Habi
     )
 
 
-def calculate_habit_stats(db: Session, habit: Habit) -> HabitStats:
+def calculate_habit_stats(
+    db: Session,
+    habit: Habit,
+    today: Optional[date] = None,
+) -> HabitStats:
+    today = today or date.today()
     entries = get_entries_for_habit(db, habit.id, habit.user_id)
     completed_count = sum(1 for entry in entries if entry.status in COMPLETION_STATUSES)
     missed_count = sum(1 for entry in entries if entry.status == "missed")
     total_entries = len(entries)
     completion_rate = completed_count / total_entries if total_entries else 0.0
-    recent_start = date.today() - timedelta(days=6)
+    recent_start = today - timedelta(days=6)
     recent_entries = [entry for entry in entries if entry.entry_date >= recent_start]
     completed_last_7_days = sum(
         1 for entry in recent_entries if entry.status in COMPLETION_STATUSES
@@ -94,7 +100,7 @@ def calculate_habit_stats(db: Session, habit: Habit) -> HabitStats:
         None,
     )
     days_since_last_completion = (
-        (date.today() - last_completed).days if last_completed is not None else None
+        (today - last_completed).days if last_completed is not None else None
     )
 
     weekday_success_rates: dict[str, float] = {}
@@ -132,8 +138,12 @@ def calculate_habit_stats(db: Session, habit: Habit) -> HabitStats:
     )
 
 
-def calculate_user_activity_summary(db: Session, user: User) -> UserActivitySummary:
-    today = date.today()
+def calculate_user_activity_summary(
+    db: Session,
+    user: User,
+    today: Optional[date] = None,
+) -> UserActivitySummary:
+    today = today or date.today()
     habits = list(db.scalars(select(Habit).where(Habit.user_id == user.id)))
     active_habits = [habit for habit in habits if habit.is_active]
     entries = list(db.scalars(select(HabitEntry).where(HabitEntry.user_id == user.id)))
@@ -158,7 +168,7 @@ def calculate_user_activity_summary(db: Session, user: User) -> UserActivitySumm
     total_entries = len(entries)
     completion_rate = completed_count / total_entries if total_entries else 0.0
 
-    habit_stats = [calculate_habit_stats(db, habit) for habit in active_habits]
+    habit_stats = [calculate_habit_stats(db, habit, today) for habit in active_habits]
     current_streak = max((stats.current_streak for stats in habit_stats), default=0)
     longest_streak = max((stats.longest_streak for stats in habit_stats), default=0)
     average_current_streak = (

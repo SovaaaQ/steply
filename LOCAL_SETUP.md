@@ -199,10 +199,14 @@ SECRET_KEY=change-this-secret-key-in-production
 ACCESS_TOKEN_EXPIRE_MINUTES=10080
 BACKEND_PORT=8000
 BACKEND_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+BACKEND_CORS_ORIGIN_REGEX=^https?://(?:localhost|127\.0\.0\.1|10(?:\.[0-9]+)+|192\.168(?:\.[0-9]+)+|172\.(?:1[6-9]|2[0-9]|3[01])(?:\.[0-9]+)+)(?::[0-9]+)?$
 
 # Frontend
 FRONTEND_PORT=5173
-VITE_API_URL=http://localhost:8000/api
+STEPLY_LAN_HOST=
+VITE_PUBLIC_APP_URL=
+VITE_API_PORT=8000
+VITE_API_URL=
 ```
 
 > **Важно про DATABASE_URL:** внутри Docker backend подключается к PostgreSQL по имени сервиса `postgres`, не `localhost`. Если меняете `POSTGRES_USER`, `POSTGRES_PASSWORD` или `POSTGRES_DB`, обновите `DATABASE_URL` в том же `.env`.
@@ -250,7 +254,7 @@ BACKEND_PORT=8001
 FRONTEND_PORT=5174
 ```
 
-Если меняете `FRONTEND_PORT`, обновите `BACKEND_CORS_ORIGINS`. Если меняете `BACKEND_PORT`, обновите `VITE_API_URL`, потому что это адрес backend для браузера.
+Если меняете `BACKEND_PORT`, обновите `VITE_API_PORT`. Default `BACKEND_CORS_ORIGIN_REGEX` уже пропускает private LAN frontend origins с другим frontend-портом.
 
 ---
 
@@ -353,7 +357,7 @@ source .venv/bin/activate       # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env            # если .env ещё нет
 alembic upgrade head
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --host 0.0.0.0
 ```
 
 Backend будет доступен на http://localhost:8000
@@ -417,9 +421,9 @@ lsof -i :5432
 kill -9 <PID>
 ```
 
-### Запросы от frontend уходят не туда
+### QR или запросы с телефона уходят не туда
 
-`VITE_API_URL` в `.env` должен быть `http://localhost:8000/api`. Это адрес backend **с точки зрения браузера**, а не контейнера.
+`make start` печатает LAN URL для QR. Если auto-detect выбрал не тот адрес, задайте `STEPLY_LAN_HOST=<LAN-IP>` и выполните `make restart`. По умолчанию frontend использует hostname открытой страницы и `VITE_API_PORT`, поэтому на телефоне API health должен открываться как `http://<LAN-IP>:8000/api/health`; полный `VITE_API_URL` нужен только для отдельного API host.
 
 ### Пересобрать всё с нуля
 

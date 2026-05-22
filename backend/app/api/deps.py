@@ -1,4 +1,7 @@
-from fastapi import Depends, HTTPException, status
+from datetime import date
+from typing import Optional
+
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -8,6 +11,17 @@ from app.models import User
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
+
+def get_client_today(
+    client_date: Optional[str] = Header(default=None, alias="X-Client-Date"),
+) -> date:
+    if client_date:
+        try:
+            return date.fromisoformat(client_date)
+        except ValueError:
+            pass
+    return date.today()
 
 
 def get_current_user(

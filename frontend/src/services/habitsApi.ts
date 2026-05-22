@@ -1,5 +1,6 @@
 import { request } from "./apiClient";
 import type { EntryStatus, Habit, HabitCreate, HabitEntry, HabitUpdate } from "../types/habit";
+import { formatLocalTime } from "../utils/formatDate";
 
 export const habitsApi = {
   list: () => request<Habit[]>("/habits"),
@@ -24,7 +25,7 @@ export const habitsApi = {
   mark: (habitId: number, status: EntryStatus, entryDate: string) =>
     request<HabitEntry>(`/habits/${habitId}/entries`, {
       method: "POST",
-      body: JSON.stringify({ status, entry_date: entryDate })
+      body: JSON.stringify({ status, entry_date: entryDate, client_time: formatLocalTime(new Date()) })
     }),
 
   entries: (habitId: number) => request<HabitEntry[]>(`/habits/${habitId}/entries`)
