@@ -9,6 +9,7 @@ interface RecoverySuggestionProps {
   stats?: HabitStats;
   predictedRisk?: number;
   todayEntry?: HabitEntry;
+  isAvailableToday: boolean;
   onRecover: () => void;
 }
 
@@ -17,6 +18,7 @@ export function RecoverySuggestion({
   stats,
   predictedRisk = 0,
   todayEntry,
+  isAvailableToday,
   onRecover
 }: RecoverySuggestionProps) {
   const isActive = shouldActivateRecoveryMode(stats, predictedRisk);
@@ -24,6 +26,10 @@ export function RecoverySuggestion({
   const recoveryXP = getXPForCompletion("recovery_completed", habit.difficulty);
 
   if ((!isActive && !isRecoveredToday) || todayEntry?.status === "completed") {
+    return null;
+  }
+
+  if (!isAvailableToday && !isRecoveredToday) {
     return null;
   }
 

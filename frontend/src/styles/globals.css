@@ -826,6 +826,24 @@ p {
   font-size: 13px;
 }
 
+.habit-schedule-hint {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  background: var(--color-surface-muted);
+  padding: 11px 12px;
+}
+
+.habit-schedule-hint strong {
+  color: var(--color-heading);
+}
+
+.habit-schedule-hint span {
+  color: var(--color-muted);
+  font-size: var(--type-sm);
+}
+
 .recovery-suggestion {
   display: flex;
   align-items: center;

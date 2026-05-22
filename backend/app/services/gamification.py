@@ -30,30 +30,7 @@ from app.models import (
     UserQuestProgress,
     XPHistory,
 )
-
-
-WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
-
-
-def _normalize_schedule_day(day: Any) -> Optional[str]:
-    if isinstance(day, int) and 0 <= day <= 6:
-        return WEEKDAY_KEYS[day]
-    if isinstance(day, str):
-        value = day.strip().lower()
-        if value.isdigit():
-            return _normalize_schedule_day(int(value))
-        if value in WEEKDAY_KEYS:
-            return value
-    return None
-
-
-def _is_habit_scheduled_on(habit: Habit, weekday_index: int) -> bool:
-    days = {
-        normalized
-        for normalized in (_normalize_schedule_day(day) for day in (habit.schedule_days or []))
-        if normalized is not None
-    }
-    return not days or WEEKDAY_KEYS[weekday_index] in days
+from app.services.habit_schedule import is_habit_available_at, is_habit_scheduled_on
 
 
 def seed_gamification_definitions(db: Session) -> None:
@@ -338,8 +315,15 @@ def refresh_user_gamification(
     return build_gamification_summary(db, user, profile, metrics)
 
 
-def collect_gamification_metrics(db: Session, user: User, today: Optional[date] = None) -> dict[str, Any]:
-    today = today or date.today()
+def collect_gamification_metrics(
+    db: Session,
+    user: User,
+    today: Optional[date] = None,
+    now: Optional[datetime] = None,
+) -> dict[str, Any]:
+    now = now or datetime.now()
+    today = today or now.date()
+    schedule_now = now if now.date() == today else datetime.combine(today, time.min)
     week_start = today - timedelta(days=today.weekday())
     recent_start = today - timedelta(days=6)
     habits = list(db.scalars(select(Habit).where(Habit.user_id == user.id)))
@@ -354,13 +338,14 @@ def collect_gamification_metrics(db: Session, user: User, today: Optional[date] 
     completed_entries = [entry for entry in entries if entry.status in COMPLETION_STATUSES]
     missed_entries = [entry for entry in entries if entry.status == "missed"]
     active_days = {entry.entry_date for entry in completed_entries}
+    completed_today_ids = {
+        entry.habit_id for entry in completed_entries if entry.entry_date == today
+    }
     scheduled_today_ids = {
         habit.id
         for habit in active_habits
-        if _is_habit_scheduled_on(habit, today.weekday())
-    }
-    completed_today_ids = {
-        entry.habit_id for entry in completed_entries if entry.entry_date == today
+        if is_habit_available_at(habit, schedule_now)
+        or (habit.id in completed_today_ids and is_habit_scheduled_on(habit, today))
     }
     current_streak, longest_streak, streak_status = calculate_streak_state(
         active_days,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import Any, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -12,6 +12,7 @@ from app.db.session import get_db
 from app.models import Habit, HabitEntry, RewardEvent, User
 from app.schemas import HabitCreate, HabitEntryCreate, HabitEntryRead, HabitRead, HabitUpdate
 from app.services.gamification import refresh_user_gamification, sync_habit_entry_reward
+from app.services.habit_schedule import get_today_unavailability_detail
 
 router = APIRouter(prefix="/habits", tags=["habits"])
 
@@ -154,7 +155,16 @@ def upsert_habit_entry(
     current_user: User = Depends(get_current_user),
 ) -> HabitEntry:
     habit = _get_user_habit(db, current_user, habit_id)
-    entry_date = payload.entry_date or date.today()
+    now = datetime.now()
+    entry_date = payload.entry_date or now.date()
+    if entry_date == now.date():
+        unavailable_detail = get_today_unavailability_detail(habit, now)
+        if unavailable_detail:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=unavailable_detail,
+            )
+
     entry = db.scalar(
         select(HabitEntry).where(
             HabitEntry.habit_id == habit.id,

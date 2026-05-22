@@ -23,6 +23,7 @@ import type { GamificationSummary, RewardPreview } from "../types/gamification";
 import type { AppSection } from "../types/navigation";
 import { formatLocalDate } from "../utils/formatDate";
 import { buildHabitPayload, defaultHabitForm, weekdayKeys } from "../utils/habitForm";
+import { getHabitScheduleAvailability } from "../utils/habitSchedule";
 import { emptySummary } from "../utils/risk";
 
 const emptyGamificationSummary: GamificationSummary = {
@@ -142,20 +143,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isHabitFormOpen, setIsHabitFormOpen] = useState(false);
   const [editingHabitId, setEditingHabitId] = useState<number | null>(null);
   const [habitForm, setHabitForm] = useState<HabitFormState>(defaultHabitForm);
+  const [now, setNow] = useState(() => new Date());
 
-  const todayISO = formatLocalDate(new Date());
-  const todayWeekday = (new Date().getDay() + 6) % 7;
-  const todayWeekdayKey = weekdayKeys[todayWeekday];
+  const todayISO = formatLocalDate(now);
 
   const activeHabits = useMemo(() => habits.filter((habit) => habit.is_active), [habits]);
 
   const habitsForToday = useMemo(
     () =>
-      activeHabits.filter(
-        (habit) =>
-          habit.schedule_days.length === 0 || habit.schedule_days.includes(todayWeekdayKey)
-      ),
-    [activeHabits, todayWeekdayKey]
+      activeHabits.filter((habit) => {
+        const availability = getHabitScheduleAvailability(habit, now);
+        const isCompletedToday = habitEntries[habit.id]?.some(
+          (entry) =>
+            entry.entry_date === todayISO &&
+            (entry.status === "completed" || entry.status === "recovery_completed")
+        );
+
+        return availability.isAvailableToday || (availability.isScheduledToday && isCompletedToday);
+      }),
+    [activeHabits, habitEntries, now, todayISO]
   );
 
   const completedToday = useMemo(
@@ -180,6 +186,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       })[0],
     [recommendations]
   );
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const loadDashboard = useCallback(async () => {
     if (!getStoredToken()) {
@@ -365,6 +376,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   async function markHabit(habitId: number, status: EntryStatus) {
     setError("");
     clearNotice();
+    const habit = activeHabits.find((item) => item.id === habitId);
+    if (habit && !getHabitScheduleAvailability(habit, new Date()).isAvailableToday) {
+      setError("Эта привычка сейчас недоступна по расписанию");
+      return;
+    }
+
     try {
       const entry = await habitsApi.mark(habitId, status);
       await recommendationsApi.generate().catch(() => []);

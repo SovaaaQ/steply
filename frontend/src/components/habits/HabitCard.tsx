@@ -5,6 +5,11 @@ import type { Prediction } from "../../types/recommendation";
 import { formatPreferredTime, percent } from "../../utils/formatDate";
 import { getXPForCompletion } from "../../utils/gamification";
 import {
+  formatNextScheduledOccurrence,
+  getHabitScheduleAvailability,
+  getNextScheduledOccurrence
+} from "../../utils/habitSchedule";
+import {
   formatRiskDisplay,
   getRiskLevel,
   hasEnoughRiskData,
@@ -67,6 +72,13 @@ export function HabitCard({
   const isRecoveredToday = todayEntry?.status === "recovery_completed";
   const isMissedToday = todayEntry?.status === "missed";
   const completionXP = getXPForCompletion("completed", habit.difficulty);
+  const scheduleAvailability = getHabitScheduleAvailability(habit, new Date());
+  const nextOccurrence = getNextScheduledOccurrence(habit, new Date());
+  const isAvailableToday = scheduleAvailability.isAvailableToday;
+  const unavailableMessage =
+    scheduleAvailability.reason === "time-passed"
+      ? "Время выполнения сегодня уже прошло"
+      : "Не запланировано на сегодня";
   const rewardLabel =
     isCompletedToday || isRecoveredToday ? "Питомец поддержан" : "Связь с питомцем";
 
@@ -195,25 +207,33 @@ export function HabitCard({
         predictedRisk={hasRiskData ? prediction.miss_risk : undefined}
         stats={stats}
         todayEntry={todayEntry}
+        isAvailableToday={isAvailableToday}
         onRecover={() => onMark(habit.id, "recovery_completed")}
       />
 
-      <div className="habit-reward-row">
-        <span>{rewardLabel}</span>
-        <strong>
-          {isCompletedToday || isRecoveredToday
-            ? "Сегодня шаг уже учтен"
-            : isMissedToday
-              ? "Доступно восстановление"
-              : `Выполнение даст +${completionXP} XP`}
-        </strong>
-      </div>
+      {!isAvailableToday && !todayEntry ? (
+        <div className="habit-schedule-hint">
+          <strong>{unavailableMessage}</strong>
+          <span>{formatNextScheduledOccurrence(nextOccurrence)}</span>
+        </div>
+      ) : (
+        <div className="habit-reward-row">
+          <span>{rewardLabel}</span>
+          <strong>
+            {isCompletedToday || isRecoveredToday
+              ? "Сегодня шаг уже учтен"
+              : isMissedToday
+                ? "Доступно восстановление"
+                : `Выполнение даст +${completionXP} XP`}
+          </strong>
+        </div>
+      )}
 
       <div className="habit-actions">
-        <Button variant="cta" disabled={isCompletedToday || isRecoveredToday} onClick={() => onMark(habit.id, "completed")}>
+        <Button variant="cta" disabled={!isAvailableToday || isCompletedToday || isRecoveredToday} onClick={() => onMark(habit.id, "completed")}>
           {isCompletedToday ? "Выполнено сегодня" : "Закрыть шаг"}
         </Button>
-        <Button variant="danger" disabled={isMissedToday} onClick={() => onMark(habit.id, "missed")}>
+        <Button variant="danger" disabled={!isAvailableToday || isMissedToday} onClick={() => onMark(habit.id, "missed")}>
           {isMissedToday ? "Пропуск отмечен" : "Зафиксировать пропуск"}
         </Button>
       </div>
