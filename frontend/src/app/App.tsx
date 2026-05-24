@@ -15,6 +15,7 @@ import { ErrorState } from "../components/ui/ErrorState";
 import { LoadingState } from "../components/ui/LoadingState";
 import { SuccessState } from "../components/ui/SuccessState";
 import { useAuth } from "../hooks/useAuth";
+import { useRussianTypography } from "../hooks/useRussianTypography";
 import { useAppData } from "./providers";
 import type { AuthMode } from "../types/navigation";
 
@@ -56,6 +57,8 @@ function AuthGate() {
 }
 
 function AppContent() {
+  useRussianTypography();
+
   const { token } = useAuth();
   const {
     completeOnboarding,

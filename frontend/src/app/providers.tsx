@@ -446,6 +446,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setError("");
     clearNotice();
     const habit = activeHabits.find((item) => item.id === habitId);
+    const existingTodayEntry = getTodayEntry(habitId);
+    if (status === "missed") {
+      setError("Пропуск считается автоматически после окончания запланированного дня");
+      return;
+    }
+    if (
+      existingTodayEntry?.status === "completed" ||
+      existingTodayEntry?.status === "recovery_completed"
+    ) {
+      setError("Сегодня шаг уже учтен");
+      return;
+    }
+    if (existingTodayEntry?.status === "missed") {
+      setError("Период уже учтен как пропущенный");
+      return;
+    }
     if (
       habit &&
       !getHabitScheduleAvailability(
@@ -474,11 +490,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ? entry.xp_awarded > 0
             ? "Шаг закрыт"
             : "Шаг закрыт. Сегодня эта привычка уже учтена"
-          : status === "recovery_completed"
-            ? entry.xp_awarded > 0
-              ? "Восстановление выполнено"
-              : "Восстановление выполнено. Сегодня эта привычка уже учтена"
-            : "Пропуск зафиксирован. Включаем мягкий маршрут восстановления",
+          : entry.xp_awarded > 0
+            ? "Восстановление выполнено"
+            : "Восстановление выполнено. Сегодня эта привычка уже учтена",
         "",
         reward
       );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { PetSetup } from "../components/gamification/PetSetup";
 import { PetStatusCard } from "../components/gamification/PetStatusCard";
@@ -9,7 +9,23 @@ import type { PetType } from "../types/auth";
 export function PetScreen() {
   const { gamification, updatePet, setActiveSection } = useAppData();
   const [isEditing, setIsEditing] = useState(false);
+  const editFormRef = useRef<HTMLDivElement | null>(null);
   const pet = gamification.pet;
+
+  useEffect(() => {
+    if (!isEditing) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      editFormRef.current?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start"
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isEditing]);
 
   async function handlePetSubmit(payload: { pet_type: PetType; pet_name: string }) {
     await updatePet(payload);
@@ -56,13 +72,15 @@ export function PetScreen() {
       <PetStatusCard pet={pet} onEdit={() => setIsEditing((current) => !current)} />
 
       {isEditing && (
-        <Card className="pet-setup-card">
-          <PetSetup
-            pet={pet}
-            title="Изменить питомца"
-            onSubmit={handlePetSubmit}
-          />
-        </Card>
+        <div ref={editFormRef} className="pet-edit-anchor">
+          <Card className="pet-setup-card">
+            <PetSetup
+              pet={pet}
+              title="Изменить питомца"
+              onSubmit={handlePetSubmit}
+            />
+          </Card>
+        </div>
       )}
 
       <Card className="pet-account-link" tone="soft">

@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.models import Recommendation, User
 from app.schemas import RecommendationRead
 from app.services.gamification import record_recommendation_read
+from app.services.habit_entries import ensure_auto_missed_entries
 from app.services.recommendations import generate_recommendations
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
@@ -34,6 +35,8 @@ def generate_user_recommendations(
     client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> list[Recommendation]:
+    if ensure_auto_missed_entries(db, current_user, client_today):
+        db.commit()
     return generate_recommendations(db, current_user, client_today)
 
 

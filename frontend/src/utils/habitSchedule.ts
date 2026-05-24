@@ -1,4 +1,4 @@
-import type { Habit, WeekdayKey } from "../types/habit";
+import type { Habit, HabitEntry, WeekdayKey } from "../types/habit";
 import { formatLocalDate, formatPreferredTime } from "./formatDate";
 import { weekdayKeys } from "./habitForm";
 
@@ -25,6 +25,21 @@ export interface ScheduledOccurrence {
   date: Date;
   weekday: WeekdayKey;
   time: string | null;
+}
+
+export type HabitPeriodState =
+  | "not_due"
+  | "available_to_complete"
+  | "completed"
+  | "missed"
+  | "locked";
+
+export interface HabitCurrentPeriodState {
+  state: HabitPeriodState;
+  availability: HabitScheduleAvailability;
+  canComplete: boolean;
+  canSkip: boolean;
+  isAlreadyCounted: boolean;
 }
 
 function getWeekdayKey(date: Date): WeekdayKey {
@@ -109,6 +124,55 @@ export function getHabitScheduleAvailability(
     isScheduledToday,
     isAvailableToday: true,
     isPastPreferredTime
+  };
+}
+
+export function getHabitCurrentPeriodState(
+  habit: Habit,
+  now: Date,
+  hasEntries: boolean,
+  todayEntry?: HabitEntry
+): HabitCurrentPeriodState {
+  const availability = getHabitScheduleAvailability(habit, now, hasEntries);
+  const isCompleted =
+    todayEntry?.status === "completed" || todayEntry?.status === "recovery_completed";
+
+  if (isCompleted) {
+    return {
+      state: "completed",
+      availability,
+      canComplete: false,
+      canSkip: false,
+      isAlreadyCounted: true
+    };
+  }
+
+  if (todayEntry?.status === "missed") {
+    return {
+      state: "missed",
+      availability,
+      canComplete: false,
+      canSkip: false,
+      isAlreadyCounted: true
+    };
+  }
+
+  if (!availability.isScheduledToday || !availability.isAvailableToday) {
+    return {
+      state: "not_due",
+      availability,
+      canComplete: false,
+      canSkip: false,
+      isAlreadyCounted: false
+    };
+  }
+
+  return {
+    state: "available_to_complete",
+    availability,
+    canComplete: true,
+    canSkip: false,
+    isAlreadyCounted: false
   };
 }
 

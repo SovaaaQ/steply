@@ -11,6 +11,7 @@ from app.db.session import get_db
 from app.models import Habit, User
 from app.schemas import HabitStats, PredictionRead, UserActivitySummary
 from app.services.analytics import calculate_habit_stats, calculate_user_activity_summary
+from app.services.habit_entries import ensure_auto_missed_entries
 from app.services.predictive import create_prediction
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
@@ -29,6 +30,8 @@ def get_summary(
     client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> UserActivitySummary:
+    if ensure_auto_missed_entries(db, current_user, client_today):
+        db.commit()
     return calculate_user_activity_summary(db, current_user, client_today)
 
 
@@ -40,6 +43,8 @@ def get_habit_analytics(
     current_user: User = Depends(get_current_user),
 ) -> HabitStats:
     habit = _get_user_habit(db, current_user, habit_id)
+    if ensure_auto_missed_entries(db, current_user, client_today, habit=habit):
+        db.commit()
     return calculate_habit_stats(db, habit, client_today)
 
 
@@ -52,5 +57,7 @@ def get_habit_prediction(
     current_user: User = Depends(get_current_user),
 ) -> PredictionRead:
     habit = _get_user_habit(db, current_user, habit_id)
+    if ensure_auto_missed_entries(db, current_user, client_today, habit=habit):
+        db.commit()
     prediction = create_prediction(db, current_user, habit, target_date or client_today)
     return PredictionRead.model_validate(prediction)

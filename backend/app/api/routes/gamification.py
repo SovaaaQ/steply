@@ -18,6 +18,7 @@ from app.schemas import (
     XPHistoryRead,
 )
 from app.services.gamification import refresh_user_gamification
+from app.services.habit_entries import ensure_auto_missed_entries
 
 router = APIRouter(prefix="/gamification", tags=["gamification"])
 
@@ -28,6 +29,7 @@ def get_gamification_summary(
     client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> dict:
+    ensure_auto_missed_entries(db, current_user, client_today)
     summary = refresh_user_gamification(db, current_user, today=client_today)
     db.commit()
     return summary
@@ -39,6 +41,7 @@ def get_achievements(
     client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> list[dict]:
+    ensure_auto_missed_entries(db, current_user, client_today)
     summary = refresh_user_gamification(db, current_user, today=client_today)
     db.commit()
     return summary["achievements"]
@@ -50,6 +53,7 @@ def get_quests(
     client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> list[dict]:
+    ensure_auto_missed_entries(db, current_user, client_today)
     summary = refresh_user_gamification(db, current_user, today=client_today)
     db.commit()
     return summary["quests"]
@@ -61,6 +65,7 @@ def get_reward_events(
     client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> list[dict]:
+    ensure_auto_missed_entries(db, current_user, client_today)
     summary = refresh_user_gamification(db, current_user, today=client_today)
     db.commit()
     return summary["recent_events"]
@@ -76,6 +81,7 @@ def update_pet(
     was_configured = bool(current_user.pet_type and current_user.pet_name)
     current_user.pet_type = payload.pet_type
     current_user.pet_name = payload.pet_name.strip()
+    ensure_auto_missed_entries(db, current_user, client_today)
     summary = refresh_user_gamification(
         db,
         current_user,

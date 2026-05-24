@@ -12,6 +12,7 @@ from app.db.session import get_db
 from app.models import Habit, HabitEntry, RewardEvent, User
 from app.schemas import HabitCreate, HabitEntryCreate, HabitEntryRead, HabitRead, HabitUpdate
 from app.services.gamification import refresh_user_gamification, sync_habit_entry_reward
+from app.services.habit_entries import ensure_auto_missed_entries, validate_entry_transition
 from app.services.habit_schedule import is_habit_scheduled_on
 
 router = APIRouter(prefix="/habits", tags=["habits"])
@@ -81,8 +82,11 @@ def _build_entry_meta(
 @router.get("", response_model=list[HabitRead])
 def list_habits(
     db: Session = Depends(get_db),
+    client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> list[Habit]:
+    if ensure_auto_missed_entries(db, current_user, client_today):
+        db.commit()
     habit_rows = db.scalars(
         select(Habit)
         .where(Habit.user_id == current_user.id)
@@ -132,9 +136,11 @@ def update_habit(
     habit_id: int,
     payload: HabitUpdate,
     db: Session = Depends(get_db),
+    client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> Habit:
     habit = _get_user_habit(db, current_user, habit_id)
+    ensure_auto_missed_entries(db, current_user, client_today, habit=habit)
     updates = payload.model_dump(exclude_unset=True)
     if "schedule_days" in updates:
         updates["schedule_days"] = _normalize_schedule_days(payload) or []
@@ -173,6 +179,7 @@ def upsert_habit_entry(
     habit_id: int,
     payload: HabitEntryCreate,
     db: Session = Depends(get_db),
+    client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> HabitEntry:
     habit = _get_user_habit(db, current_user, habit_id)
@@ -183,6 +190,7 @@ def upsert_habit_entry(
             detail="Привычка не запланирована на выбранную дату",
         )
 
+    ensure_auto_missed_entries(db, current_user, client_today, habit=habit)
     entry = db.scalar(
         select(HabitEntry).where(
             HabitEntry.habit_id == habit.id,
@@ -190,8 +198,8 @@ def upsert_habit_entry(
             HabitEntry.entry_date == entry_date,
         )
     )
+    validate_entry_transition(existing=entry, payload=payload, client_today=client_today)
     if entry:
-        entry.status = payload.status
         entry.note = payload.note
         entry.completion_value = payload.completion_value
         entry.meta = _build_entry_meta(habit, payload, entry.meta)
@@ -220,9 +228,12 @@ def list_habit_entries(
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
     db: Session = Depends(get_db),
+    client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> list[HabitEntry]:
     habit = _get_user_habit(db, current_user, habit_id)
+    if ensure_auto_missed_entries(db, current_user, client_today, habit=habit):
+        db.commit()
     query = select(HabitEntry).where(
         HabitEntry.habit_id == habit.id,
         HabitEntry.user_id == current_user.id,

@@ -78,6 +78,8 @@ export function DashboardPage() {
                 const entry = getTodayEntry(habit.id);
                 const isDone =
                   entry?.status === "completed" || entry?.status === "recovery_completed";
+                const isMissed = entry?.status === "missed";
+                const isAlreadyCounted = isDone || isMissed;
 
                 return (
                   <div className={`today-row ${isDone ? "done" : ""}`} key={habit.id}>
@@ -93,11 +95,11 @@ export function DashboardPage() {
                     </div>
                     <Button
                       type="button"
-                      variant={isDone ? "secondary" : "cta"}
-                      disabled={isDone}
+                      variant={isAlreadyCounted ? "secondary" : "cta"}
+                      disabled={isAlreadyCounted}
                       onClick={() => void markHabit(habit.id, "completed")}
                     >
-                      {isDone ? "Готово" : "Отметить"}
+                      {isDone ? "Готово" : isMissed ? "Пропущено" : "Отметить"}
                     </Button>
                   </div>
                 );

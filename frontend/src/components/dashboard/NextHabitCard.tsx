@@ -42,6 +42,8 @@ export function NextHabitCard({
   }
 
   const isDone = todayEntry?.status === "completed" || todayEntry?.status === "recovery_completed";
+  const isMissed = todayEntry?.status === "missed";
+  const isAlreadyCounted = isDone || isMissed;
   const hasRiskData = hasEnoughRiskData(prediction, stats);
   const recoveryActive = shouldActivateRecoveryMode(stats, hasRiskData ? prediction.miss_risk : 0);
   const nextOccurrence = isDone ? getNextScheduledOccurrence(habit, new Date(), 1) : undefined;
@@ -80,10 +82,10 @@ export function NextHabitCard({
         <Button
           type="button"
           variant="cta"
-          disabled={isDone}
+          disabled={isAlreadyCounted}
           onClick={() => onMark(habit.id, "completed")}
         >
-          {isDone ? "Уже отмечено" : "Отметить привычку"}
+          {isDone ? "Уже отмечено" : isMissed ? "Пропуск учтен" : "Отметить привычку"}
         </Button>
         <Button type="button" variant="secondary" onClick={onOpenHabits}>
           Перейти к привычкам

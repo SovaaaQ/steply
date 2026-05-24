@@ -7,7 +7,7 @@ import { getXPForCompletion } from "../../utils/gamification";
 import {
   formatFirstScheduledOccurrence,
   formatNextScheduledOccurrence,
-  getHabitScheduleAvailability,
+  getHabitCurrentPeriodState,
   getNextScheduledOccurrence
 } from "../../utils/habitSchedule";
 import {
@@ -75,7 +75,8 @@ export function HabitCard({
   const completionXP = getXPForCompletion("completed", habit.difficulty);
   const now = new Date();
   const hasEntries = (stats?.total_entries ?? 0) > 0;
-  const scheduleAvailability = getHabitScheduleAvailability(habit, now, hasEntries);
+  const periodState = getHabitCurrentPeriodState(habit, now, hasEntries, todayEntry);
+  const scheduleAvailability = periodState.availability;
   const nextOccurrence = getNextScheduledOccurrence(
     habit,
     now,
@@ -88,7 +89,7 @@ export function HabitCard({
         scheduleAvailability.reason === "first-after-preferred-time" ? 1 : 0
       )
     : undefined;
-  const isAvailableToday = scheduleAvailability.isAvailableToday;
+  const isAvailableToday = periodState.state === "available_to_complete";
   const isLateCompletion = todayEntry?.meta?.late_completion === true;
   const unavailableMessage =
     scheduleAvailability.reason === "first-after-preferred-time"
@@ -278,7 +279,7 @@ export function HabitCard({
         <Button
           className="habit-action-button habit-action-complete"
           variant="cta"
-          disabled={!isAvailableToday || isCompletedToday || isRecoveredToday}
+          disabled={!periodState.canComplete}
           onClick={() => onMark(habit.id, "completed")}
         >
           <svg
@@ -292,23 +293,23 @@ export function HabitCard({
             {isCompletedToday || isRecoveredToday ? "Выполнено сегодня" : "Закрыть шаг"}
           </span>
         </Button>
-        <Button
-          className="habit-action-button habit-action-miss"
-          variant="danger"
-          disabled={!isAvailableToday || isMissedToday}
-          onClick={() => onMark(habit.id, "missed")}
-        >
-          <span className="habit-action-label">
-            {isMissedToday ? "Пропуск отмечен" : "Зафиксировать пропуск"}
-          </span>
-          <svg
-            className="habit-button-accent habit-button-miss-accent"
-            viewBox="0 0 56 24"
-            aria-hidden="true"
+        {periodState.state === "missed" && (
+          <Button
+            className="habit-action-button habit-action-miss"
+            variant="danger"
+            disabled
+            title="Пропуск уже учтен для этого периода"
           >
-            <path d="M3 17 C12 11 18 7 23 12 C27 17 34 7 39 10 C43 13 48 12 53 8" />
-          </svg>
-        </Button>
+            <span className="habit-action-label">Пропуск учтен</span>
+            <svg
+              className="habit-button-accent habit-button-miss-accent"
+              viewBox="0 0 56 24"
+              aria-hidden="true"
+            >
+              <path d="M3 17 C12 11 18 7 23 12 C27 17 34 7 39 10 C43 13 48 12 53 8" />
+            </svg>
+          </Button>
+        )}
       </div>
     </Card>
   );
