@@ -23,7 +23,7 @@ export function RecommendationCard({
         <span className="recommendation-habit">{habitTitle}</span>
         <p className="recommendation-advice">{advice}</p>
         <p className="recommendation-reason">
-          <strong>Почему:</strong> {reason}
+          <strong>Причина:</strong> {reason}
         </p>
       </div>
       <Button

@@ -20,7 +20,7 @@ export const riskDescriptions: Record<RiskLevel, string> = {
 export const statusLabels: Record<EntryStatus, string> = {
   completed: "Выполнено",
   missed: "Пропуск",
-  recovery_completed: "Восстановлено"
+  recovery_completed: "Мягкий шаг"
 };
 
 export const emptySummary: Summary = {
@@ -80,7 +80,7 @@ export function formatRiskDisplay(
   stats: Pick<HabitStats, "total_entries"> | undefined
 ): string {
   if (!hasEnoughRiskData(prediction, stats)) {
-    return "Недостаточно данных";
+    return "Пока рано считать";
   }
   const level = getRiskLevel(prediction);
   return `${riskLabels[level]} риск · ${percent(prediction.miss_risk)}`;

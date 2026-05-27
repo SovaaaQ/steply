@@ -132,13 +132,13 @@ def validate_entry_transition(
     if payload.status == "missed" and payload.entry_date >= client_today:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Пропуск считается автоматически после окончания запланированного дня",
+            detail="Пропуск появится сам после конца дня",
         )
 
     if payload.status in COMPLETION_STATUSES and payload.entry_date < client_today:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Можно отмечать выполнение только за текущий день",
+            detail="Отметить выполнение можно только за сегодня",
         )
 
     if existing is None or existing.status == payload.status:
@@ -147,16 +147,16 @@ def validate_entry_transition(
     if existing.status in COMPLETION_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Сегодня шаг уже учтен, пропуск недоступен",
+            detail="Сегодня уже учтено, пропуск недоступен",
         )
 
     if existing.status == "missed" and payload.status in COMPLETION_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Период уже учтен как пропущенный",
+            detail="Этот день уже отмечен как пропуск",
         )
 
     raise HTTPException(
         status_code=status.HTTP_409_CONFLICT,
-        detail="Нельзя изменить состояние уже учтенного периода",
+        detail="Этот день уже отмечен",
     )

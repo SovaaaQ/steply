@@ -222,9 +222,9 @@ function formatScheduledOccurrence(
 }
 
 export function formatNextScheduledOccurrence(occurrence: ScheduledOccurrence | undefined): string {
-  return formatScheduledOccurrence("Следующее выполнение", occurrence);
+  return formatScheduledOccurrence("Следующий раз", occurrence);
 }
 
 export function formatFirstScheduledOccurrence(occurrence: ScheduledOccurrence | undefined): string {
-  return formatScheduledOccurrence("Первое выполнение", occurrence);
+  return formatScheduledOccurrence("Первый раз", occurrence);
 }

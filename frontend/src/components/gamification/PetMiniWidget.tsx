@@ -22,7 +22,7 @@ export function PetMiniWidget({ pet, onOpen }: PetMiniWidgetProps) {
         <strong>{petName}</strong>
         <small>{petTypeLabels[petType]} · {petStateShortLabels[pet.pet_state]}</small>
       </span>
-      <em>{pet.is_configured ? petMiniPhrases[pet.pet_state] : "Выбери питомца для мягкой мотивации"}</em>
+      <em>{pet.is_configured ? petMiniPhrases[pet.pet_state] : "Выберите питомца для поддержки"}</em>
     </button>
   );
 }

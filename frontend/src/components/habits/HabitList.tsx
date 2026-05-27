@@ -32,7 +32,7 @@ export function HabitList({
   if (habits.length === 0) {
     return (
       <EmptyState
-        title="У вас пока нет привычек"
+        title="Привычек пока нет"
         action={
           onCreate ? (
             <Button type="button" variant="cta" onClick={onCreate}>
@@ -41,8 +41,8 @@ export function HabitList({
           ) : undefined
         }
       >
-        Создайте короткий шаг на сегодня. После первой отметки откроются XP, серия,
-        квест дня и персональные рекомендации.
+        Добавьте короткий шаг на сегодня. После первой отметки появятся XP,
+        серия и советы.
       </EmptyState>
     );
   }

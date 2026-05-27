@@ -223,7 +223,7 @@ def _set_recovery_metadata(entry: HabitEntry, habit: Habit) -> None:
     entry.meta = {
         **(entry.meta or {}),
         "recovery_task": getRecoveryTask(habit),
-        "support_message": "Минимальная версия выполнена. Регулярность сохранена.",
+        "support_message": "Минимальная версия засчитана. Ритм можно продолжать.",
     }
 
 
@@ -808,13 +808,13 @@ def build_streak_read(
     labels = {
         "empty": "Серия еще не началась",
         "active": "Серия активна",
-        "at_risk": "Серия под риском",
+        "at_risk": "Серия может прерваться",
         "restored": "Серия восстановлена",
     }
     next_steps = {
-        "empty": "Создайте привычку и закройте первый короткий шаг.",
+        "empty": "Создайте привычку и отметьте первый короткий шаг.",
         "active": "Поддержите темп одним реальным действием сегодня или завтра.",
-        "at_risk": "Выберите минимальную версию привычки, чтобы вернуться без давления.",
+        "at_risk": "Выберите минимальную версию привычки и вернитесь без давления.",
         "restored": "Закрепите восстановление небольшим повторением в ближайший день.",
     }
     return {
@@ -849,8 +849,8 @@ def choose_next_best_action(quests: list[dict[str, Any]], streak_status: str) ->
 
     if streak_status == "at_risk":
         return {
-            "title": "Вернуть серию мягко",
-            "description": "Закройте один минимальный шаг, а не компенсируйте пропущенный объем.",
+            "title": "Вернуть серию спокойно",
+            "description": "Отметьте один минимальный шаг, без компенсации пропущенного объема.",
             "cta_label": "Открыть день",
             "cta_section": "dashboard",
         }
@@ -873,7 +873,7 @@ def choose_next_best_action(quests: list[dict[str, Any]], streak_status: str) ->
 
     return {
         "title": "Маршрут держится",
-        "description": "Следующий полезный шаг появится после обновления привычек или нового дня.",
+        "description": "Следующий полезный шаг появится после новых отметок или завтра.",
         "cta_label": "Открыть привычки",
         "cta_section": "habits",
     }

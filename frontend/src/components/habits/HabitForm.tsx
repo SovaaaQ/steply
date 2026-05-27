@@ -111,7 +111,7 @@ export function HabitForm({
         <div className="habit-form-section-head">
           <span className="habit-form-step">02</span>
           <h3>Когда повторять?</h3>
-          <span className="form-hint">выберите дни, когда привычка должна повторяться</span>
+          <span className="form-hint">выберите дни, когда хотите повторять привычку</span>
         </div>
 
         <div className="form-row habit-schedule-row">
@@ -146,7 +146,7 @@ export function HabitForm({
                 }))
               }
             />
-            <span className="field-hint">можно оставить пустым</span>
+            <span className="field-hint">можно не выбирать</span>
           </label>
         </div>
 
@@ -185,7 +185,7 @@ export function HabitForm({
         <div className="habit-form-section-head">
           <span className="habit-form-step">03</span>
           <h3>Нагрузка</h3>
-          <span className="form-hint">сложность влияет на XP</span>
+          <span className="form-hint">от сложности зависит XP</span>
         </div>
 
         <label className="difficulty-field">

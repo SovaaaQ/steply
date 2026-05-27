@@ -26,7 +26,7 @@ export function ProfilePage() {
           <span className="page-kicker sketch-circle profile-kicker-sketch">Профиль</span>
           <h2>{user?.full_name ?? "Пользователь Steply"}</h2>
           <p>
-            Данные профиля, основные настройки и краткая статистика
+            Аккаунт, настройки и короткая статистика
           </p>
         </div>
         <Button variant="ghost" type="button" onClick={logout}>
@@ -37,7 +37,7 @@ export function ProfilePage() {
       <div className="profile-grid">
         <Card className="profile-panel">
           <span className="page-kicker">Аккаунт</span>
-          <h3>Данные пользователя</h3>
+          <h3>Ваши данные</h3>
           <dl className="profile-list">
             <div>
               <dt>Имя</dt>
@@ -55,7 +55,7 @@ export function ProfilePage() {
         </Card>
 
         <Card className="profile-panel" tone="accent">
-          <span className="page-kicker">Краткая статистика</span>
+          <span className="page-kicker">Статистика</span>
           <h3>Аккаунт и привычки</h3>
           <dl className="profile-list">
             <div>
@@ -63,7 +63,7 @@ export function ProfilePage() {
               <dd>{activeHabits.length}</dd>
             </div>
             <div>
-              <dt>Процент выполнения</dt>
+              <dt>Выполнение</dt>
               <dd>{percent(summary.completion_rate)}</dd>
             </div>
             <div>
@@ -84,11 +84,11 @@ export function ProfilePage() {
 
         <Card className="profile-panel">
           <span className="page-kicker">Настройки</span>
-          <h3>Сессия и приложение</h3>
+          <h3>Приложение</h3>
           <div className="settings-list">
             <span>Аккаунт активен</span>
-            <span>Рекомендации обновляются по истории привычек</span>
-            <span>Режим восстановления включается автоматически</span>
+            <span>Советы обновляются по истории привычек</span>
+            <span>Мягкий режим включается автоматически</span>
           </div>
           <Button type="button" variant="ghost" onClick={logout}>
             Выйти из аккаунта

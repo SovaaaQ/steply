@@ -3,7 +3,7 @@ export function AuthHintCard() {
     <aside className="auth-hint-card" aria-label="Подсказка о возможностях Steply">
       <div>
         <span>Что нового?</span>
-        <p>Следите за привычками, получайте советы и развивайте питомца</p>
+        <p>Ведите привычки, смотрите прогресс и растите питомца</p>
       </div>
       <svg
         className="auth-hint-arrow"

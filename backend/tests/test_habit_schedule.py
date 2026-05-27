@@ -69,7 +69,7 @@ def test_new_timed_habit_waits_for_next_scheduled_day_after_preferred_time() -> 
     assert not is_habit_available_at(habit, now)
     assert (
         get_today_unavailability_detail(habit, now)
-        == "Первое выполнение перенесено на следующий запланированный день"
+        == "Первый шаг перенесен на следующий запланированный день"
     )
 
 

@@ -10,9 +10,9 @@ interface PetStatusCardProps {
 }
 
 const stateReason = {
-  happy: "в хорошей форме, потому что ты регулярно выполняешь привычки",
-  neutral: "нужна забота. Выполни ближайшую привычку, чтобы поддержать прогресс",
-  sad: "грустит, потому что в последние дни было несколько пропусков. Можно начать с режима восстановления"
+  happy: "в хорошей форме: привычки идут регулярно",
+  neutral: "ждет ближайшую отметку, чтобы не терять ритм",
+  sad: "заметил несколько пропусков. Можно начать с мягкого шага"
 };
 
 export function PetStatusCard({ pet, onEdit }: PetStatusCardProps) {
@@ -51,23 +51,23 @@ export function PetStatusCard({ pet, onEdit }: PetStatusCardProps) {
 
       <div className="pet-progress">
         <div>
-          <span>{isMaxLevel ? "Максимальный уровень" : "Прогресс до следующего уровня"}</span>
+          <span>{isMaxLevel ? "Максимальный уровень" : "До следующего уровня"}</span>
           <strong>{Math.round(pet.progress_percent)}%</strong>
         </div>
         <XPProgressBar value={pet.progress_percent} label="Прогресс до следующего уровня питомца" />
       </div>
 
       <div className="pet-explanation">
-        <span>Почему такое состояние</span>
+        <span>Почему так</span>
         <p>{petName} {stateReason[pet.pet_state]}</p>
       </div>
 
       <div className="pet-help-list">
-        <span>Как помочь питомцу</span>
+        <span>Что поможет</span>
         <ul>
-          <li>Выполнить ближайшую привычку</li>
-          <li>Выполнить минимальную версию привычки</li>
-          <li>Вернуться к регулярности без давления</li>
+          <li>Отметить ближайшую привычку</li>
+          <li>Сделать минимальную версию</li>
+          <li>Вернуться к ритму без давления</li>
         </ul>
       </div>
     </section>

@@ -60,5 +60,5 @@ def get_today_unavailability_detail(habit: Any, now: datetime) -> Optional[str]:
     if not is_habit_scheduled_on(habit, now.date()):
         return "Привычка не запланирована на сегодня"
     if is_first_occurrence_deferred(habit, now):
-        return "Первое выполнение перенесено на следующий запланированный день"
+        return "Первый шаг перенесен на следующий запланированный день"
     return None

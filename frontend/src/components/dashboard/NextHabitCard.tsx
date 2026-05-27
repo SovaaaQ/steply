@@ -32,8 +32,8 @@ export function NextHabitCard({
     return (
       <section className="next-habit-card">
         <span className="page-kicker">Ближайшая привычка</span>
-        <h3>На сегодня нет активных привычек</h3>
-        <p>Создай одну небольшую привычку, чтобы собрать маршрут дня</p>
+        <h3>На сегодня ничего не запланировано</h3>
+        <p>Добавьте небольшую привычку, чтобы собрать маршрут дня</p>
         <Button type="button" variant="cta" onClick={onOpenHabits}>
           Перейти к привычкам
         </Button>
@@ -57,7 +57,7 @@ export function NextHabitCard({
       <h3>{habit.title}</h3>
       <p>
         {isDone
-          ? `Сегодня привычка уже выполнена. ${formatNextScheduledOccurrence(nextOccurrence)}.`
+          ? `Сегодня уже готово. ${formatNextScheduledOccurrence(nextOccurrence)}.`
           : habit.description || "Короткий шаг на сегодня"}
       </p>
 
@@ -67,7 +67,7 @@ export function NextHabitCard({
           <dd>{formatPreferredTime(habit.preferred_time)}</dd>
         </div>
         <div>
-          <dt>{isDone ? "Риск следующего шага" : "Риск"}</dt>
+          <dt>{isDone ? "Что дальше" : "Риск"}</dt>
           <dd>{formatRiskDisplay(prediction, stats)}</dd>
         </div>
       </dl>
@@ -85,7 +85,7 @@ export function NextHabitCard({
           disabled={isAlreadyCounted}
           onClick={() => onMark(habit.id, "completed")}
         >
-          {isDone ? "Уже отмечено" : isMissed ? "Пропуск учтен" : "Отметить привычку"}
+          {isDone ? "Уже отмечено" : isMissed ? "День пропущен" : "Отметить"}
         </Button>
         <Button type="button" variant="secondary" onClick={onOpenHabits}>
           Перейти к привычкам

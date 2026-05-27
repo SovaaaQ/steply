@@ -19,11 +19,12 @@ Steply предназначен для поддержки формировани
 
 ## 3. Основные сущности и связи
 
-- `User` - владелец данных, имеет привычки, события выполнения, прогнозы и рекомендации.
+- `User` - владелец данных, имеет привычки, события выполнения, прогнозы, рекомендации и игровой прогресс.
 - `Habit` - привычка пользователя, содержит параметры регулярности и сложности.
 - `HabitEntry` - событие выполнения или пропуска привычки за конкретную дату.
 - `Prediction` - результат предиктивного анализа: вероятность выполнения, риск пропуска, уровень риска и признаки модели.
 - `Recommendation` - персонализированный совет, сформированный на основе аналитики и риска.
+- `UserGamificationProfile`, `Achievement`, `Quest`, `RewardEvent`, `XPHistory` - серверная игровая механика: XP, уровни, серия, достижения, задания и аудит начислений.
 
 Связи:
 
@@ -31,7 +32,8 @@ Steply предназначен для поддержки формировани
 - одна привычка имеет много событий выполнения;
 - одна привычка имеет много прогнозов;
 - одна привычка может иметь много рекомендаций;
-- рекомендация может ссылаться на конкретный прогноз.
+- рекомендация может ссылаться на конкретный прогноз;
+- игровые справочники сидятся на backend startup, пользовательский прогресс хранится отдельно от справочников.
 
 ## 4. Технический стек
 
@@ -50,18 +52,24 @@ backend/
   app/
     api/routes/        REST API маршруты
     core/              настройки и безопасность
-    db/                подключение к БД и инициализация
+    db/                подключение к БД, Alembic startup и seed справочников
     models/            SQLAlchemy модели
     schemas/           Pydantic схемы
-    services/          бизнес-логика, аналитика, прогнозы, рекомендации
+    services/          бизнес-логика, расписание привычек, аналитика, прогнозы, рекомендации, геймификация
 frontend/
   src/
-    api.ts             клиент REST API
-    App.tsx            разделы интерфейса Steply
-    types.ts           TypeScript-типы
-    style.css          визуальная система
+    app/               App, provider и простой section-router
+    services/          REST API-клиенты по доменам
+    pages/             экраны Steply
+    components/        layout, ui, habits, dashboard, recommendations, gamification
+    hooks/             hooks поверх AppProvider
+    types/             TypeScript-типы
+    utils/             форматирование, расписание, риск и геймификация
+    styles/            theme.css и globals.css
 docs/
   project-analysis.md  анализ документа и проектное решение
+  database-structure.md описание текущей схемы БД
+  run-project.md       инструкция запуска и миграций
 ```
 
 ## 6. Проектирование базы данных
@@ -75,6 +83,9 @@ docs/
 - `experience_points`
 - `level`
 - `lives`
+- `pet_type`
+- `pet_name`
+- `pet_state`
 - `created_at`
 
 ### habits
@@ -88,6 +99,8 @@ docs/
 - `difficulty`
 - `preferred_time`
 - `recovery_minutes`
+- `recovery_task`
+- `schedule_days`
 - `is_active`
 - `created_at`
 
@@ -99,6 +112,9 @@ docs/
 - `entry_date`
 - `status`
 - `note`
+- `completion_value`
+- `xp_awarded`
+- `meta`
 - `created_at`
 
 Ограничение: одна отметка на одну привычку за одну дату.
@@ -127,6 +143,16 @@ docs/
 - `priority`
 - `is_read`
 - `created_at`
+
+### gamification
+
+Текущая версия также использует игровые таблицы:
+
+- `user_gamification_profiles` - агрегированный уровень, XP и серия пользователя;
+- `achievements` и `user_achievements` - справочник достижений и прогресс пользователя;
+- `quests` и `user_quest_progress` - справочник заданий и прогресс за период;
+- `reward_events` - idempotent журнал начислений XP;
+- `xp_history` - аудит XP за выполнение привычек.
 
 ## 7. REST API
 
@@ -157,6 +183,15 @@ docs/
 - `GET /api/recommendations`
 - `POST /api/recommendations/generate`
 - `PATCH /api/recommendations/{recommendation_id}/read`
+
+### Gamification
+
+- `GET /api/gamification/summary`
+- `GET /api/gamification/achievements`
+- `GET /api/gamification/quests`
+- `GET /api/gamification/events`
+- `GET /api/gamification/xp-history`
+- `PUT /api/gamification/pet`
 
 ## 8. ML/аналитические функции
 

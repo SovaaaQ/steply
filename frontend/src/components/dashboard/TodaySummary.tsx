@@ -22,7 +22,7 @@ export function TodaySummary({
         {firstName}, сегодня фокус на <span className="hand-underline">привычках</span>
       </h2>
       <p>
-        Закрой ближайший шаг или выбери минимальную версию, если день идет тяжело.
+        Отметьте ближайший шаг или сделайте минимальную версию, если день идет тяжело.
       </p>
       <div className="summary-metrics">
         <div>

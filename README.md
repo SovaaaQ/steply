@@ -59,12 +59,12 @@ make stop
 ```text
 backend/
   app/
-    api/routes/          REST API: auth, habits, analytics, recommendations
+    api/routes/          REST API: auth, habits, analytics, recommendations, gamification
     core/                настройки приложения и JWT
-    db/                  SQLAlchemy session и создание таблиц
+    db/                  SQLAlchemy session, Alembic startup и seed справочников
     models/              SQLAlchemy модели
     schemas/             Pydantic схемы
-    services/            аналитика, прогноз риска, рекомендации
+    services/            аналитика, расписание привычек, прогноз риска, рекомендации, геймификация
   .env.example           пример backend-переменных окружения
   requirements.txt       зависимости backend
 
@@ -87,7 +87,9 @@ frontend/
   .env.example           пример frontend-переменных окружения
 
 docs/
-  screenshots/           скриншоты desktop/mobile версии
+  database-structure.md  схема БД, связи и индексы
+  project-analysis.md    проектный анализ Steply
+  run-project.md         подробный запуск и migration workflow
   practice-report-materials.md
 Makefile                 команды запуска, остановки, логов и cleanup
 scripts/start.sh         запуск compose, ожидание healthchecks и миграции
@@ -264,20 +266,9 @@ Mobile-интерфейс использует компактный header, ка
 
 ## Скриншоты
 
-Скриншоты сохранены в `docs/screenshots/`.
-
-| Файл | Описание | Подпись для отчета |
-| --- | --- | --- |
-| `desktop-dashboard.png` | Главный экран desktop | Рисунок 1 – Главный экран Steply в desktop-версии после редизайна. |
-| `desktop-habits-list.png` | Страница привычек | Рисунок 2 – Страница управления привычками. |
-| `desktop-recommendations.png` | Советы | Рисунок 3 – Персонализированные советы пользователя. |
-| `mobile-dashboard-390.png` | Mobile-главная | Рисунок 4 – Мобильная версия главного экрана Steply. |
-| `mobile-habits-390.png` | Mobile-привычки | Рисунок 5 – Мобильная версия списка привычек. |
-| `mobile-recommendations-430.png` | Mobile-советы | Рисунок 6 – Мобильная версия персонализированных советов. |
-| `desktop-habit-form.png` | Форма привычки | Рисунок 7 – Форма создания и редактирования привычки. |
-| `desktop-profile.png` | Профиль | Рисунок 8 – Профиль пользователя и сводка прогресса. |
-| `tablet-dashboard-768.png` | Tablet-главная | Рисунок 9 – Адаптация главного экрана Steply под планшетную ширину. |
-| `desktop-dashboard-1024.png` | Desktop 1024px | Рисунок 10 – Главный экран Steply на промежуточной desktop-ширине. |
+Скриншоты не хранятся в репозитории: они являются генерируемыми материалами для
+конкретной презентации/защиты. Для обновления визуальных материалов запустите
+приложение и сохраните актуальные экраны из браузера после `make start`.
 
 ## Демо-сценарий для защиты
 
@@ -312,7 +303,8 @@ uvicorn app.main:app --reload --host 0.0.0.0
 PostgreSQL:
 
 ```bash
-docker compose up -d postgres
+docker compose up -d postgres backend
+docker compose exec -T postgres psql -U steply_user -d steply_db -c "\dt"
 curl http://localhost:8000/api/health
 ```
 

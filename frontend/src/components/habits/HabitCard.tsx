@@ -93,7 +93,7 @@ export function HabitCard({
   const isLateCompletion = todayEntry?.meta?.late_completion === true;
   const unavailableMessage =
     scheduleAvailability.reason === "first-after-preferred-time"
-      ? "Первое выполнение перенесено"
+      ? "Первый шаг перенесен"
       : "Не запланировано на сегодня";
   const rewardLabel =
     isCompletedToday || isRecoveredToday ? "Питомец поддержан" : "Связь с питомцем";
@@ -137,7 +137,7 @@ export function HabitCard({
               <RiskBadge prediction={prediction} stats={stats} />
               {todayEntry && <HabitStatusBadge status={todayEntry.status} />}
             </div>
-            <p>{habit.description || "Короткая привычка без описания"}</p>
+            <p>{habit.description || "Без описания"}</p>
           </div>
 
           {!compact && (
@@ -168,7 +168,7 @@ export function HabitCard({
 
       <div className="habit-progress">
         <div className="habit-progress-row">
-          <span>Прогресс привычки</span>
+          <span>Общий прогресс</span>
           <strong>{percent(completionRate)}</strong>
         </div>
         <ProgressBar value={completionPercent} variant="habit" label={`Прогресс ${habit.title}`} />
@@ -194,7 +194,7 @@ export function HabitCard({
         <div>
           <dt>
             <span>
-              {isCompletedToday || isRecoveredToday ? "Риск следующего шага" : "Риск пропуска"}
+              {isCompletedToday || isRecoveredToday ? "Что дальше" : "Риск пропуска"}
             </span>
             <span className={`risk-info ${isRiskPopoverOpen ? "open" : ""}`} ref={riskInfoRef}>
               <button
@@ -208,8 +208,8 @@ export function HabitCard({
                 ?
               </button>
               <span className="risk-popover" id={riskPopoverId} role="note" aria-hidden={!isRiskPopoverOpen}>
-                <strong>Как рассчитывается риск</strong>
-                <span>Steply оценивает риск по:</span>
+                <strong>Откуда берется риск</strong>
+                <span>Смотрим на:</span>
                 <ul>
                   <li>регулярности выполнения</li>
                   <li>количеству пропусков</li>
@@ -229,10 +229,10 @@ export function HabitCard({
 
       <p className="risk-explanation">
         {isCompletedToday || isRecoveredToday
-          ? `Сегодня привычка уже выполнена. ${formatNextScheduledOccurrence(nextOccurrence)}.`
+          ? `Сегодня уже готово. ${formatNextScheduledOccurrence(nextOccurrence)}.`
           : riskLevel
             ? riskDescriptions[riskLevel]
-            : "Нужно еще несколько выполнений"}
+            : "Пока рано считать"}
       </p>
 
       <RecoverySuggestion
@@ -246,8 +246,8 @@ export function HabitCard({
 
       {scheduleAvailability.isPastPreferredTime && isAvailableToday && !todayEntry && (
         <div className="habit-schedule-hint habit-late-hint">
-          <strong>Предпочтительное время прошло</strong>
-          <span>Отметка доступна до конца запланированного дня</span>
+          <strong>Удобное время уже прошло</strong>
+          <span>Отметить можно до конца дня</span>
         </div>
       )}
 
@@ -267,10 +267,10 @@ export function HabitCard({
             {isLateCompletion
               ? "Отмечено после рекомендованного времени"
               : isCompletedToday || isRecoveredToday
-                ? "Сегодня шаг уже учтен"
+                ? "Сегодня уже учтено"
               : isMissedToday
-                ? "Доступно восстановление"
-                : `Выполнение даст +${completionXP} XP`}
+                ? "Можно вернуться мягко"
+                : `За выполнение +${completionXP} XP`}
           </strong>
         </div>
       )}
@@ -290,7 +290,7 @@ export function HabitCard({
             <path d="M17 3 L15 14 L5 9 M15 14 L29 11 M15 14 L26 24 M15 14 L7 27" />
           </svg>
           <span className="habit-action-label">
-            {isCompletedToday || isRecoveredToday ? "Выполнено сегодня" : "Закрыть шаг"}
+            {isCompletedToday || isRecoveredToday ? "Готово сегодня" : "Отметить"}
           </span>
         </Button>
         {periodState.state === "missed" && (
@@ -298,9 +298,9 @@ export function HabitCard({
             className="habit-action-button habit-action-miss"
             variant="danger"
             disabled
-            title="Пропуск уже учтен для этого периода"
+            title="Этот день уже отмечен как пропуск"
           >
-            <span className="habit-action-label">Пропуск учтен</span>
+            <span className="habit-action-label">День пропущен</span>
             <svg
               className="habit-button-accent habit-button-miss-accent"
               viewBox="0 0 56 24"

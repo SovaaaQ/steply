@@ -28,10 +28,10 @@ interface AdviceItem {
 
 function getTodayFollowUpAdvice(habit?: Habit) {
   if (!habit) {
-    return "Сегодня шаг уже отмечен. Следующий совет появится после новой истории";
+    return "Сегодня уже отмечено. Следующий совет появится после новых отметок";
   }
 
-  return `Сегодня привычка уже выполнена. ${formatNextScheduledOccurrence(
+  return `Сегодня уже готово. ${formatNextScheduledOccurrence(
     getNextScheduledOccurrence(habit, new Date(), 1)
   )}.`;
 }
@@ -45,7 +45,7 @@ function isAdviceItem(item: AdviceItem | null): item is AdviceItem {
 }
 
 function getHabitTitle(habit?: Habit) {
-  return habit?.title ?? "Общая рекомендация";
+  return habit?.title ?? "Общий совет";
 }
 
 function formatMarks(count: number) {
@@ -71,7 +71,7 @@ function getRiskReason(stats: HabitStats | undefined, risk: number | undefined) 
   }
   return parts.length > 0
     ? parts.join(", ")
-    : "Steply учитывает последние отметки и регулярность привычки";
+    : "Смотрим на последние отметки и регулярность привычки";
 }
 
 function getPredictionRiskReason(
@@ -79,7 +79,7 @@ function getPredictionRiskReason(
   prediction: Prediction | undefined
 ) {
   if (!hasEnoughRiskData(prediction, stats)) {
-    return "Недостаточно истории: отметьте привычку несколько раз, чтобы прогноз стал полезным";
+    return "Пока мало истории: отметьте привычку несколько раз, и прогноз станет полезнее";
   }
   const context = getRiskReason(stats, undefined);
   return `${formatRiskDisplay(prediction, stats)}; ${context}`;
@@ -88,17 +88,17 @@ function getPredictionRiskReason(
 function getRecommendationAdvice(recommendation: Recommendation, habit?: Habit) {
   switch (recommendation.type) {
     case "reduce_difficulty":
-      return "Сделайте шаг проще на сегодня и отметьте реальное выполнение";
+      return "Сделайте шаг проще на сегодня и отметьте результат";
     case "soft_reminder":
-      return "Запланируйте выполнение заранее и закройте шаг в удобное время";
+      return "Выберите удобное время заранее и отметьте шаг";
     case "restore_regular_activity":
-      return "Вернитесь через короткое действие без попытки компенсировать пропуски";
+      return "Вернитесь через короткий шаг, без компенсации пропусков";
     case "motivation":
       return "Сохраните текущий темп и выполните привычку в привычное время";
     case "keep_regular":
-      return "Продолжайте отмечать выполнение, чтобы прогноз оставался точным";
+      return "Продолжайте отмечать привычку, чтобы советы оставались точными";
     default:
-      return recommendation.message || `Продолжайте работать с привычкой «${getHabitTitle(habit)}»`;
+      return recommendation.message || `Продолжайте привычку «${getHabitTitle(habit)}»`;
   }
 }
 
@@ -140,7 +140,7 @@ export function TipsScreen() {
         tone: "urgent" as const,
         habit,
         habitTitle: habit.title,
-        advice: "Выполните минимальную версию привычки сегодня, чтобы сохранить регулярность",
+        advice: "Сделайте минимальную версию сегодня, чтобы не терять ритм",
         reason: getPredictionRiskReason(stats, prediction),
         ctaLabel: "Отметить" as const,
         markStatus: "recovery_completed" as const
@@ -170,10 +170,10 @@ export function TipsScreen() {
         habitTitle: habit.title,
         advice: isDone
           ? getTodayFollowUpAdvice(habit)
-          : "Отметьте привычку несколько раз, чтобы Steply точнее оценивал риск пропуска",
+          : "Отметьте привычку несколько раз, чтобы риск считался точнее",
         reason: isDone
-          ? `Сегодняшняя отметка уже учтена; сейчас есть ${formatMarks(totalEntries)}`
-          : `Сейчас есть ${formatMarks(totalEntries)}, для уверенного прогноза нужно больше истории`,
+          ? `Сегодня уже учтено; сейчас есть ${formatMarks(totalEntries)}`
+          : `Сейчас есть ${formatMarks(totalEntries)}, для прогноза нужно немного больше истории`,
         ctaLabel: isDone ? "Перейти к привычке" as const : "Отметить" as const,
         markStatus: isDone ? undefined : "completed" as const
       };
@@ -202,8 +202,8 @@ export function TipsScreen() {
         habitTitle: getHabitTitle(habit),
         advice: isDone ? getTodayFollowUpAdvice(habit) : getRecommendationAdvice(recommendation, habit),
         reason: prediction
-          ? `${isDone ? "Риск относится к следующему выполнению. " : ""}${getPredictionRiskReason(stats, prediction)}`
-          : "Совет сформирован по истории привычек и последним отметкам",
+          ? `${isDone ? "Это риск на следующий раз. " : ""}${getPredictionRiskReason(stats, prediction)}`
+          : "Совет собран по истории привычек и последним отметкам",
         ctaLabel: "Перейти к привычке" as const,
         recommendationId: recommendation.id
       };
@@ -225,7 +225,7 @@ export function TipsScreen() {
     <section className="recommendations-page page-stack">
       <div className="tips-topbar">
         <p className="tips-subtitle">
-          Рекомендации по привычкам, риску пропуска и восстановлению
+          Советы по привычкам, пропускам и возвращению
         </p>
         <Button
           className="tips-refresh-button"
@@ -243,28 +243,28 @@ export function TipsScreen() {
           <SketchArrow className="tips-hint-arrow" />
           <strong><span className="marker-highlight">Как работают советы</span></strong>
           <p>
-            Steply анализирует отметки привычек, регулярность и риск пропуска.
-            Чем больше выполнений, тем точнее рекомендации.
+            Steply смотрит на отметки, регулярность и риск пропуска.
+            Чем больше истории, тем полезнее советы.
           </p>
         </article>
         <article className="tips-hint-card tips-hint-secondary">
           <strong>После отметки</strong>
-          <p>Советы обновляются по новой истории и помогают выбрать следующий реальный шаг</p>
+          <p>Советы обновляются после отметок и помогают выбрать следующий реальный шаг</p>
         </article>
       </div>
 
       {activeHabits.length === 0 ? (
         <section className="tips-section-panel">
           <TipsEmptyState>
-            Создайте первую привычку, и здесь появятся советы по риску, данным и восстановлению.
+            Создайте первую привычку, и здесь появятся советы по риску и возвращению.
           </TipsEmptyState>
         </section>
       ) : (
         <div className="tips-section-grid">
           <section className="tips-section-panel tips-section-urgent">
             <div className="tips-section-heading">
-              <h2>Срочно</h2>
-              <p>Высокий риск пропуска или нужен режим восстановления</p>
+              <h2>Сейчас важно</h2>
+              <p>Есть риск пропуска или пора вернуться мягко</p>
             </div>
             <div className="tips-card-list">
               {urgentItems.length > 0 ? (
@@ -281,7 +281,7 @@ export function TipsScreen() {
                 ))
               ) : (
                 <TipsEmptyState>
-                  Сейчас нет привычек с высоким риском. Поддерживайте регулярные отметки
+                  Сейчас нет привычек с высоким риском. Продолжайте отмечать привычки
                 </TipsEmptyState>
               )}
             </div>
@@ -289,8 +289,8 @@ export function TipsScreen() {
 
           <section className="tips-section-panel">
             <div className="tips-section-heading">
-              <h2>Нужно больше данных</h2>
-              <p>Привычки, по которым пока мало отметок для точного прогноза</p>
+              <h2>Пока мало истории</h2>
+              <p>Нужно еще несколько отметок, чтобы советы стали точнее</p>
             </div>
             <div className="tips-card-list">
               {dataItems.length > 0 ? (
@@ -307,7 +307,7 @@ export function TipsScreen() {
                 ))
               ) : (
                 <TipsEmptyState>
-                  Данных достаточно для базовых рекомендаций. Продолжайте отмечать привычки
+                  Истории уже хватает для первых советов. Продолжайте отмечать привычки
                 </TipsEmptyState>
               )}
             </div>
@@ -315,8 +315,8 @@ export function TipsScreen() {
 
           <section className="tips-section-panel tips-section-wide">
             <div className="tips-section-heading">
-              <h2>Рекомендации</h2>
-              <p>Обычные советы по регулярности, сложности и следующему шагу</p>
+              <h2>Советы</h2>
+              <p>Спокойные подсказки по регулярности, сложности и следующему шагу</p>
             </div>
             <div className="tips-card-list tips-card-list-wide">
               {recommendationItems.length > 0 ? (
@@ -333,7 +333,7 @@ export function TipsScreen() {
                 ))
               ) : (
                 <TipsEmptyState>
-                  Обычных советов пока нет. Обновите советы после нескольких отметок
+                  Советов пока нет. Обновите их после нескольких отметок
                 </TipsEmptyState>
               )}
             </div>

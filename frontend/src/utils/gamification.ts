@@ -17,10 +17,10 @@ export const petTypeLabels: Record<PetType, string> = {
 };
 
 export const petTypeDescriptions: Record<PetType, string> = {
-  dog: "энергичный напарник",
-  cat: "спокойный мотиватор",
-  parrot: "яркий компаньон",
-  hamster: "маленький хранитель привычек"
+  dog: "бодрый напарник",
+  cat: "спокойный спутник",
+  parrot: "яркий товарищ",
+  hamster: "тихий хранитель ритма"
 };
 
 export const petStateLabels: Record<PetState, string> = {
@@ -37,8 +37,8 @@ export const petStateShortLabels: Record<PetState, string> = {
 
 export const petMiniPhrases: Record<PetState, string> = {
   happy: "Так держать, питомец доволен",
-  neutral: "Выполни привычку, чтобы поддержать питомца",
-  sad: "Питомец скучает – пора вернуться к привычкам"
+  neutral: "Отметьте привычку, чтобы поддержать питомца",
+  sad: "Питомцу не хватает вашего ритма"
 };
 
 const difficultyXP: Record<Difficulty, number> = {
@@ -82,6 +82,6 @@ export function shouldActivateRecoveryMode(
 export function getRecoveryTask(habit: Pick<Habit, "recovery_task">) {
   return (
     habit.recovery_task?.trim() ||
-    "Выполни минимальную версию привычки, чтобы сохранить регулярность"
+    "Сделайте минимальную версию привычки"
   );
 }

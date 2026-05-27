@@ -42,8 +42,8 @@ export function RegisterPage({
         <div className="auth-orbit">S</div>
         <h1>Steply</h1>
         <p>
-          Создайте аккаунт, чтобы Steply начал видеть ваш темп, рассчитывать риск
-          пропуска и подбирать рекомендации без лишнего давления.
+          Создайте аккаунт, чтобы сохранить привычки, видеть свой темп
+          и получать спокойные подсказки.
         </p>
         <div className="auth-points">
           <span>Прогресс дня</span>
@@ -100,7 +100,7 @@ export function RegisterPage({
           {error && <ErrorState message={error} />}
 
           <Button variant="cta" disabled={isLoading}>
-            {isLoading ? "Создаем аккаунт" : "Создать аккаунт"}
+            {isLoading ? "Создаем" : "Создать аккаунт"}
           </Button>
         </form>
         <AuthQrCard />

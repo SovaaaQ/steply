@@ -30,7 +30,7 @@ const emptyGamificationSummary: GamificationSummary = {
   profile: {
     level: 1,
     title: "Старт маршрута",
-    milestone: "Создайте первую привычку и закройте первый шаг",
+    milestone: "Создайте первую привычку и отметьте первый шаг",
     total_xp: 0,
     current_level_xp: 0,
     current_level_min_xp: 0,
@@ -60,7 +60,7 @@ const emptyGamificationSummary: GamificationSummary = {
     best: 0,
     status: "empty",
     label: "Серия еще не началась",
-    next_step: "Создайте привычку и закройте первый короткий шаг",
+    next_step: "Создайте привычку и отметьте первый короткий шаг",
     is_at_risk: false,
     last_active_date: null,
     completed_today: 0,
@@ -70,8 +70,8 @@ const emptyGamificationSummary: GamificationSummary = {
   quests: [],
   recent_events: [],
   next_best_action: {
-    title: "Соберите первый маршрут",
-    description: "Создайте первую привычку, чтобы появились XP, серия и задания",
+    title: "Начните с одной привычки",
+    description: "Добавьте первый шаг, чтобы появился прогресс",
     cta_label: "Создать привычку",
     cta_section: "habits"
   }
@@ -276,8 +276,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       );
 
       let recommendationsData = initialRecommendations;
-      if (active.length > 0 && recommendationsData.length === 0) {
-        recommendationsData = await recommendationsApi.generate();
+      if (active.length > 0) {
+        recommendationsData = await recommendationsApi.generate().catch(() => initialRecommendations);
       }
       const gamificationData = await gamificationApi.summary();
 
@@ -293,7 +293,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         (isOpen) => isOpen || getOnboardingStatus(currentUser.id) === "pending"
       );
     } catch (loadError) {
-      const message = loadError instanceof Error ? loadError.message : "Ошибка загрузки данных";
+      const message = loadError instanceof Error ? loadError.message : "Не удалось загрузить данные";
       setError(message);
       if (message.includes("Сессия истекла")) {
         clearToken();
@@ -347,7 +347,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setIsOnboardingOpen(
       Boolean(options?.isNewRegistration) || getOnboardingStatus(response.user.id) === "pending"
     );
-    showNotice("Вы вошли в Steply", "Сегодня можно начать с ближайшей привычки");
+    showNotice("Вы в Steply", "Сегодня можно начать с ближайшей привычки");
     setActiveSection("dashboard");
   }
 
@@ -408,10 +408,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       if (editingHabitId) {
         await habitsApi.update(editingHabitId, payload);
-        showNotice("Привычка обновлена");
+        showNotice("Привычку обновили");
       } else {
         await habitsApi.create(payload);
-        showNotice("Привычка создана");
+        showNotice("Привычка добавлена");
       }
       setIsHabitFormOpen(false);
       resetHabitForm();
@@ -448,18 +448,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const habit = activeHabits.find((item) => item.id === habitId);
     const existingTodayEntry = getTodayEntry(habitId);
     if (status === "missed") {
-      setError("Пропуск считается автоматически после окончания запланированного дня");
+      setError("Пропуск появится сам после конца дня");
       return;
     }
     if (
       existingTodayEntry?.status === "completed" ||
       existingTodayEntry?.status === "recovery_completed"
     ) {
-      setError("Сегодня шаг уже учтен");
+      setError("Сегодня уже учтено");
       return;
     }
     if (existingTodayEntry?.status === "missed") {
-      setError("Период уже учтен как пропущенный");
+      setError("Этот день уже отмечен как пропуск");
       return;
     }
     if (
@@ -480,19 +480,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const reward =
         entry.xp_awarded > 0
           ? {
-              title: "XP начислены за выполнение привычки",
-              detail: `${entry.xp_awarded} XP учтены в уровне`,
+              title: "XP за привычку",
+              detail: `${entry.xp_awarded} XP добавлены к уровню`,
               xp: entry.xp_awarded
             }
           : undefined;
       showNotice(
         status === "completed"
           ? entry.xp_awarded > 0
-            ? "Шаг закрыт"
-            : "Шаг закрыт. Сегодня эта привычка уже учтена"
+            ? "Готово, засчитали"
+            : "Готово, сегодня уже учтено"
           : entry.xp_awarded > 0
-            ? "Восстановление выполнено"
-            : "Восстановление выполнено. Сегодня эта привычка уже учтена",
+            ? "Мягкий шаг засчитан"
+            : "Мягкий шаг уже засчитан",
         "",
         reward
       );
@@ -552,13 +552,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const generated = await recommendationsApi.generate();
       setRecommendations(generated);
-      showNotice("Рекомендации обновлены на основе текущей истории");
+      showNotice("Советы обновлены по последним отметкам");
       await loadDashboard();
     } catch (recommendationError) {
       setError(
         recommendationError instanceof Error
           ? recommendationError.message
-          : "Не удалось сформировать рекомендации"
+          : "Не удалось обновить советы"
       );
     }
   }
@@ -568,13 +568,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     clearNotice();
     try {
       await recommendationsApi.markRead(recommendationId);
-      showNotice("Совет прочитан", "XP и задания обновлены по циклу обратной связи");
+      showNotice("Совет отмечен", "Задания обновились");
       await loadDashboard();
     } catch (recommendationError) {
       setError(
         recommendationError instanceof Error
           ? recommendationError.message
-          : "Не удалось отметить совет прочитанным"
+          : "Не удалось отметить совет"
       );
     }
   }

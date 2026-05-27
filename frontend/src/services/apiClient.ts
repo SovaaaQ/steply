@@ -75,7 +75,7 @@ function normalizeApiError(detail: unknown): string {
   if (typeof detail === "string" && detail.length > 0) {
     return detail;
   }
-  return "Ошибка запроса к серверу";
+  return "Не получилось связаться с сервером";
 }
 
 export function getStoredToken(): string | null {

@@ -39,8 +39,8 @@ export function LoginPage({
         <div className="auth-orbit">S</div>
         <h1>Steply</h1>
         <p>
-          Технологичный помощник для привычек: аналитика активности, риск пропуска,
-          персональные советы и питомец для мягкой мотивации.
+          Steply помогает держать привычки рядом: показывает темп, предупреждает
+          о риске пропуска и подсказывает, как вернуться без давления.
         </p>
         <div className="auth-points">
           <span>Привычки</span>
@@ -87,7 +87,7 @@ export function LoginPage({
 
           {error && <ErrorState message={error} />}
 
-          <Button variant="cta" disabled={isLoading}>{isLoading ? "Проверяем данные" : "Войти"}</Button>
+          <Button variant="cta" disabled={isLoading}>{isLoading ? "Проверяем" : "Войти"}</Button>
         </form>
         <AuthQrCard />
       </div>

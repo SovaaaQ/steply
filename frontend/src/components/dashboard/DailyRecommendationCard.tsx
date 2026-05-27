@@ -16,11 +16,11 @@ export function DailyRecommendationCard({
           <h2>{recommendation.title}</h2>
           <p>{recommendation.message}</p>
           <Button variant="secondary" onClick={onOpen}>
-            Почему это важно
+            Посмотреть совет
           </Button>
         </>
       ) : (
-        <p>Рекомендация появится после первых отметок</p>
+        <p>Совет появится после первых отметок</p>
       )}
     </section>
   );

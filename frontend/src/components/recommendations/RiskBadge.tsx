@@ -19,7 +19,7 @@ interface RiskBadgeProps {
 export function RiskBadge({ level, prediction, stats }: RiskBadgeProps) {
   if (prediction) {
     if (!hasEnoughRiskData(prediction, stats)) {
-      return <Badge tone="neutral">Недостаточно данных</Badge>;
+      return <Badge tone="neutral">Пока рано считать</Badge>;
     }
 
     const displayLevel = getRiskLevel(prediction);

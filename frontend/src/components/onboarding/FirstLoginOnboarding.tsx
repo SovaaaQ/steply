@@ -11,15 +11,15 @@ interface OnboardingStep {
 const onboardingSteps: OnboardingStep[] = [
   {
     title: <span className="sketch-circle">Выберите питомца</span>,
-    description: "Он помогает сохранять интерес"
+    description: "Он будет поддерживать вас по пути"
   },
   {
     title: <span className="marker-highlight">Создайте первую привычку</span>,
-    description: "Задайте расписание и сложность"
+    description: "Выберите дни, время и нагрузку"
   },
   {
     title: <span className="hand-underline">Отмечайте выполнение</span>,
-    description: "Steply считает прогресс, риск и советы"
+    description: "Steply покажет прогресс, риск пропуска и подсказки"
   }
 ];
 

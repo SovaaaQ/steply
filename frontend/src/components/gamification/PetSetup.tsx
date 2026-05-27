@@ -73,7 +73,7 @@ export function PetSetup({ pet, title = "Выберите питомца", onSub
       </label>
 
       <Button variant="cta" disabled={isSaving || !petName.trim()}>
-        {isSaving ? "Сохранение" : "Сохранить питомца"}
+        {isSaving ? "Сохраняем" : "Сохранить питомца"}
       </Button>
     </form>
   );

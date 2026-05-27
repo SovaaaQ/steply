@@ -67,7 +67,7 @@ export function HabitsPage() {
         <div className="section-heading">
           <div>
             <span className="page-kicker">Привычки</span>
-            <h2>Управление привычками</h2>
+            <h2>Ваши привычки</h2>
           </div>
           <Button
             className="habit-page-create"
@@ -78,7 +78,7 @@ export function HabitsPage() {
             Новая привычка
           </Button>
         </div>
-        <p className="habit-motivation">Выполни привычку, чтобы поддержать питомца</p>
+        <p className="habit-motivation">Отметьте привычку, чтобы поддержать питомца</p>
 
         <Button
           className="mobile-habit-create"
@@ -147,8 +147,8 @@ export function HabitsPage() {
               <div className="pet-required-panel">
                 <strong>Сначала выберите питомца</strong>
                 <p>
-                  После выбора питомца новые привычки будут поддерживать его состояние
-                  и участвовать в прогрессе дня.
+                  После выбора питомца привычки начнут влиять на его состояние
+                  и прогресс дня.
                 </p>
                 <Button
                   type="button"

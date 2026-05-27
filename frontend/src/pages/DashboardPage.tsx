@@ -65,7 +65,7 @@ export function DashboardPage() {
           <div className="section-heading compact">
             <div>
               <span className="page-kicker">Сегодня</span>
-              <h2>Что нужно сделать</h2>
+              <h2>План на день</h2>
             </div>
             <Button type="button" variant="secondary" onClick={() => setActiveSection("habits")}>
               Все привычки
@@ -87,10 +87,10 @@ export function DashboardPage() {
                       <strong>{habit.title}</strong>
                       <span>
                         {entry?.status === "missed"
-                          ? "Пропуск зафиксирован, доступен мягкий возврат"
+                          ? "Этот день пропущен, можно вернуться мягко"
                           : isDone
                             ? "Отмечено сегодня"
-                            : "Ожидает выполнения"}
+                            : "Ждет отметки"}
                       </span>
                     </div>
                     <Button
@@ -106,7 +106,7 @@ export function DashboardPage() {
               })}
             </div>
           ) : (
-            <p className="muted-panel">На сегодня пока нет активных привычек</p>
+            <p className="muted-panel">На сегодня ничего не запланировано</p>
           )}
         </section>
 

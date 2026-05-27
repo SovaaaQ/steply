@@ -37,11 +37,11 @@ export function RecoverySuggestion({
     <div className={`recovery-suggestion ${isRecoveredToday ? "done" : ""}`}>
       <div>
         <span>Режим восстановления</span>
-        <strong>{isRecoveredToday ? "Минимальная версия выполнена" : getRecoveryTask(habit)}</strong>
+        <strong>{isRecoveredToday ? "Минимальная версия готова" : getRecoveryTask(habit)}</strong>
         <p>
           {isRecoveredToday
-            ? "Отлично, ты вернулся к привычке без лишнего давления"
-            : `Риск пропуска ${percent(predictedRisk)}. Выполни короткий вариант и получи +${recoveryXP} XP.`}
+            ? "Мягкий шаг засчитан, можно продолжать без давления"
+            : `Риск пропуска ${percent(predictedRisk)}. Сделайте короткий вариант и получите +${recoveryXP} XP.`}
         </p>
       </div>
       {!isRecoveredToday && (

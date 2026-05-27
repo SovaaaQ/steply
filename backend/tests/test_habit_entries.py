@@ -88,7 +88,7 @@ def test_completed_period_cannot_be_skipped() -> None:
             payload=make_payload("missed", date(2026, 5, 22)),
             client_today=date(2026, 5, 23),
         ),
-        "Сегодня шаг уже учтен, пропуск недоступен",
+        "Сегодня уже учтено, пропуск недоступен",
     )
 
 
@@ -99,7 +99,7 @@ def test_missed_period_cannot_be_completed() -> None:
             payload=make_payload("completed", date(2026, 5, 23)),
             client_today=date(2026, 5, 23),
         ),
-        "Период уже учтен как пропущенный",
+        "Этот день уже отмечен как пропуск",
     )
 
 
@@ -110,7 +110,7 @@ def test_skip_is_rejected_while_current_period_is_open() -> None:
             payload=make_payload("missed", date(2026, 5, 23)),
             client_today=date(2026, 5, 23),
         ),
-        "Пропуск считается автоматически после окончания запланированного дня",
+        "Пропуск появится сам после конца дня",
     )
 
 
