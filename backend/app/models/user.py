@@ -63,8 +63,8 @@ class User(Base):
         uselist=False,
     )
     achievements = relationship("UserAchievement", back_populates="user", cascade="all, delete-orphan")
-    quest_progress = relationship(
-        "UserQuestProgress",
+    goal_progress = relationship(
+        "UserGoalProgress",
         back_populates="user",
         cascade="all, delete-orphan",
     )

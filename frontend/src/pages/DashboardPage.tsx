@@ -47,7 +47,7 @@ export function DashboardPage() {
           progress={todayProgress}
         />
 
-        <div className="mission-stack">
+        <div className="dashboard-side-stack">
           <NextHabitCard
             habit={nextHabit}
             prediction={nextHabit ? predictions[nextHabit.id] : undefined}

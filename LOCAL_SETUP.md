@@ -306,7 +306,7 @@ docker compose exec postgres psql -U steply_user -d steply_db -c "\dt"
  public | habit_entries              | table | steply_user
  public | habits                     | table | steply_user
  public | predictions                | table | steply_user
- public | quests                     | table | steply_user
+ public | goals                     | table | steply_user
  public | recommendations            | table | steply_user
  public | reward_events              | table | steply_user
  public | users                      | table | steply_user

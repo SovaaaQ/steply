@@ -165,13 +165,13 @@ class UserAchievement(Base):
     reward_event = relationship("RewardEvent", foreign_keys=[reward_event_id])
 
 
-class Quest(Base):
-    __tablename__ = "quests"
+class Goal(Base):
+    __tablename__ = "goals"
     __table_args__ = (
-        CheckConstraint("type IN ('onboarding', 'daily', 'weekly')", name="ck_quests_type"),
-        CheckConstraint("target >= 1", name="ck_quests_target"),
-        CheckConstraint("reward_xp >= 0", name="ck_quests_reward_xp"),
-        CheckConstraint("sort_order >= 0", name="ck_quests_sort_order"),
+        CheckConstraint("type IN ('onboarding', 'daily', 'weekly')", name="ck_goals_type"),
+        CheckConstraint("target >= 1", name="ck_goals_target"),
+        CheckConstraint("reward_xp >= 0", name="ck_goals_reward_xp"),
+        CheckConstraint("sort_order >= 0", name="ck_goals_sort_order"),
     )
 
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
@@ -211,18 +211,18 @@ class Quest(Base):
         nullable=False,
     )
 
-    user_progress = relationship("UserQuestProgress", back_populates="quest")
+    user_progress = relationship("UserGoalProgress", back_populates="goal")
 
 
-class UserQuestProgress(Base):
-    __tablename__ = "user_quest_progress"
+class UserGoalProgress(Base):
+    __tablename__ = "user_goal_progress"
     __table_args__ = (
-        UniqueConstraint("user_id", "quest_id", "period_key", name="uq_user_quest_period"),
-        CheckConstraint("progress >= 0", name="ck_user_quest_progress_progress"),
-        CheckConstraint("target >= 1", name="ck_user_quest_progress_target"),
+        UniqueConstraint("user_id", "goal_id", "period_key", name="uq_user_goal_period"),
+        CheckConstraint("progress >= 0", name="ck_user_goal_progress_progress"),
+        CheckConstraint("target >= 1", name="ck_user_goal_progress_target"),
         CheckConstraint(
             "status IN ('active', 'completed', 'empty')",
-            name="ck_user_quest_progress_status",
+            name="ck_user_goal_progress_status",
         ),
     )
 
@@ -232,8 +232,8 @@ class UserQuestProgress(Base):
         index=True,
         nullable=False,
     )
-    quest_id: Mapped[str] = mapped_column(
-        ForeignKey("quests.id", ondelete="CASCADE"),
+    goal_id: Mapped[str] = mapped_column(
+        ForeignKey("goals.id", ondelete="CASCADE"),
         index=True,
         nullable=False,
     )
@@ -265,8 +265,8 @@ class UserQuestProgress(Base):
         nullable=False,
     )
 
-    user = relationship("User", back_populates="quest_progress")
-    quest = relationship("Quest", back_populates="user_progress")
+    user = relationship("User", back_populates="goal_progress")
+    goal = relationship("Goal", back_populates="user_progress")
     reward_event = relationship("RewardEvent", foreign_keys=[reward_event_id])
 
 

@@ -12,8 +12,8 @@ FrequencyType = Literal["daily", "weekly", "custom"]
 WeekdayKey = Literal["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 ScheduleDay = Union[WeekdayKey, int]
 RiskLevel = Literal["low", "medium", "high"]
-QuestType = Literal["onboarding", "daily", "weekly"]
-QuestStatus = Literal["active", "completed", "empty"]
+GoalType = Literal["onboarding", "daily", "weekly"]
+GoalStatus = Literal["active", "completed", "empty"]
 StreakStatus = Literal["empty", "active", "at_risk", "restored"]
 PetType = Literal["dog", "cat", "parrot", "hamster"]
 PetState = Literal["happy", "neutral", "sad"]
@@ -245,16 +245,16 @@ class GamificationAchievementRead(BaseModel):
     unlocked_at: Optional[datetime]
 
 
-class GamificationQuestRead(BaseModel):
+class GamificationGoalRead(BaseModel):
     id: str
-    type: QuestType
+    type: GoalType
     tone: str
     title: str
     description: str
     progress: int
     target: int
     reward_xp: int
-    status: QuestStatus
+    status: GoalStatus
     period_key: str
     cta_label: str
     cta_section: str
@@ -299,6 +299,6 @@ class GamificationSummaryRead(BaseModel):
     pet: PetRead
     streak: StreakRead
     achievements: list[GamificationAchievementRead]
-    quests: list[GamificationQuestRead]
+    goals: list[GamificationGoalRead]
     recent_events: list[RewardEventRead]
     next_best_action: NextBestActionRead

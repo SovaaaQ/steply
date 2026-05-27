@@ -1,10 +1,10 @@
 from app.models.gamification import (
     Achievement,
-    Quest,
+    Goal,
     RewardEvent,
     UserAchievement,
     UserGamificationProfile,
-    UserQuestProgress,
+    UserGoalProgress,
     XPHistory,
 )
 from app.models.habit import Habit, HabitEntry
@@ -17,12 +17,12 @@ __all__ = [
     "Habit",
     "HabitEntry",
     "Prediction",
-    "Quest",
+    "Goal",
     "Recommendation",
     "RewardEvent",
     "User",
     "UserAchievement",
     "UserGamificationProfile",
-    "UserQuestProgress",
+    "UserGoalProgress",
     "XPHistory",
 ]

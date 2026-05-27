@@ -24,7 +24,7 @@ Steply предназначен для поддержки формировани
 - `HabitEntry` - событие выполнения или пропуска привычки за конкретную дату.
 - `Prediction` - результат предиктивного анализа: вероятность выполнения, риск пропуска, уровень риска и признаки модели.
 - `Recommendation` - персонализированный совет, сформированный на основе аналитики и риска.
-- `UserGamificationProfile`, `Achievement`, `Quest`, `RewardEvent`, `XPHistory` - серверная игровая механика: XP, уровни, серия, достижения, задания и аудит начислений.
+- `UserGamificationProfile`, `Achievement`, `Goal`, `RewardEvent`, `XPHistory` - серверная игровая механика: XP, уровни, серия, достижения, цели и аудит начислений.
 
 Связи:
 
@@ -150,7 +150,7 @@ docs/
 
 - `user_gamification_profiles` - агрегированный уровень, XP и серия пользователя;
 - `achievements` и `user_achievements` - справочник достижений и прогресс пользователя;
-- `quests` и `user_quest_progress` - справочник заданий и прогресс за период;
+- `goals` и `user_goal_progress` - справочник целей и прогресс за период;
 - `reward_events` - idempotent журнал начислений XP;
 - `xp_history` - аудит XP за выполнение привычек.
 
@@ -188,7 +188,7 @@ docs/
 
 - `GET /api/gamification/summary`
 - `GET /api/gamification/achievements`
-- `GET /api/gamification/quests`
+- `GET /api/gamification/goals`
 - `GET /api/gamification/events`
 - `GET /api/gamification/xp-history`
 - `PUT /api/gamification/pet`

@@ -19,17 +19,17 @@ It intentionally avoids gambling mechanics, random rewards, paid boosters, loot 
 1. User creates or completes a habit action.
 2. Backend records an idempotent reward event when the action is eligible.
 3. User immediately sees XP feedback in the toast and updated progress blocks.
-4. Achievements and quests update from the same backend state.
+4. Achievements and goals update from the same backend state.
 5. The dashboard shows the next best action.
 6. User returns to continue the route or restore it softly after a gap.
 
 Main UI surfaces:
 
-- Dashboard hero: level, streak, daily progress, quests, next best action.
+- Dashboard: daily progress, next habit, next best action, and compact pet state.
 - Habit cards: action feedback after completion/miss.
-- Achievements page: full achievement collection, quests, level progress.
-- Profile page: personal progress, recovery state, achievements.
-- Header/sidebar: compact level and streak status.
+- Pet screen: pet setup, XP progress, level, and current state.
+- Profile page: account details and habit statistics.
+- Header/sidebar: navigation and compact daily progress.
 
 ## XP Rules
 
@@ -41,14 +41,14 @@ Action rewards:
 - `habit_recovery_completed`: half of difficulty XP with a 5 XP minimum.
 - `recommendation_read`: +5 XP once per recommendation.
 
-Achievement and quest rewards are separate milestone rewards. XP is not stored as a mutable frontend value. It is recalculated from `reward_events`, which makes repeated requests safe.
+Achievement and goal rewards are separate milestone rewards. XP is not stored as a mutable frontend value. It is recalculated from `reward_events`, which makes repeated requests safe.
 
 Anti-abuse:
 
 - Habit entries are unique per habit/date.
 - Reward events use `user_id + event_key` uniqueness.
 - Habit entry XP is synced to the current entry status, so repeated completion requests do not stack XP.
-- Achievements and quests can be completed once per user or period.
+- Achievements and goals can be completed once per user or period.
 
 ## Levels
 
@@ -92,28 +92,28 @@ Current achievements:
 
 Achievements have locked/unlocked states and store user progress in `user_achievements`.
 
-## Quests
+## Goals
 
-Definitions are seeded into the `quests` table from `QUEST_DEFINITIONS`.
+Definitions are seeded into the `goals` table from `GOAL_DEFINITIONS`.
 
-Onboarding quests:
+Onboarding goals:
 
 - create first habit;
 - complete first step;
 - read first recommendation.
 
-Daily quests:
+Daily goals:
 
 - complete one step today;
 - complete the route scheduled for today.
 
-Weekly quests:
+Weekly goals:
 
 - complete five steps this week;
 - read one recommendation this week;
 - recovery week, shown only in recovery mode.
 
-Quest progress is stored in `user_quest_progress` by period:
+Goal progress is stored in `user_goal_progress` by period:
 
 - onboarding: `onboarding`
 - daily: ISO date, for example `2026-05-20`
@@ -126,7 +126,7 @@ Rewards are visual and progress-based:
 - XP toast after meaningful actions;
 - level progress;
 - unlocked achievement cards;
-- completed quest states;
+- goal progress in the gamification summary;
 - recent reward events in the gamification summary;
 - next best action card.
 
@@ -139,8 +139,8 @@ New models are in `backend/app/models/gamification.py`:
 - `UserGamificationProfile`
 - `Achievement`
 - `UserAchievement`
-- `Quest`
-- `UserQuestProgress`
+- `Goal`
+- `UserGoalProgress`
 - `RewardEvent`
 
 Existing `User.experience_points` and `User.level` remain for compatibility, but are synced from reward events.
@@ -153,13 +153,13 @@ New endpoints:
 
 - `GET /api/gamification/summary`
 - `GET /api/gamification/achievements`
-- `GET /api/gamification/quests`
+- `GET /api/gamification/goals`
 - `GET /api/gamification/events`
 
 Action-triggered updates happen inside existing endpoints:
 
 - `POST /api/habits` syncs onboarding progress.
-- `POST /api/habits/{habit_id}/entries` syncs completion XP, streaks, quests, achievements.
+- `POST /api/habits/{habit_id}/entries` syncs completion XP, streaks, goals, achievements.
 - `PATCH /api/recommendations/{recommendation_id}/read` rewards recommendation review.
 
 ## Frontend Integration
@@ -170,20 +170,17 @@ New frontend API:
 
 Main components:
 
-- `GamificationSummary`
-- `LevelProgress`
+- `PetMiniWidget`
+- `PetStatusCard`
+- `PetSetup`
 - `XPProgressBar`
-- `StreakWidget`
-- `AchievementBadge`
-- `AchievementGrid`
-- `QuestCard`
-- `DailyQuests`
-- `WeeklyQuests`
+- `PetAnimation`
 - `RewardToast`
-- `ProgressEmptyState`
-- `NextBestActionCard`
+- `TodaySummary`
+- `NextHabitCard`
+- `DailyRecommendationCard`
 
-The old local/mock achievement and quest calculation was removed. Frontend now displays server state.
+The old local/mock achievement and goal calculation was removed. Frontend now displays server state.
 
 ## Adding A New Achievement
 
@@ -192,17 +189,17 @@ The old local/mock achievement and quest calculation was removed. Frontend now d
 3. Restart backend so `init_db()` seeds the definition.
 4. Add any needed UI category styling if the category is new.
 
-## Adding A New Quest
+## Adding A New Goal
 
-1. Add an item to `QUEST_DEFINITIONS`.
+1. Add an item to `GOAL_DEFINITIONS`.
 2. Choose `type`: `onboarding`, `daily`, or `weekly`.
 3. Choose `metric`, `target`, `reward_xp`, `cta_section`, and `next_step`.
-4. Add `active_when` only if the quest should be conditional.
+4. Add `active_when` only if the goal should be conditional.
 5. Restart backend so the definition is seeded.
 
 ## Later Improvements
 
-- Add read timestamps to recommendations for richer weekly insight quests.
-- Add admin tooling to edit quest/achievement definitions without deployment.
+- Add read timestamps to recommendations for richer weekly insight goals.
+- Add admin tooling to edit goal/achievement definitions without deployment.
 - Add notification scheduling for at-risk streaks without pressure language.
 - Add backend tests around reward idempotency and streak edge cases.

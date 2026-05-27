@@ -1,21 +1,21 @@
 import type { AppSection } from "./navigation";
 import type { PetState, PetType } from "./auth";
 
-export type QuestTone = "daily" | "weekly" | "recovery" | "onboarding" | "insight";
-export type QuestType = "onboarding" | "daily" | "weekly";
-export type QuestStatus = "active" | "completed" | "empty";
+export type GoalTone = "daily" | "weekly" | "recovery" | "onboarding" | "insight";
+export type GoalType = "onboarding" | "daily" | "weekly";
+export type GoalStatus = "active" | "completed" | "empty";
 export type StreakStatus = "empty" | "active" | "at_risk" | "restored";
 
-export interface Quest {
+export interface Goal {
   id: string;
-  type: QuestType;
-  tone: QuestTone;
+  type: GoalType;
+  tone: GoalTone;
   title: string;
   description: string;
   progress: number;
   target: number;
   reward_xp: number;
-  status: QuestStatus;
+  status: GoalStatus;
   period_key: string;
   cta_label: string;
   cta_section: AppSection;
@@ -108,7 +108,7 @@ export interface GamificationSummary {
   pet: Pet;
   streak: StreakState;
   achievements: GamificationAchievement[];
-  quests: Quest[];
+  goals: Goal[];
   recent_events: RewardEvent[];
   next_best_action: NextBestAction;
 }

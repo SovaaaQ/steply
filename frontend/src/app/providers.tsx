@@ -67,7 +67,7 @@ const emptyGamificationSummary: GamificationSummary = {
     scheduled_today: 0
   },
   achievements: [],
-  quests: [],
+  goals: [],
   recent_events: [],
   next_best_action: {
     title: "Начните с одной привычки",

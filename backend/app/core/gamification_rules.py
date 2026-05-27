@@ -240,7 +240,7 @@ ACHIEVEMENT_DEFINITIONS = [
 ]
 
 
-QUEST_DEFINITIONS = [
+GOAL_DEFINITIONS = [
     {
         "id": "onboarding_create_first_habit",
         "type": "onboarding",

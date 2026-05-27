@@ -257,7 +257,7 @@ def upgrade() -> None:
     )
 
     op.create_table(
-        "quests",
+        "goals",
         sa.Column("id", sa.String(length=80), primary_key=True),
         sa.Column("type", sa.String(length=32), nullable=False),
         sa.Column("tone", sa.String(length=32), nullable=False),
@@ -279,10 +279,10 @@ def upgrade() -> None:
             server_default=sa.text("CURRENT_TIMESTAMP"),
             nullable=False,
         ),
-        sa.CheckConstraint("type IN ('onboarding', 'daily', 'weekly')", name="ck_quests_type"),
-        sa.CheckConstraint("target >= 1", name="ck_quests_target"),
-        sa.CheckConstraint("reward_xp >= 0", name="ck_quests_reward_xp"),
-        sa.CheckConstraint("sort_order >= 0", name="ck_quests_sort_order"),
+        sa.CheckConstraint("type IN ('onboarding', 'daily', 'weekly')", name="ck_goals_type"),
+        sa.CheckConstraint("target >= 1", name="ck_goals_target"),
+        sa.CheckConstraint("reward_xp >= 0", name="ck_goals_reward_xp"),
+        sa.CheckConstraint("sort_order >= 0", name="ck_goals_sort_order"),
     )
 
     op.create_table(
@@ -352,10 +352,10 @@ def upgrade() -> None:
     op.create_index("ix_user_achievements_user_id", "user_achievements", ["user_id"], unique=False)
 
     op.create_table(
-        "user_quest_progress",
+        "user_goal_progress",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("quest_id", sa.String(length=80), nullable=False),
+        sa.Column("goal_id", sa.String(length=80), nullable=False),
         sa.Column("period_key", sa.String(length=32), nullable=False),
         sa.Column("progress", sa.Integer(), server_default=sa.text("0"), nullable=False),
         sa.Column("target", sa.Integer(), server_default=sa.text("1"), nullable=False),
@@ -368,26 +368,26 @@ def upgrade() -> None:
             server_default=sa.text("CURRENT_TIMESTAMP"),
             nullable=False,
         ),
-        sa.CheckConstraint("progress >= 0", name="ck_user_quest_progress_progress"),
-        sa.CheckConstraint("target >= 1", name="ck_user_quest_progress_target"),
+        sa.CheckConstraint("progress >= 0", name="ck_user_goal_progress_progress"),
+        sa.CheckConstraint("target >= 1", name="ck_user_goal_progress_target"),
         sa.CheckConstraint(
             "status IN ('active', 'completed', 'empty')",
-            name="ck_user_quest_progress_status",
+            name="ck_user_goal_progress_status",
         ),
-        sa.ForeignKeyConstraint(["quest_id"], ["quests.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["goal_id"], ["goals.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["reward_event_id"], ["reward_events.id"], ondelete="SET NULL"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
-        sa.UniqueConstraint("user_id", "quest_id", "period_key", name="uq_user_quest_period"),
+        sa.UniqueConstraint("user_id", "goal_id", "period_key", name="uq_user_goal_period"),
     )
-    op.create_index("ix_user_quest_progress_period_key", "user_quest_progress", ["period_key"], unique=False)
-    op.create_index("ix_user_quest_progress_quest_id", "user_quest_progress", ["quest_id"], unique=False)
+    op.create_index("ix_user_goal_progress_period_key", "user_goal_progress", ["period_key"], unique=False)
+    op.create_index("ix_user_goal_progress_goal_id", "user_goal_progress", ["goal_id"], unique=False)
     op.create_index(
-        "ix_user_quest_progress_reward_event_id",
-        "user_quest_progress",
+        "ix_user_goal_progress_reward_event_id",
+        "user_goal_progress",
         ["reward_event_id"],
         unique=False,
     )
-    op.create_index("ix_user_quest_progress_user_id", "user_quest_progress", ["user_id"], unique=False)
+    op.create_index("ix_user_goal_progress_user_id", "user_goal_progress", ["user_id"], unique=False)
 
     op.create_table(
         "xp_history",
@@ -434,11 +434,11 @@ def downgrade() -> None:
     op.drop_index("ix_xp_history_completion_id", table_name="xp_history")
     op.drop_table("xp_history")
 
-    op.drop_index("ix_user_quest_progress_user_id", table_name="user_quest_progress")
-    op.drop_index("ix_user_quest_progress_reward_event_id", table_name="user_quest_progress")
-    op.drop_index("ix_user_quest_progress_quest_id", table_name="user_quest_progress")
-    op.drop_index("ix_user_quest_progress_period_key", table_name="user_quest_progress")
-    op.drop_table("user_quest_progress")
+    op.drop_index("ix_user_goal_progress_user_id", table_name="user_goal_progress")
+    op.drop_index("ix_user_goal_progress_reward_event_id", table_name="user_goal_progress")
+    op.drop_index("ix_user_goal_progress_goal_id", table_name="user_goal_progress")
+    op.drop_index("ix_user_goal_progress_period_key", table_name="user_goal_progress")
+    op.drop_table("user_goal_progress")
 
     op.drop_index("ix_user_achievements_user_id", table_name="user_achievements")
     op.drop_index("ix_user_achievements_reward_event_id", table_name="user_achievements")
@@ -449,7 +449,7 @@ def downgrade() -> None:
     op.drop_index("ix_reward_events_user_id", table_name="reward_events")
     op.drop_index("ix_reward_events_event_type", table_name="reward_events")
     op.drop_table("reward_events")
-    op.drop_table("quests")
+    op.drop_table("goals")
     op.drop_table("achievements")
     op.drop_table("user_gamification_profiles")
 

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.gamification_rules import (
     ACHIEVEMENT_DEFINITIONS,
     COMPLETION_STATUSES,
-    QUEST_DEFINITIONS,
+    GOAL_DEFINITIONS,
     XP_REWARDS,
     calculatePetState,
     getRecoveryTask,
@@ -21,13 +21,13 @@ from app.models import (
     Achievement,
     Habit,
     HabitEntry,
-    Quest,
+    Goal,
     Recommendation,
     RewardEvent,
     User,
     UserAchievement,
     UserGamificationProfile,
-    UserQuestProgress,
+    UserGoalProgress,
     XPHistory,
 )
 from app.services.habit_schedule import is_habit_available_at, is_habit_scheduled_on
@@ -43,16 +43,16 @@ def seed_gamification_definitions(db: Session) -> None:
             setattr(achievement, field, value)
         achievement.is_active = True
 
-    for item in QUEST_DEFINITIONS:
-        quest = db.get(Quest, item["id"])
-        if quest is None:
-            quest = Quest(id=item["id"])
-            db.add(quest)
+    for item in GOAL_DEFINITIONS:
+        goal = db.get(Goal, item["id"])
+        if goal is None:
+            goal = Goal(id=item["id"])
+            db.add(goal)
         for field, value in item.items():
-            setattr(quest, field, value)
-        quest.target_metric = item.get("target_metric")
-        quest.active_when = item.get("active_when")
-        quest.is_active = True
+            setattr(goal, field, value)
+        goal.target_metric = item.get("target_metric")
+        goal.active_when = item.get("active_when")
+        goal.is_active = True
 
     db.commit()
 
@@ -316,7 +316,7 @@ def refresh_user_gamification(
     profile.streak_status = str(metrics["streak_status"])
 
     sync_achievements(db, user, metrics, award_rewards=can_award_milestones)
-    sync_quests(db, user, metrics, today=metrics_today, award_rewards=can_award_milestones)
+    sync_goals(db, user, metrics, today=metrics_today, award_rewards=can_award_milestones)
     sync_profile_xp(db, user, profile)
     db.flush()
     return build_gamification_summary(db, user, profile, metrics, metrics_today)
@@ -563,7 +563,7 @@ def sync_achievements(
                 user_achievement.reward_event_id = reward.id
 
 
-def sync_quests(
+def sync_goals(
     db: Session,
     user: User,
     metrics: dict[str, Any],
@@ -571,68 +571,68 @@ def sync_quests(
     today: date,
     award_rewards: bool = True,
 ) -> None:
-    quests = list(
+    goals = list(
         db.scalars(
-            select(Quest)
-            .where(Quest.is_active.is_(True))
-            .order_by(Quest.sort_order)
+            select(Goal)
+            .where(Goal.is_active.is_(True))
+            .order_by(Goal.sort_order)
         )
     )
     now = datetime.utcnow()
-    for quest in quests:
-        if quest.active_when == "recovery_mode" and not metrics["recovery_mode"]:
+    for goal in goals:
+        if goal.active_when == "recovery_mode" and not metrics["recovery_mode"]:
             continue
 
-        period_key = get_quest_period_key(quest.type, today)
-        target = int(metrics.get(quest.target_metric, quest.target) or quest.target)
-        target = max(target, quest.target)
-        progress = min(int(metrics.get(quest.metric, 0) or 0), target)
-        is_empty = quest.id == "daily_route" and int(metrics["scheduled_today"]) == 0
+        period_key = get_goal_period_key(goal.type, today)
+        target = int(metrics.get(goal.target_metric, goal.target) or goal.target)
+        target = max(target, goal.target)
+        progress = min(int(metrics.get(goal.metric, 0) or 0), target)
+        is_empty = goal.id == "daily_route" and int(metrics["scheduled_today"]) == 0
 
-        quest_progress = db.scalar(
-            select(UserQuestProgress).where(
-                UserQuestProgress.user_id == user.id,
-                UserQuestProgress.quest_id == quest.id,
-                UserQuestProgress.period_key == period_key,
+        goal_progress = db.scalar(
+            select(UserGoalProgress).where(
+                UserGoalProgress.user_id == user.id,
+                UserGoalProgress.goal_id == goal.id,
+                UserGoalProgress.period_key == period_key,
             )
         )
-        if quest_progress is None:
-            quest_progress = UserQuestProgress(
+        if goal_progress is None:
+            goal_progress = UserGoalProgress(
                 user_id=user.id,
-                quest_id=quest.id,
+                goal_id=goal.id,
                 period_key=period_key,
                 target=target,
             )
-            db.add(quest_progress)
+            db.add(goal_progress)
 
-        quest_progress.target = target
-        quest_progress.progress = max(quest_progress.progress or 0, progress)
+        goal_progress.target = target
+        goal_progress.progress = max(goal_progress.progress or 0, progress)
         if (
             not is_empty
-            and quest_progress.status != "completed"
+            and goal_progress.status != "completed"
             and progress >= target
         ):
             reward = (
                 award_xp_once(
                     db,
                     user,
-                    event_type="quest_completed",
-                    event_key=f"quest:{quest.id}:{period_key}",
-                    xp_amount=quest.reward_xp,
-                    description=f"Задание: {quest.title}",
-                    source_type="quest",
-                    source_id=quest.id,
-                    meta={"period_key": period_key, "type": quest.type},
+                    event_type="goal_completed",
+                    event_key=f"goal:{goal.id}:{period_key}",
+                    xp_amount=goal.reward_xp,
+                    description=f"Цель: {goal.title}",
+                    source_type="goal",
+                    source_id=goal.id,
+                    meta={"period_key": period_key, "type": goal.type},
                 )
                 if award_rewards
                 else None
             )
-            quest_progress.status = "completed"
-            quest_progress.completed_at = now
+            goal_progress.status = "completed"
+            goal_progress.completed_at = now
             if reward is not None:
-                quest_progress.reward_event_id = reward.id
-        elif quest_progress.status != "completed":
-            quest_progress.status = "empty" if is_empty else "active"
+                goal_progress.reward_event_id = reward.id
+        elif goal_progress.status != "completed":
+            goal_progress.status = "empty" if is_empty else "active"
 
 
 def sync_profile_xp(db: Session, user: User, profile: UserGamificationProfile) -> None:
@@ -652,10 +652,10 @@ def sync_profile_xp(db: Session, user: User, profile: UserGamificationProfile) -
     user.level = int(level_state["level"])
 
 
-def get_quest_period_key(quest_type: str, today: date) -> str:
-    if quest_type == "onboarding":
+def get_goal_period_key(goal_type: str, today: date) -> str:
+    if goal_type == "onboarding":
         return "onboarding"
-    if quest_type == "weekly":
+    if goal_type == "weekly":
         iso_year, iso_week, _ = today.isocalendar()
         return f"{iso_year}-W{iso_week:02d}"
     return today.isoformat()
@@ -670,7 +670,7 @@ def build_gamification_summary(
 ) -> dict[str, Any]:
     level_state = get_level_state(profile.total_xp)
     achievements = build_achievement_items(db, user)
-    quests = build_quest_items(db, user, metrics, today)
+    goals = build_goal_items(db, user, metrics, today)
     recent_events = list(
         db.scalars(
             select(RewardEvent)
@@ -690,9 +690,9 @@ def build_gamification_summary(
         "pet": build_pet_read(user, profile),
         "streak": build_streak_read(profile, metrics),
         "achievements": achievements,
-        "quests": quests,
+        "goals": goals,
         "recent_events": [reward_event_to_dict(event) for event in recent_events],
-        "next_best_action": choose_next_best_action(quests, profile.streak_status),
+        "next_best_action": choose_next_best_action(goals, profile.streak_status),
     }
 
 
@@ -745,55 +745,55 @@ def build_achievement_items(db: Session, user: User) -> list[dict[str, Any]]:
     return items
 
 
-def build_quest_items(
+def build_goal_items(
     db: Session,
     user: User,
     metrics: dict[str, Any],
     today: date,
 ) -> list[dict[str, Any]]:
-    quests = list(
+    goals = list(
         db.scalars(
-            select(Quest)
-            .where(Quest.is_active.is_(True))
-            .order_by(Quest.sort_order)
+            select(Goal)
+            .where(Goal.is_active.is_(True))
+            .order_by(Goal.sort_order)
         )
     )
     items: list[dict[str, Any]] = []
-    for quest in quests:
-        if quest.active_when == "recovery_mode" and not metrics["recovery_mode"]:
+    for goal in goals:
+        if goal.active_when == "recovery_mode" and not metrics["recovery_mode"]:
             continue
 
-        period_key = get_quest_period_key(quest.type, today)
-        target = int(metrics.get(quest.target_metric, quest.target) or quest.target)
-        target = max(target, quest.target)
-        fallback_progress = min(int(metrics.get(quest.metric, 0) or 0), target)
+        period_key = get_goal_period_key(goal.type, today)
+        target = int(metrics.get(goal.target_metric, goal.target) or goal.target)
+        target = max(target, goal.target)
+        fallback_progress = min(int(metrics.get(goal.metric, 0) or 0), target)
         progress = db.scalar(
-            select(UserQuestProgress).where(
-                UserQuestProgress.user_id == user.id,
-                UserQuestProgress.quest_id == quest.id,
-                UserQuestProgress.period_key == period_key,
+            select(UserGoalProgress).where(
+                UserGoalProgress.user_id == user.id,
+                UserGoalProgress.goal_id == goal.id,
+                UserGoalProgress.period_key == period_key,
             )
         )
         current = max(progress.progress, fallback_progress) if progress else fallback_progress
         status = progress.status if progress else "active"
-        is_empty = quest.id == "daily_route" and int(metrics["scheduled_today"]) == 0
+        is_empty = goal.id == "daily_route" and int(metrics["scheduled_today"]) == 0
         if is_empty:
             status = "empty"
         items.append(
             {
-                "id": quest.id,
-                "type": quest.type,
-                "tone": quest.tone,
-                "title": quest.title,
-                "description": quest.description,
+                "id": goal.id,
+                "type": goal.type,
+                "tone": goal.tone,
+                "title": goal.title,
+                "description": goal.description,
                 "progress": min(current, target),
                 "target": target,
-                "reward_xp": quest.reward_xp,
+                "reward_xp": goal.reward_xp,
                 "status": status,
                 "period_key": period_key,
-                "cta_label": quest.cta_label,
-                "cta_section": quest.cta_section,
-                "next_step": quest.next_step,
+                "cta_label": goal.cta_label,
+                "cta_section": goal.cta_section,
+                "next_step": goal.next_step,
                 "completed_at": progress.completed_at if progress else None,
                 "empty": is_empty,
             }
@@ -830,12 +830,12 @@ def build_streak_read(
     }
 
 
-def choose_next_best_action(quests: list[dict[str, Any]], streak_status: str) -> dict[str, Any]:
+def choose_next_best_action(goals: list[dict[str, Any]], streak_status: str) -> dict[str, Any]:
     onboarding = next(
         (
-            quest
-            for quest in quests
-            if quest["type"] == "onboarding" and quest["status"] != "completed"
+            goal
+            for goal in goals
+            if goal["type"] == "onboarding" and goal["status"] != "completed"
         ),
         None,
     )
@@ -855,20 +855,20 @@ def choose_next_best_action(quests: list[dict[str, Any]], streak_status: str) ->
             "cta_section": "dashboard",
         }
 
-    active_quest = next(
+    active_goal = next(
         (
-            quest
-            for quest in quests
-            if quest["status"] not in {"completed", "empty"} and quest["type"] in {"daily", "weekly"}
+            goal
+            for goal in goals
+            if goal["status"] not in {"completed", "empty"} and goal["type"] in {"daily", "weekly"}
         ),
         None,
     )
-    if active_quest:
+    if active_goal:
         return {
-            "title": active_quest["title"],
-            "description": active_quest["next_step"],
-            "cta_label": active_quest["cta_label"],
-            "cta_section": active_quest["cta_section"],
+            "title": active_goal["title"],
+            "description": active_goal["next_step"],
+            "cta_label": active_goal["cta_label"],
+            "cta_section": active_goal["cta_section"],
         }
 
     return {

@@ -645,7 +645,7 @@ button,
 
 .habit-list,
 .habit-form,
-.mission-stack {
+.dashboard-side-stack {
   display: grid;
   gap: 14px;
 }
@@ -654,7 +654,7 @@ button,
   gap: 16px;
 }
 
-.mission-stack {
+.dashboard-side-stack {
   align-content: stretch;
 }
 

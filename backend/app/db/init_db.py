@@ -14,6 +14,21 @@ APP_TABLES = {
     "habit_entries",
     "habits",
     "predictions",
+    "goals",
+    "recommendations",
+    "reward_events",
+    "user_achievements",
+    "user_gamification_profiles",
+    "user_goal_progress",
+    "users",
+    "xp_history",
+}
+
+LEGACY_APP_TABLES = {
+    "achievements",
+    "habit_entries",
+    "habits",
+    "predictions",
     "quests",
     "recommendations",
     "reward_events",
@@ -36,8 +51,18 @@ def run_migrations() -> None:
     inspector = inspect(engine)
     table_names = set(inspector.get_table_names())
     existing_app_tables = table_names & APP_TABLES
+    legacy_app_tables = table_names & LEGACY_APP_TABLES
 
-    if "alembic_version" not in table_names and existing_app_tables:
+    if "alembic_version" not in table_names and (existing_app_tables or legacy_app_tables):
+        if existing_app_tables == APP_TABLES:
+            ensure_legacy_columns()
+            command.stamp(config, "head")
+            return
+        if legacy_app_tables == LEGACY_APP_TABLES:
+            ensure_legacy_columns()
+            command.stamp(config, "202605210001")
+            command.upgrade(config, "head")
+            return
         if existing_app_tables != APP_TABLES:
             missing_tables = ", ".join(sorted(APP_TABLES - existing_app_tables))
             raise RuntimeError(

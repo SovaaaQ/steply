@@ -10,7 +10,7 @@ from app.db.session import get_db
 from app.models import User, XPHistory
 from app.schemas import (
     GamificationAchievementRead,
-    GamificationQuestRead,
+    GamificationGoalRead,
     GamificationSummaryRead,
     PetRead,
     PetUpdate,
@@ -47,8 +47,8 @@ def get_achievements(
     return summary["achievements"]
 
 
-@router.get("/quests", response_model=list[GamificationQuestRead])
-def get_quests(
+@router.get("/goals", response_model=list[GamificationGoalRead])
+def get_goals(
     db: Session = Depends(get_db),
     client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
@@ -56,7 +56,7 @@ def get_quests(
     ensure_auto_missed_entries(db, current_user, client_today)
     summary = refresh_user_gamification(db, current_user, today=client_today)
     db.commit()
-    return summary["quests"]
+    return summary["goals"]
 
 
 @router.get("/events", response_model=list[RewardEventRead])
