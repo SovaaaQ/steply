@@ -35,10 +35,13 @@
   --color-info: var(--color-blue-dark);
   --color-risk-low: var(--color-forest);
   --color-risk-low-soft: #edf7df;
+  --color-risk-low-strong: #245327;
   --color-risk-medium: var(--color-warning);
   --color-risk-medium-soft: var(--color-warning-soft);
+  --color-risk-medium-strong: #7a4a00;
   --color-risk-high: var(--color-danger);
   --color-risk-high-soft: var(--color-danger-soft);
+  --color-risk-high-strong: #a92b22;
   --color-completed: var(--color-success);
   --color-completed-soft: var(--color-success-soft);
   --color-missed: var(--color-danger);

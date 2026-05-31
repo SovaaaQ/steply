@@ -103,6 +103,7 @@ def calculate_risk(
         "missed_count": stats.missed_count,
         "completion_rate": round(completion_rate, 3),
         "recent_miss_rate": round(recent_miss_rate, 3),
+        "consecutive_missed": stats.consecutive_missed,
         "current_streak": stats.current_streak,
         "longest_streak": stats.longest_streak,
         "weekday": weekday_key,

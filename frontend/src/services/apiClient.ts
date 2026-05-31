@@ -49,7 +49,9 @@ function getBrowserApiUrl() {
   }
 
   const apiUrl = new URL(window.location.origin);
-  apiUrl.port = getApiPort();
+  if (isLoopbackHostname(apiUrl.hostname)) {
+    apiUrl.port = getApiPort();
+  }
   apiUrl.pathname = "/api";
   apiUrl.search = "";
   apiUrl.hash = "";

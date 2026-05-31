@@ -1,6 +1,5 @@
 import { RecommendationCard } from "../components/recommendations/RecommendationCard";
 import { Button } from "../components/ui/Button";
-import { SketchArrow } from "../components/ui/SketchArrow";
 import { useAppData } from "../app/providers";
 import { useRecommendations } from "../hooks/useRecommendations";
 import type { EntryStatus, Habit } from "../types/habit";
@@ -46,6 +45,27 @@ function isAdviceItem(item: AdviceItem | null): item is AdviceItem {
 
 function getHabitTitle(habit?: Habit) {
   return habit?.title ?? "Общий совет";
+}
+
+function getAdviceLabel(tone: AdviceItem["tone"]) {
+  switch (tone) {
+    case "urgent":
+      return "Риск";
+    case "data":
+      return "История";
+    default:
+      return "Совет";
+  }
+}
+
+function getRecommendationTone(recommendation: Recommendation): AdviceItem["tone"] {
+  if (recommendation.priority === "high" || recommendation.type === "recovery_mode") {
+    return "urgent";
+  }
+  if (recommendation.type === "data_collection") {
+    return "data";
+  }
+  return "normal";
 }
 
 function formatMarks(count: number) {
@@ -179,36 +199,38 @@ export function TipsScreen() {
       };
     });
 
-  const dataHabitIds = new Set(dataItems.map((item) => item.habit?.id).filter(Boolean));
-
   const recommendationItems: AdviceItem[] = recommendations
-    .filter((recommendation) => recommendation.type !== "data_collection")
-    .map((recommendation): AdviceItem | null => {
+    .map((recommendation): AdviceItem => {
       const habit = recommendation.habit_id
         ? activeHabitById.get(recommendation.habit_id)
         : undefined;
-      if (habit && (urgentHabitIds.has(habit.id) || dataHabitIds.has(habit.id))) {
-        return null;
-      }
       const prediction = habit ? predictions[habit.id] : undefined;
       const stats = habit ? habitStats[habit.id] : undefined;
       const todayEntry = habit ? getTodayEntry(habit.id) : undefined;
       const isDone =
         todayEntry?.status === "completed" || todayEntry?.status === "recovery_completed";
+      const tone = getRecommendationTone(recommendation);
       return {
         id: `recommendation-${recommendation.id}`,
-        tone: "normal" as const,
+        tone,
         habit,
         habitTitle: getHabitTitle(habit),
-        advice: isDone ? getTodayFollowUpAdvice(habit) : getRecommendationAdvice(recommendation, habit),
+        advice: recommendation.message || (isDone
+          ? getTodayFollowUpAdvice(habit)
+          : getRecommendationAdvice(recommendation, habit)),
         reason: prediction
           ? `${isDone ? "Это риск на следующий раз. " : ""}${getPredictionRiskReason(stats, prediction)}`
           : "Совет собран по истории привычек и последним отметкам",
         ctaLabel: "Перейти к привычке" as const,
         recommendationId: recommendation.id
       };
-    })
-    .filter(isAdviceItem);
+    });
+
+  const fallbackAdviceItems = [...urgentItems, ...dataItems];
+  const adviceItems = recommendationItems.length > 0 ? recommendationItems : fallbackAdviceItems;
+  const primaryAdvice = adviceItems[0];
+  const secondaryAdviceItems = adviceItems.filter((item) => item.id !== primaryAdvice?.id);
+  const insightItems = [...urgentItems, ...dataItems].slice(0, 3);
 
   function handleAdviceAction(item: AdviceItem) {
     if (item.habit && item.markStatus) {
@@ -225,7 +247,7 @@ export function TipsScreen() {
     <section className="recommendations-page page-stack">
       <div className="tips-topbar">
         <p className="tips-subtitle">
-          Советы по привычкам, пропускам и возвращению
+          Сначала конкретный следующий шаг, затем контекст по рискам и истории
         </p>
         <Button
           className="tips-refresh-button"
@@ -238,21 +260,6 @@ export function TipsScreen() {
         </Button>
       </div>
 
-      <div className="tips-hint-grid">
-        <article className="tips-hint-card tips-hint-primary">
-          <SketchArrow className="tips-hint-arrow" />
-          <strong><span className="marker-highlight">Как работают советы</span></strong>
-          <p>
-            Steply смотрит на отметки, регулярность и риск пропуска.
-            Чем больше истории, тем полезнее советы.
-          </p>
-        </article>
-        <article className="tips-hint-card tips-hint-secondary">
-          <strong>После отметки</strong>
-          <p>Советы обновляются после отметок и помогают выбрать следующий реальный шаг</p>
-        </article>
-      </div>
-
       {activeHabits.length === 0 ? (
         <section className="tips-section-panel">
           <TipsEmptyState>
@@ -260,67 +267,81 @@ export function TipsScreen() {
           </TipsEmptyState>
         </section>
       ) : (
-        <div className="tips-section-grid">
-          <section className="tips-section-panel tips-section-urgent">
-            <div className="tips-section-heading">
-              <h2>Сейчас важно</h2>
-              <p>Есть риск пропуска или пора вернуться мягко</p>
-            </div>
-            <div className="tips-card-list">
-              {urgentItems.length > 0 ? (
-                urgentItems.map((item) => (
-                  <RecommendationCard
-                    ctaLabel={item.ctaLabel}
-                    habitTitle={item.habitTitle}
-                    key={item.id}
-                    reason={item.reason}
-                    advice={item.advice}
-                    tone={item.tone}
-                    onAction={() => handleAdviceAction(item)}
-                  />
-                ))
+        <>
+          <div className="tips-dashboard-grid">
+            <section className="tips-focus-panel">
+              <div className="tips-section-heading">
+                <h2>Совет на сейчас</h2>
+                <p>Самое полезное действие по текущим привычкам</p>
+              </div>
+              {primaryAdvice ? (
+                <RecommendationCard
+                  ctaLabel={primaryAdvice.ctaLabel}
+                  habitTitle={primaryAdvice.habitTitle}
+                  reason={primaryAdvice.reason}
+                  advice={primaryAdvice.advice}
+                  tone={primaryAdvice.tone}
+                  metaLabel="Следующий шаг"
+                  featured
+                  onAction={() => handleAdviceAction(primaryAdvice)}
+                />
               ) : (
                 <TipsEmptyState>
-                  Сейчас нет привычек с высоким риском. Продолжайте отмечать привычки
+                  Обновите советы после нескольких отметок, и здесь появится следующий шаг
                 </TipsEmptyState>
               )}
-            </div>
-          </section>
+            </section>
 
-          <section className="tips-section-panel">
-            <div className="tips-section-heading">
-              <h2>Пока мало истории</h2>
-              <p>Нужно еще несколько отметок, чтобы советы стали точнее</p>
-            </div>
-            <div className="tips-card-list">
-              {dataItems.length > 0 ? (
-                dataItems.map((item) => (
-                  <RecommendationCard
-                    ctaLabel={item.ctaLabel}
-                    habitTitle={item.habitTitle}
-                    key={item.id}
-                    reason={item.reason}
-                    advice={item.advice}
-                    tone={item.tone}
-                    onAction={() => handleAdviceAction(item)}
-                  />
-                ))
-              ) : (
-                <TipsEmptyState>
-                  Истории уже хватает для первых советов. Продолжайте отмечать привычки
-                </TipsEmptyState>
-              )}
-            </div>
-          </section>
+            <aside className="tips-insight-panel" aria-label="Контекст по привычкам">
+              <div className="tips-section-heading">
+                <h2>Контекст</h2>
+                <p>Риски и точность советов без перегруза</p>
+              </div>
+              <div className="tips-stat-grid">
+                <div>
+                  <strong>{adviceItems.length}</strong>
+                  <span>советов</span>
+                </div>
+                <div>
+                  <strong>{urgentItems.length}</strong>
+                  <span>в риске</span>
+                </div>
+                <div>
+                  <strong>{dataItems.length}</strong>
+                  <span>мало истории</span>
+                </div>
+              </div>
+              <div className="tips-insight-list">
+                {insightItems.length > 0 ? (
+                  insightItems.map((item) => (
+                    <button
+                      className={`tips-insight-row tips-insight-row-${item.tone}`}
+                      key={item.id}
+                      type="button"
+                      onClick={() => handleAdviceAction(item)}
+                    >
+                      <span>{getAdviceLabel(item.tone)}</span>
+                      <strong>{item.habitTitle}</strong>
+                      <small>{item.reason}</small>
+                    </button>
+                  ))
+                ) : (
+                  <TipsEmptyState>
+                    Критичных рисков нет, истории достаточно для обычных советов
+                  </TipsEmptyState>
+                )}
+              </div>
+            </aside>
+          </div>
 
-          <section className="tips-section-panel tips-section-wide">
+          <section className="tips-section-panel tips-advice-panel">
             <div className="tips-section-heading">
-              <h2>Советы</h2>
-              <p>Спокойные подсказки по регулярности, сложности и следующему шагу</p>
+              <h2>Следующие советы</h2>
+              <p>Практичные подсказки по привычкам, регулярности и возвращению</p>
             </div>
             <div className="tips-card-list tips-card-list-wide">
-              {recommendationItems.length > 0 ? (
-                recommendationItems.map((item) => (
+              {secondaryAdviceItems.length > 0 ? (
+                secondaryAdviceItems.map((item) => (
                   <RecommendationCard
                     ctaLabel={item.ctaLabel}
                     habitTitle={item.habitTitle}
@@ -328,17 +349,18 @@ export function TipsScreen() {
                     reason={item.reason}
                     advice={item.advice}
                     tone={item.tone}
+                    metaLabel={getAdviceLabel(item.tone)}
                     onAction={() => handleAdviceAction(item)}
                   />
                 ))
               ) : (
                 <TipsEmptyState>
-                  Советов пока нет. Обновите их после нескольких отметок
+                  Пока достаточно одного главного совета. Новые появятся после отметок
                 </TipsEmptyState>
               )}
             </div>
           </section>
-        </div>
+        </>
       )}
     </section>
   );

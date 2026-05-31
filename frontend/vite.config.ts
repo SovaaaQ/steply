@@ -1,4 +1,5 @@
 import { networkInterfaces } from "node:os";
+import { resolve } from "node:path";
 
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
@@ -48,7 +49,10 @@ function formatPublicHost(host: string) {
 }
 
 export default defineConfig(({ command, mode }) => {
-  const env = loadEnv(mode, process.cwd(), "");
+  const env = {
+    ...loadEnv(mode, resolve(process.cwd(), ".."), ""),
+    ...loadEnv(mode, process.cwd(), "")
+  };
   const explicitPublicAppUrl = env.VITE_PUBLIC_APP_URL?.trim();
   const publicHost = formatPublicHost(env.STEPLY_LAN_HOST ?? "");
   const lanAddress = command === "serve" ? getPrivateLanAddress() : null;

@@ -39,7 +39,15 @@ make stop
 
 ### Телефон через QR
 
-`make start` пытается определить private LAN IPv4 хоста и печатает `phone frontend: http://<LAN-IP>:5173`. Desktop по-прежнему открывается на `http://localhost:5173`; QR на экране входа ведет на напечатанный LAN URL, а frontend на телефоне сам обращается к API на том же hostname и `VITE_API_PORT`.
+На хостинге QR на главном экране и экране входа автоматически ведет на текущий домен сайта. Обычно `VITE_PUBLIC_APP_URL` оставляют пустым. Если frontend и backend лежат на одном домене через reverse proxy, frontend будет обращаться в `/api` этого же домена.
+
+Если backend размещен отдельно, задайте полный API URL перед сборкой:
+
+```env
+VITE_API_URL=https://api.example.com/api
+```
+
+Для локального показа через телефон `make start` пытается определить private LAN IPv4 хоста и печатает `phone frontend: http://<LAN-IP>:5173`. Desktop по-прежнему открывается на `http://localhost:5173`; QR ведет на напечатанный LAN URL, а frontend на телефоне сам обращается к API на том же hostname и `VITE_API_PORT`.
 
 Если auto-detect выбрал не тот interface или не нашел Wi-Fi IP, задайте в root `.env` `STEPLY_LAN_HOST=<LAN-IP>` и выполните `make restart`. Для прямого `docker compose up --build` задайте полный `VITE_PUBLIC_APP_URL=http://<LAN-IP>:5173`. Проверка с телефона: `http://<LAN-IP>:5173` и `http://<LAN-IP>:8000/api/health`.
 
@@ -129,6 +137,30 @@ cp frontend/.env.example frontend/.env
 Шаблон: [`frontend/.env.example`](frontend/.env.example).
 
 Backend также принимает формат `postgresql://...`: приложение автоматически нормализует его к драйверу `postgresql+psycopg://...`, который используется SQLAlchemy с установленным пакетом `psycopg`.
+
+### AI-рекомендации
+
+По умолчанию советы формируются эвристически и не требуют внешних сервисов.
+Для AI-советов можно подключить BotHub через OpenAI-compatible API. Создайте
+API-ключ в BotHub и добавьте его в root `.env` для Docker или в
+`backend/.env` для запуска backend без Docker:
+
+```env
+AI_ENABLED=true
+AI_PROVIDER=bothub
+AI_DAILY_RECOMMENDATION_LIMIT=5
+BOTHUB_API_KEY=your-bothub-access-token
+BOTHUB_BASE_URL=https://openai.bothub.chat/v1
+BOTHUB_MODEL=gpt-5.4-mini
+```
+
+Для тарифа Basic это обычный расход Caps. `gpt-5.4-mini` выбран как
+достаточно качественная и сравнительно экономная модель для коротких советов.
+`AI_DAILY_RECOMMENDATION_LIMIT` ограничивает число AI-генераций в день на
+пользователя; при маленьком тарифе можно поставить `2` или `3`.
+
+Если ключ не задан, закончились caps или BotHub вернул ошибку, backend
+автоматически использует базовые эвристические советы.
 
 ## Запуск через Docker Compose
 

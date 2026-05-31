@@ -1,4 +1,5 @@
 import { Button } from "../ui/Button";
+import { cn } from "../../utils/cn";
 
 interface RecommendationCardProps {
   habitTitle: string;
@@ -6,6 +7,8 @@ interface RecommendationCardProps {
   reason: string;
   tone: "urgent" | "normal" | "data";
   ctaLabel: "Перейти к привычке" | "Отметить";
+  metaLabel?: string;
+  featured?: boolean;
   onAction: () => void;
 }
 
@@ -15,12 +18,23 @@ export function RecommendationCard({
   reason,
   tone,
   ctaLabel,
+  metaLabel,
+  featured = false,
   onAction
 }: RecommendationCardProps) {
   return (
-    <article className={`recommendation-card recommendation-card-${tone}`}>
+    <article
+      className={cn(
+        "recommendation-card",
+        `recommendation-card-${tone}`,
+        featured && "recommendation-card-featured"
+      )}
+    >
       <div className="recommendation-card-main">
-        <span className="recommendation-habit">{habitTitle}</span>
+        <div className="recommendation-card-heading">
+          <span className="recommendation-habit">{habitTitle}</span>
+          {metaLabel && <span className="recommendation-meta">{metaLabel}</span>}
+        </div>
         <p className="recommendation-advice">{advice}</p>
         <p className="recommendation-reason">
           <strong>Причина:</strong> {reason}

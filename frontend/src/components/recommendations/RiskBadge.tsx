@@ -23,23 +23,9 @@ export function RiskBadge({ level, prediction, stats }: RiskBadgeProps) {
     }
 
     const displayLevel = getRiskLevel(prediction);
-    return (
-      <Badge
-        className={displayLevel === "high" ? "sketch-circle risk-sketch-badge" : undefined}
-        tone={riskTone[displayLevel]}
-      >
-        {formatRiskDisplay(prediction, stats)}
-      </Badge>
-    );
+    return <Badge tone={riskTone[displayLevel]}>{formatRiskDisplay(prediction, stats)}</Badge>;
   }
 
   const fallbackLevel = level ?? "low";
-  return (
-    <Badge
-      className={fallbackLevel === "high" ? "sketch-circle risk-sketch-badge" : undefined}
-      tone={riskTone[fallbackLevel]}
-    >
-      {riskLabels[fallbackLevel]} риск
-    </Badge>
-  );
+  return <Badge tone={riskTone[fallbackLevel]}>{riskLabels[fallbackLevel]} риск</Badge>;
 }

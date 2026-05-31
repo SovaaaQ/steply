@@ -12,6 +12,13 @@ interface QrSvgData {
   size: number;
 }
 
+interface AuthQrCardProps {
+  variant?: "auth" | "demo";
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+}
+
 const QR_CONFIGS: QrConfig[] = [
   { version: 1, dataCodewords: 19, eccCodewords: 7, alignment: [] },
   { version: 2, dataCodewords: 34, eccCodewords: 10, alignment: [6, 18] },
@@ -357,10 +364,24 @@ function copyTextFallback(value: string) {
   return copied;
 }
 
-export function AuthQrCard() {
+export function AuthQrCard({
+  variant = "auth",
+  eyebrow,
+  title,
+  description
+}: AuthQrCardProps = {}) {
   const [appUrl, setAppUrl] = useState<string | null>(null);
   const [qr, setQr] = useState<QrSvgData | null>(null);
   const [copyStatus, setCopyStatus] = useState("");
+  const isDemo = variant === "demo";
+  const cardClassName = `auth-qr-card${isDemo ? " auth-qr-card-demo" : ""}`;
+  const resolvedEyebrow = eyebrow ?? (isDemo ? "Демо-доступ" : "");
+  const resolvedTitle = title ?? (isDemo ? "QR для комиссии" : "Откройте на телефоне");
+  const resolvedDescription =
+    description ??
+    (isDemo
+      ? "Сканируйте, чтобы открыть Steply на телефоне и протестировать приложение самостоятельно."
+      : "Сканируйте QR-код");
 
   useEffect(() => {
     const candidates = getQrCandidates();
@@ -382,10 +403,11 @@ export function AuthQrCard() {
     return (
       <aside className="auth-qr-card auth-qr-card-hint" aria-label="Открытие Steply на телефоне">
         <div className="auth-qr-copy">
-          <strong>Телефон не откроет localhost</strong>
+          {resolvedEyebrow && <span className="auth-qr-eyebrow">{resolvedEyebrow}</span>}
+          <strong>QR появится на публичном адресе</strong>
           <span>
-            Запустите <code>make start</code> для автоопределения LAN-адреса или задайте
-            <code>VITE_PUBLIC_APP_URL=http://IP:5173</code>.
+            На хостинге он возьмет текущий домен сайта. Для локального показа задайте
+            <code>VITE_PUBLIC_APP_URL=http://IP:5173</code> в root <code>.env</code>.
           </span>
         </div>
       </aside>
@@ -410,7 +432,7 @@ export function AuthQrCard() {
   }
 
   return (
-    <aside className="auth-qr-card" aria-label="QR-код для открытия Steply на телефоне">
+    <aside className={cardClassName} aria-label="QR-код для открытия Steply на телефоне">
       <div className="auth-qr-code" aria-hidden="true">
         {qr ? (
           <svg viewBox={`-4 -4 ${qr.size + 8} ${qr.size + 8}`} role="img">
@@ -422,8 +444,9 @@ export function AuthQrCard() {
         )}
       </div>
       <div className="auth-qr-copy">
-        <strong>Откройте на телефоне</strong>
-        <span>Сканируйте QR-код</span>
+        {resolvedEyebrow && <span className="auth-qr-eyebrow">{resolvedEyebrow}</span>}
+        <strong>{resolvedTitle}</strong>
+        <span>{resolvedDescription}</span>
         <a className="auth-qr-link" href={appUrl}>
           {appUrl}
         </a>

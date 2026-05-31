@@ -26,6 +26,13 @@ class Settings(BaseSettings):
         r"192\.168(?:\.[0-9]+)+|172\.(?:1[6-9]|2[0-9]|3[01])"
         r"(?:\.[0-9]+)+)(?::[0-9]+)?$"
     )
+    ai_enabled: bool = False
+    ai_provider: str = "bothub"
+    ai_request_timeout_seconds: float = 12.0
+    ai_daily_recommendation_limit: int = 5
+    bothub_api_key: str = ""
+    bothub_base_url: str = "https://openai.bothub.chat/v1"
+    bothub_model: str = "gpt-5.4-mini"
 
     model_config = SettingsConfigDict(
         env_file=".env",

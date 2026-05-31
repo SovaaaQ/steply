@@ -1,13 +1,61 @@
-from datetime import date
+from datetime import date, datetime, time
 from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Habit, Prediction, Recommendation, User
+from app.core.config import get_settings
 from app.core.gamification_rules import getRecoveryTask
 from app.services.analytics import calculate_habit_stats
+from app.services.ai_recommendations import generate_ai_recommendation
 from app.services.predictive import create_prediction
+
+
+def _day_start(today: date) -> datetime:
+    return datetime.combine(today, time.min)
+
+
+def _has_fresh_recommendation(recommendation: Recommendation, today: date) -> bool:
+    return recommendation.created_at.date() == today
+
+
+def _is_ai_worthwhile(rec_type: str, prediction: Prediction) -> bool:
+    features = prediction.features or {}
+    total_entries = int(features.get("total_entries") or 0)
+    if total_entries < 3:
+        return False
+
+    consecutive_missed = int(features.get("consecutive_missed") or 0)
+    recent_miss_rate = float(features.get("recent_miss_rate") or 0)
+    return (
+        prediction.risk_level in {"medium", "high"}
+        or rec_type
+        in {
+            "recovery_mode",
+            "reduce_difficulty",
+            "soft_reminder",
+            "restore_regular_activity",
+        }
+        or consecutive_missed > 0
+        or recent_miss_rate >= 0.2
+    )
+
+
+def _daily_ai_budget_available(db: Session, user: User, today: date) -> bool:
+    limit = max(0, get_settings().ai_daily_recommendation_limit)
+    if limit == 0:
+        return False
+
+    created_today = list(
+        db.scalars(
+            select(Recommendation).where(
+                Recommendation.user_id == user.id,
+                Recommendation.created_at >= _day_start(today),
+            )
+        )
+    )
+    return len(created_today) < limit
 
 
 def _build_recommendation_text(habit: Habit, prediction: Prediction) -> tuple[str, str, str, str]:
@@ -101,21 +149,46 @@ def _upsert_recommendation(
     user: User,
     habit: Habit,
     prediction: Prediction,
+    today: date,
 ) -> Recommendation:
     rec_type, title, message, priority = _build_recommendation_text(habit, prediction)
+
     existing = db.scalar(
         select(Recommendation).where(
             Recommendation.user_id == user.id,
             Recommendation.habit_id == habit.id,
-            Recommendation.type == rec_type,
-            Recommendation.is_read.is_(False),
-        )
+        ).order_by(Recommendation.created_at.desc())
     )
+
+    if existing and _has_fresh_recommendation(existing, today):
+        return existing
+
+    should_use_ai = _is_ai_worthwhile(rec_type, prediction) and _daily_ai_budget_available(
+        db,
+        user,
+        today,
+    )
+    if should_use_ai:
+        ai_draft = generate_ai_recommendation(
+            habit=habit,
+            prediction=prediction,
+            today=today,
+            base_type=rec_type,
+            base_title=title,
+            base_message=message,
+        )
+        if ai_draft:
+            title = ai_draft.title
+            message = ai_draft.message
+
     if existing:
         existing.prediction_id = prediction.id
+        existing.type = rec_type
         existing.title = title
         existing.message = message
         existing.priority = priority
+        existing.is_read = False
+        existing.created_at = datetime.utcnow()
         db.commit()
         db.refresh(existing)
         return existing
@@ -152,5 +225,5 @@ def generate_recommendations(
     for habit in habits:
         _ = calculate_habit_stats(db, habit, today)
         prediction = create_prediction(db, user, habit, today)
-        recommendations.append(_upsert_recommendation(db, user, habit, prediction))
+        recommendations.append(_upsert_recommendation(db, user, habit, prediction, today))
     return recommendations

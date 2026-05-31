@@ -275,10 +275,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         })
       );
 
-      let recommendationsData = initialRecommendations;
-      if (active.length > 0) {
-        recommendationsData = await recommendationsApi.generate().catch(() => initialRecommendations);
-      }
       const gamificationData = await gamificationApi.summary();
 
       setUser(currentUser);
@@ -287,7 +283,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPredictions(Object.fromEntries(predictionPairs) as Record<number, Prediction>);
       setHabitStats(Object.fromEntries(statsPairs) as Record<number, HabitStats>);
       setHabitEntries(entriesByHabit);
-      setRecommendations(recommendationsData);
+      setRecommendations(initialRecommendations);
       setGamification(gamificationData);
       setIsOnboardingOpen(
         (isOpen) => isOpen || getOnboardingStatus(currentUser.id) === "pending"
