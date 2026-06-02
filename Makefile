@@ -1,4 +1,4 @@
-.PHONY: start stop restart logs clean clean-volumes
+.PHONY: start stop restart logs migrate migrate-prod clean clean-volumes
 
 start:
 	./scripts/start.sh
@@ -12,6 +12,12 @@ restart:
 
 logs:
 	docker compose logs -f --tail=200
+
+migrate:
+	./scripts/migrate.sh
+
+migrate-prod:
+	COMPOSE_FILE=docker-compose.prod.yml COMPOSE_ENV_FILE=$${COMPOSE_ENV_FILE:-.env.production} ./scripts/migrate.sh
 
 clean:
 	docker compose down --remove-orphans

@@ -1,19 +1,19 @@
-from datetime import date, datetime, time
+from datetime import date, datetime
 from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Habit, Prediction, Recommendation, User
 from app.core.config import get_settings
 from app.core.gamification_rules import getRecoveryTask
-from app.services.analytics import calculate_habit_stats
+from app.core.time import utc_now, utc_start_of_day
+from app.models import Habit, Prediction, Recommendation, User
 from app.services.ai_recommendations import generate_ai_recommendation
 from app.services.predictive import create_prediction
 
 
 def _day_start(today: date) -> datetime:
-    return datetime.combine(today, time.min)
+    return utc_start_of_day(today)
 
 
 def _has_fresh_recommendation(recommendation: Recommendation, today: date) -> bool:
@@ -188,8 +188,8 @@ def _upsert_recommendation(
         existing.message = message
         existing.priority = priority
         existing.is_read = False
-        existing.created_at = datetime.utcnow()
-        db.commit()
+        existing.created_at = utc_now()
+        db.flush()
         db.refresh(existing)
         return existing
 
@@ -203,7 +203,7 @@ def _upsert_recommendation(
         priority=priority,
     )
     db.add(recommendation)
-    db.commit()
+    db.flush()
     db.refresh(recommendation)
     return recommendation
 
@@ -223,7 +223,6 @@ def generate_recommendations(
     )
     recommendations: list[Recommendation] = []
     for habit in habits:
-        _ = calculate_habit_stats(db, habit, today)
         prediction = create_prediction(db, user, habit, today)
         recommendations.append(_upsert_recommendation(db, user, habit, prediction, today))
     return recommendations

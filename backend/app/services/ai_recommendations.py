@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import socket
 import urllib.error
 import urllib.request
@@ -10,6 +11,9 @@ from typing import Any, Optional
 
 from app.core.config import get_settings
 from app.models import Habit, Prediction
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -239,4 +243,5 @@ def _generate_bothub_recommendation(context: dict[str, Any]) -> Optional[AIRecom
         urllib.error.HTTPError,
         socket.timeout,
     ):
+        logger.warning("AI recommendation provider failed; using heuristic fallback", exc_info=True)
         return None

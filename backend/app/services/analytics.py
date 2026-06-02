@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date, timedelta
 from typing import Optional
 
@@ -68,19 +69,26 @@ def get_entries_for_habit(db: Session, habit_id: int, user_id: int) -> list[Habi
     )
 
 
-def calculate_habit_stats(
-    db: Session,
+def group_entries_by_habit(entries: list[HabitEntry]) -> dict[int, list[HabitEntry]]:
+    grouped: dict[int, list[HabitEntry]] = defaultdict(list)
+    for entry in entries:
+        grouped[entry.habit_id].append(entry)
+    return dict(grouped)
+
+
+def calculate_habit_stats_from_entries(
     habit: Habit,
+    entries: list[HabitEntry],
     today: Optional[date] = None,
 ) -> HabitStats:
     today = today or date.today()
-    entries = get_entries_for_habit(db, habit.id, habit.user_id)
-    completed_count = sum(1 for entry in entries if entry.status in COMPLETION_STATUSES)
-    missed_count = sum(1 for entry in entries if entry.status == "missed")
-    total_entries = len(entries)
+    sorted_entries = sorted(entries, key=lambda item: item.entry_date)
+    completed_count = sum(1 for entry in sorted_entries if entry.status in COMPLETION_STATUSES)
+    missed_count = sum(1 for entry in sorted_entries if entry.status == "missed")
+    total_entries = len(sorted_entries)
     completion_rate = completed_count / total_entries if total_entries else 0.0
     recent_start = today - timedelta(days=6)
-    recent_entries = [entry for entry in entries if entry.entry_date >= recent_start]
+    recent_entries = [entry for entry in sorted_entries if entry.entry_date >= recent_start]
     completed_last_7_days = sum(
         1 for entry in recent_entries if entry.status in COMPLETION_STATUSES
     )
@@ -88,13 +96,13 @@ def calculate_habit_stats(
     completion_rate_last_7 = (
         completed_last_7_days / len(recent_entries) if recent_entries else 0.0
     )
-    consecutive_missed = _calculate_consecutive_missed(entries)
-    current_streak, longest_streak = _calculate_streaks(entries)
+    consecutive_missed = _calculate_consecutive_missed(sorted_entries)
+    current_streak, longest_streak = _calculate_streaks(sorted_entries)
 
     last_completed = next(
         (
             entry.entry_date
-            for entry in reversed(entries)
+            for entry in reversed(sorted_entries)
             if entry.status in COMPLETION_STATUSES
         ),
         None,
@@ -105,7 +113,9 @@ def calculate_habit_stats(
 
     weekday_success_rates: dict[str, float] = {}
     for weekday, label in WEEKDAY_LABELS.items():
-        weekday_entries = [entry for entry in entries if entry.entry_date.weekday() == weekday]
+        weekday_entries = [
+            entry for entry in sorted_entries if entry.entry_date.weekday() == weekday
+        ]
         if not weekday_entries:
             weekday_success_rates[label] = 0.0
             continue
@@ -138,15 +148,24 @@ def calculate_habit_stats(
     )
 
 
-def calculate_user_activity_summary(
+def calculate_habit_stats(
     db: Session,
+    habit: Habit,
+    today: Optional[date] = None,
+) -> HabitStats:
+    today = today or date.today()
+    entries = get_entries_for_habit(db, habit.id, habit.user_id)
+    return calculate_habit_stats_from_entries(habit, entries, today)
+
+
+def calculate_user_activity_summary_from_entries(
     user: User,
+    habits: list[Habit],
+    entries: list[HabitEntry],
     today: Optional[date] = None,
 ) -> UserActivitySummary:
     today = today or date.today()
-    habits = list(db.scalars(select(Habit).where(Habit.user_id == user.id)))
     active_habits = [habit for habit in habits if habit.is_active]
-    entries = list(db.scalars(select(HabitEntry).where(HabitEntry.user_id == user.id)))
     completed_count = sum(1 for entry in entries if entry.status in COMPLETION_STATUSES)
     missed_count = sum(1 for entry in entries if entry.status == "missed")
     entries_last_7_days = [
@@ -168,7 +187,11 @@ def calculate_user_activity_summary(
     total_entries = len(entries)
     completion_rate = completed_count / total_entries if total_entries else 0.0
 
-    habit_stats = [calculate_habit_stats(db, habit, today) for habit in active_habits]
+    entries_by_habit = group_entries_by_habit(entries)
+    habit_stats = [
+        calculate_habit_stats_from_entries(habit, entries_by_habit.get(habit.id, []), today)
+        for habit in active_habits
+    ]
     current_streak = max((stats.current_streak for stats in habit_stats), default=0)
     longest_streak = max((stats.longest_streak for stats in habit_stats), default=0)
     average_current_streak = (
@@ -209,3 +232,14 @@ def calculate_user_activity_summary(
         recovery_mode=missed_last_7_days >= 3
         or any(stats.recovery_mode for stats in habit_stats),
     )
+
+
+def calculate_user_activity_summary(
+    db: Session,
+    user: User,
+    today: Optional[date] = None,
+) -> UserActivitySummary:
+    today = today or date.today()
+    habits = list(db.scalars(select(Habit).where(Habit.user_id == user.id)))
+    entries = list(db.scalars(select(HabitEntry).where(HabitEntry.user_id == user.id)))
+    return calculate_user_activity_summary_from_entries(user, habits, entries, today)

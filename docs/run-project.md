@@ -196,6 +196,11 @@ curl http://localhost:8000/api/health
 curl -I http://localhost:5173
 ```
 
+Frontend при загрузке главного состояния сначала вызывает `POST /api/day/sync`,
+а затем read-only `GET /api/dashboard`. Если вы проверяете API вручную после
+смены даты, сначала выполните sync, чтобы auto-missed записи и геймификация
+были актуальны.
+
 Остановка без удаления данных:
 
 ```bash
@@ -251,6 +256,8 @@ alembic upgrade head
 | `AUTO_INIT_DB` | Startup migration + seed | `true` |
 | `SECRET_KEY` | JWT signing key | dev placeholder |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | TTL access token | `10080` |
+| `UVICORN_WORKERS` | Количество backend worker processes в Docker | `1` |
+| `FORWARDED_ALLOW_IPS` | Доверенные proxy IP для forwarded headers | `*` |
 | `BACKEND_CORS_ORIGINS` | Разрешенные browser origins | localhost frontend |
 | `BACKEND_CORS_ORIGIN_REGEX` | Local/private LAN browser origins | localhost + private IPv4 LAN |
 | `BACKEND_PORT` | Host port API | `8000` |
@@ -261,6 +268,12 @@ alembic upgrade head
 | `VITE_API_URL` | Опциональный полный API URL override | empty |
 
 В compose hostname БД для backend равен имени сервиса `postgres`. Если изменили `VITE_PUBLIC_APP_URL`, `VITE_API_PORT` или `VITE_API_URL`, пересоберите frontend image: `docker compose up --build -d frontend`.
+
+Non-local окружения валидируются backend на старте. Если `ENVIRONMENT` не равен
+`local`, задайте длинный случайный `SECRET_KEY`, `AUTO_INIT_DB=false`, точные
+origins в `BACKEND_CORS_ORIGINS` и пустой `BACKEND_CORS_ORIGIN_REGEX`.
+Production checklist с TLS, reverse proxy, миграциями и backup находится в
+[`docs/hosting.md`](hosting.md).
 
 ### Backend `.env`
 

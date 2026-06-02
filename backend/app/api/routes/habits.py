@@ -82,11 +82,8 @@ def _build_entry_meta(
 @router.get("", response_model=list[HabitRead])
 def list_habits(
     db: Session = Depends(get_db),
-    client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> list[Habit]:
-    if ensure_auto_missed_entries(db, current_user, client_today):
-        db.commit()
     habit_rows = db.scalars(
         select(Habit)
         .where(Habit.user_id == current_user.id)
@@ -228,12 +225,9 @@ def list_habit_entries(
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
     db: Session = Depends(get_db),
-    client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> list[HabitEntry]:
     habit = _get_user_habit(db, current_user, habit_id)
-    if ensure_auto_missed_entries(db, current_user, client_today, habit=habit):
-        db.commit()
     query = select(HabitEntry).where(
         HabitEntry.habit_id == habit.id,
         HabitEntry.user_id == current_user.id,

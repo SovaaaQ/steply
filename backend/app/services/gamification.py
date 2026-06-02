@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any, Optional
 
 from sqlalchemy import func, select
@@ -17,6 +17,7 @@ from app.core.gamification_rules import (
     get_level_state,
     shouldActivateRecoveryMode,
 )
+from app.core.time import utc_now, utc_start_of_day
 from app.models import (
     Achievement,
     Habit,
@@ -322,15 +323,33 @@ def refresh_user_gamification(
     return build_gamification_summary(db, user, profile, metrics, metrics_today)
 
 
+def read_user_gamification_summary(
+    db: Session,
+    user: User,
+    *,
+    today: Optional[date] = None,
+) -> dict[str, Any]:
+    profile = db.get(UserGamificationProfile, user.id)
+    if profile is None:
+        profile = UserGamificationProfile(
+            user_id=user.id,
+            total_xp=user.experience_points,
+            level=user.level,
+        )
+    metrics_today = today or date.today()
+    metrics = collect_gamification_metrics(db, user, today=metrics_today)
+    return build_gamification_summary(db, user, profile, metrics, metrics_today)
+
+
 def collect_gamification_metrics(
     db: Session,
     user: User,
     today: Optional[date] = None,
     now: Optional[datetime] = None,
 ) -> dict[str, Any]:
-    now = now or datetime.now()
+    now = now or utc_now()
     today = today or now.date()
-    schedule_now = now if now.date() == today else datetime.combine(today, time.min)
+    schedule_now = now if now.date() == today else utc_start_of_day(today)
     week_start = today - timedelta(days=today.weekday())
     recent_start = today - timedelta(days=6)
     habits = list(db.scalars(select(Habit).where(Habit.user_id == user.id)))
@@ -364,7 +383,7 @@ def collect_gamification_metrics(
             select(func.count(RewardEvent.id)).where(
                 RewardEvent.user_id == user.id,
                 RewardEvent.event_type == "recommendation_read",
-                RewardEvent.created_at >= datetime.combine(week_start, time.min),
+                RewardEvent.created_at >= utc_start_of_day(week_start),
             )
         )
         or 0
@@ -523,7 +542,7 @@ def sync_achievements(
             .order_by(Achievement.sort_order)
         )
     )
-    now = datetime.utcnow()
+    now = utc_now()
     for achievement in achievements:
         progress = min(int(metrics.get(achievement.metric, 0) or 0), achievement.target)
         user_achievement = db.scalar(
@@ -578,7 +597,7 @@ def sync_goals(
             .order_by(Goal.sort_order)
         )
     )
-    now = datetime.utcnow()
+    now = utc_now()
     for goal in goals:
         if goal.active_when == "recovery_mode" and not metrics["recovery_mode"]:
             continue

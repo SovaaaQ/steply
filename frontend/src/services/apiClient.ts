@@ -68,6 +68,9 @@ function normalizeApiError(detail: unknown): string {
   if (detail === "Incorrect email or password") {
     return "Неверный email или пароль";
   }
+  if (detail === "Too many authentication attempts. Try again later") {
+    return "Слишком много попыток входа. Попробуйте позже";
+  }
   if (detail === "Habit not found") {
     return "Привычка не найдена";
   }

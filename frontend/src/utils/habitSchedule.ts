@@ -78,8 +78,7 @@ function startOfLocalDay(date: Date): Date {
 }
 
 function parseAsUTC(isoString: string): Date {
-  // Backend stores naive UTC datetimes without 'Z'. Force UTC interpretation so that
-  // getFullYear/getMonth/getDate return LOCAL calendar values, not UTC calendar values.
+  // Keep compatibility with existing rows created before timezone-aware UTC timestamps.
   const hasZone = isoString.endsWith("Z") || /[+-]\d{2}:?\d{2}$/.test(isoString);
   return new Date(hasZone ? isoString : isoString + "Z");
 }

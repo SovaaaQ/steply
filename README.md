@@ -62,6 +62,12 @@ VITE_API_URL=https://api.example.com/api
 - API: REST.
 - Локальная инфраструктура: Docker Compose для PostgreSQL, backend и frontend.
 
+Основной frontend bootstrap использует явную пару запросов: `POST /api/day/sync`
+создает auto-missed записи и обновляет геймификацию, затем read-only
+`GET /api/dashboard` возвращает агрегированное состояние главного экрана. Это
+сохраняет GET-эндпоинты без побочных записей в БД и уменьшает число запросов
+при загрузке dashboard.
+
 ## Структура проекта
 
 ```text
@@ -98,10 +104,13 @@ docs/
   database-structure.md  схема БД, связи и индексы
   project-analysis.md    проектный анализ Steply
   run-project.md         подробный запуск и migration workflow
+  hosting.md             production checklist, TLS, migrations, backups
   practice-report-materials.md
 Makefile                 команды запуска, остановки, логов и cleanup
 scripts/start.sh         запуск compose, ожидание healthchecks и миграции
+scripts/migrate.sh       явный Alembic migration step для compose
 docker-compose.yml       локальный запуск PostgreSQL, backend и frontend
+docker-compose.prod.yml  production-oriented compose example
 ```
 
 ## Настройка переменных окружения
@@ -117,6 +126,28 @@ cp .env.example .env
 Шаблон: [`.env.example`](.env.example) — содержит все доступные переменные с комментариями.
 
 Обязательно задайте уникальный `SECRET_KEY` перед любым развёртыванием.
+Backend теперь валидирует non-local окружения на старте: если `ENVIRONMENT`
+не равен `local`, нужно задать длинный случайный `SECRET_KEY`, установить
+`AUTO_INIT_DB=false`, очистить `BACKEND_CORS_ORIGIN_REGEX` и указать точные
+frontend origins в `BACKEND_CORS_ORIGINS`.
+
+Минимальный production/staging-фрагмент:
+
+```env
+ENVIRONMENT=production
+AUTO_INIT_DB=false
+SECRET_KEY=replace-with-a-long-random-secret
+BACKEND_CORS_ORIGINS=https://app.example.com
+BACKEND_CORS_ORIGIN_REGEX=
+VITE_API_URL=
+VITE_PUBLIC_APP_URL=https://app.example.com
+```
+
+Для хостинга используйте [docs/hosting.md](docs/hosting.md): там описаны
+`docker-compose.prod.yml`, reverse proxy, TLS, отдельный шаг миграций, backup и
+rate limiting. Локальный `docker-compose.yml` публикует PostgreSQL и включает
+dev startup migrations, поэтому он не предназначен для production без
+изменений.
 
 Backend без Docker (отдельный процесс):
 
@@ -205,6 +236,15 @@ cd backend
 alembic upgrade head
 ```
 
+Для compose можно использовать:
+
+```bash
+make migrate
+```
+
+В production `AUTO_INIT_DB=false`, а миграции выполняются отдельным release-step
+перед запуском новой версии.
+
 Структура таблиц описана в [docs/database-structure.md](docs/database-structure.md), запуск и migration workflow – в [docs/run-project.md](docs/run-project.md).
 
 ## Запуск backend
@@ -266,29 +306,31 @@ npm run build
 
 Регистрация, вход и onboarding открывают эти пять разделов, но не считаются отдельными
 разделами приложения в демонстрационном сценарии.
+Минимальная длина пароля при регистрации — 10 символов; login дополнительно
+защищен простым rate limit по IP и email.
 
 ## Дизайн-концепция Steply
 
-Редизайн Steply уходит от стерильного минимализма к более глубокому wellness/productivity-образу: интерфейс остается спокойным и читаемым, но получает эмоциональную палитру, контрастный Plum Noir, технологичный Transformative Teal и точечные дофаминовые акценты. Такой подход делает главный экран выразительным рабочим центром, а не набором одинаковых светлых карточек.
+Редизайн Steply уходит от стерильного минимализма к более теплому wellness/productivity-образу: интерфейс остается спокойным и читаемым, но получает бумажный фон, темный графитовый текст, живой lime-акцент и понятные цвета состояний. Такой подход делает главный экран выразительным рабочим центром, а не набором одинаковых светлых карточек.
 
 Цветовая система построена вокруг правила 60/30/10:
 
-- 60%: `Cloud Dancer` (`#f4f0e8`) и теплые светлые фоны для страниц и больших спокойных зон.
-- 30%: поверхности карточек, muted teal-блоки, Icy Blue-инсайты и Plum Noir в сайдбаре.
-- 10%: `Wasabi` (`#b7ef16`) для главных CTA, прогресса и достижений; `Persimmon` (`#ff6b3d`) для риска, пропусков и восстановления.
+- 60%: `paper` (`#f4f5ee`) и светлые поверхности для страниц и больших спокойных зон.
+- 30%: белые/soft поверхности, графитовые панели и приглушенные информационные блоки.
+- 10%: `lime` (`#c7f128`) для главных CTA и прогресса; `amber`/`red` для восстановления, риска и пропусков.
 
 Основные цвета и UX-роли:
 
-- `Cloud Dancer` – общий фон приложения и спокойная база.
-- `Plum Noir` – основной текст, заголовки, desktop sidebar и контрастные секции.
-- `Transformative Teal` – бренд, активная навигация, прогресс и аналитические акценты.
-- `Wasabi` – главные CTA, позитивный прогресс, серия и достижения.
-- `Persimmon` – высокий риск, предупреждения, пропуски и режим восстановления.
-- `Icy Blue` – рекомендации, подсказки и информационные аналитические блоки.
+- `paper` – общий фон приложения и спокойная база.
+- `ink`/`graphite` – основной текст, заголовки, desktop sidebar и контрастные секции.
+- `forest` – брендовые и аналитические акценты.
+- `lime` – главные CTA, позитивный прогресс, серия и достижения.
+- `amber` – средний риск, восстановление и мягкие предупреждения.
+- `red` – высокий риск, ошибки и пропуски.
 
 Цвета централизованы в `frontend/src/styles/theme.css`, а визуальные правила компонентов – в `frontend/src/styles/globals.css`. Компоненты `Button`, `Card`, `Badge`, `ProgressBar`, `EmptyState`, состояния загрузки, ошибки и успеха используют семантические варианты, а не разрозненные hex-коды.
 
-Desktop-адаптация использует Plum Noir sidebar, sticky header, крупный hero-блок Cloud Dancer -> Transformative Teal, сетку метрик и отдельную колонку инсайтов. Mobile-адаптация не является сжатой desktop-версией: используется компактный header, нижняя навигация, одноколоночная структура, крупные CTA и карточки с уменьшенной высотой на ширинах 390-430px.
+Desktop-адаптация использует темный sidebar, sticky header, крупные summary-блоки, сетку метрик и отдельную колонку инсайтов. Mobile-адаптация не является сжатой desktop-версией: используется компактный header, нижняя навигация, одноколоночная структура, крупные CTA и карточки с уменьшенной высотой на ширинах 390-430px.
 
 ## Desktop и mobile версия
 

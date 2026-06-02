@@ -17,7 +17,7 @@ from app.schemas import (
     RewardEventRead,
     XPHistoryRead,
 )
-from app.services.gamification import refresh_user_gamification
+from app.services.gamification import read_user_gamification_summary, refresh_user_gamification
 from app.services.habit_entries import ensure_auto_missed_entries
 
 router = APIRouter(prefix="/gamification", tags=["gamification"])
@@ -29,10 +29,7 @@ def get_gamification_summary(
     client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> dict:
-    ensure_auto_missed_entries(db, current_user, client_today)
-    summary = refresh_user_gamification(db, current_user, today=client_today)
-    db.commit()
-    return summary
+    return read_user_gamification_summary(db, current_user, today=client_today)
 
 
 @router.get("/achievements", response_model=list[GamificationAchievementRead])
@@ -41,9 +38,7 @@ def get_achievements(
     client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> list[dict]:
-    ensure_auto_missed_entries(db, current_user, client_today)
-    summary = refresh_user_gamification(db, current_user, today=client_today)
-    db.commit()
+    summary = read_user_gamification_summary(db, current_user, today=client_today)
     return summary["achievements"]
 
 
@@ -53,9 +48,7 @@ def get_goals(
     client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> list[dict]:
-    ensure_auto_missed_entries(db, current_user, client_today)
-    summary = refresh_user_gamification(db, current_user, today=client_today)
-    db.commit()
+    summary = read_user_gamification_summary(db, current_user, today=client_today)
     return summary["goals"]
 
 
@@ -65,9 +58,7 @@ def get_reward_events(
     client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> list[dict]:
-    ensure_auto_missed_entries(db, current_user, client_today)
-    summary = refresh_user_gamification(db, current_user, today=client_today)
-    db.commit()
+    summary = read_user_gamification_summary(db, current_user, today=client_today)
     return summary["recent_events"]
 
 

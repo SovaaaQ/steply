@@ -8,6 +8,15 @@ from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+DEFAULT_BACKEND_CORS_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+DEFAULT_BACKEND_CORS_ORIGIN_REGEX = (
+    r"^https?://(?:localhost|127\.0\.0\.1|10(?:\.[0-9]+)+|"
+    r"192\.168(?:\.[0-9]+)+|172\.(?:1[6-9]|2[0-9]|3[01])"
+    r"(?:\.[0-9]+)+)(?::[0-9]+)?$"
+)
+DEFAULT_SECRET_KEY_PREFIX = "change-this"
+
+
 class Settings(BaseSettings):
     app_name: str = "Steply"
     environment: str = "local"
@@ -20,12 +29,8 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     database_url: Optional[str] = None
-    backend_cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
-    backend_cors_origin_regex: str = (
-        r"^https?://(?:localhost|127\.0\.0\.1|10(?:\.[0-9]+)+|"
-        r"192\.168(?:\.[0-9]+)+|172\.(?:1[6-9]|2[0-9]|3[01])"
-        r"(?:\.[0-9]+)+)(?::[0-9]+)?$"
-    )
+    backend_cors_origins: str = DEFAULT_BACKEND_CORS_ORIGINS
+    backend_cors_origin_regex: str = DEFAULT_BACKEND_CORS_ORIGIN_REGEX
     ai_enabled: bool = False
     ai_provider: str = "bothub"
     ai_request_timeout_seconds: float = 12.0
@@ -49,6 +54,11 @@ class Settings(BaseSettings):
                 return [str(item).strip() for item in parsed if str(item).strip()]
         return [item.strip() for item in value.split(",") if item.strip()]
 
+    @property
+    def cors_origin_regex(self) -> Optional[str]:
+        value = self.backend_cors_origin_regex.strip()
+        return value or None
+
     @model_validator(mode="after")
     def build_database_url(self) -> "Settings":
         if not self.database_url:
@@ -62,6 +72,27 @@ class Settings(BaseSettings):
                 "postgresql+psycopg://",
                 1,
             )
+        return self
+
+    @model_validator(mode="after")
+    def validate_production_settings(self) -> "Settings":
+        if self.environment.strip().lower() == "local":
+            return self
+
+        if self.secret_key.strip().startswith(DEFAULT_SECRET_KEY_PREFIX):
+            raise ValueError("SECRET_KEY must be set outside local environment")
+
+        if self.cors_origin_regex:
+            raise ValueError("Use explicit CORS origins outside local environment")
+
+        if self.auto_init_db:
+            raise ValueError("AUTO_INIT_DB must be false outside local environment")
+
+        if not self.cors_origins or self.backend_cors_origins.strip() == DEFAULT_BACKEND_CORS_ORIGINS:
+            raise ValueError(
+                "Explicit BACKEND_CORS_ORIGINS are required outside local environment",
+            )
+
         return self
 
 

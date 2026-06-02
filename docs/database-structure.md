@@ -7,6 +7,7 @@
 - Подключение настраивается в `backend/app/db/session.py` через `DATABASE_URL` или переменные `POSTGRES_*`.
 - Схема описана ORM-моделями в `backend/app/models/`.
 - Схема создается миграциями Alembic. Initial revision: `202605210001` в `backend/alembic/versions/`.
+- Timestamp-поля хранятся как timezone-aware UTC (`timestamp with time zone`).
 - При `AUTO_INIT_DB=true` backend на старте выполняет `alembic upgrade head` через `init_db()` и затем idempotent seed справочников `achievements`/`goals`.
 - Для legacy dev-баз, созданных до Alembic, `init_db()` распознает полный старый набор таблиц без `alembic_version`, добавляет только известные legacy-колонки, применяет безопасное переименование gamification-целей и затем фиксирует актуальную Alembic-ревизию. Неполная старая схема останавливает startup вместо молчаливого создания смеси таблиц.
 - Сессии БД выдаются dependency `get_db()`; текущий пользователь загружается в `backend/app/api/deps.py`.

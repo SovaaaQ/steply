@@ -11,10 +11,11 @@ import {
 
 import { authApi } from "../services/authApi";
 import { clearToken, getStoredToken, storeToken } from "../services/apiClient";
+import { dashboardApi } from "../services/dashboardApi";
+import { dayApi } from "../services/dayApi";
 import { gamificationApi } from "../services/gamificationApi";
 import { habitsApi } from "../services/habitsApi";
 import { recommendationsApi } from "../services/recommendationsApi";
-import { statisticsApi } from "../services/statisticsApi";
 import type { AuthResponse, PetType, User } from "../types/auth";
 import type { EntryStatus, Habit, HabitEntry, HabitFormState } from "../types/habit";
 import type { Prediction, Recommendation } from "../types/recommendation";
@@ -23,7 +24,7 @@ import type { GamificationSummary, RewardPreview } from "../types/gamification";
 import type { AppSection } from "../types/navigation";
 import { formatLocalDate } from "../utils/formatDate";
 import { buildHabitPayload, defaultHabitForm, weekdayKeys } from "../utils/habitForm";
-import { getHabitScheduleAvailability, getNextScheduledOccurrence } from "../utils/habitSchedule";
+import { getHabitScheduleAvailability } from "../utils/habitSchedule";
 import { emptySummary } from "../utils/risk";
 
 const emptyGamificationSummary: GamificationSummary = {
@@ -148,6 +149,17 @@ interface AppDataContextValue {
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
 
+interface AuthDataContextValue {
+  token: string | null;
+  user: User | null;
+  handleAuth: (response: AuthResponse, options?: { isNewRegistration?: boolean }) => void;
+  login: (payload: { email: string; password: string }) => Promise<AuthResponse>;
+  register: (payload: { email: string; full_name: string; password: string }) => Promise<AuthResponse>;
+  logout: () => void;
+}
+
+const AuthDataContext = createContext<AuthDataContextValue | null>(null);
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(getStoredToken());
   const [activeSection, setActiveSection] = useState<AppSection>("dashboard");
@@ -222,9 +234,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           );
         })
         .sort((left, right) => {
-        const weights: Record<string, number> = { high: 3, normal: 2, low: 1 };
-        return (weights[right.priority] ?? 0) - (weights[left.priority] ?? 0);
-      })[0],
+          const weights: Record<string, number> = { high: 3, normal: 2, low: 1 };
+          return (weights[right.priority] ?? 0) - (weights[left.priority] ?? 0);
+        })[0],
     [habitEntries, recommendations, todayISO]
   );
 
@@ -240,53 +252,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError("");
     try {
-      const [currentUser, habitsData, summaryData] = await Promise.all([
-        authApi.me(),
-        habitsApi.list(),
-        statisticsApi.summary()
-      ]);
+      await dayApi.sync();
+      const dashboardData = await dashboardApi.get();
 
-      const active = habitsData.filter((habit) => habit.is_active);
-      const dashboardNow = new Date();
-      const dashboardTodayISO = formatLocalDate(dashboardNow);
-      const [statsPairs, entryPairs, initialRecommendations] = await Promise.all([
-        Promise.all(
-          active.map(async (habit) => [habit.id, await statisticsApi.habitStats(habit.id)] as const)
-        ),
-        Promise.all(active.map(async (habit) => [habit.id, await habitsApi.entries(habit.id)] as const)),
-        recommendationsApi.list()
-      ]);
-      const entriesByHabit = Object.fromEntries(entryPairs) as Record<number, HabitEntry[]>;
-      const predictionPairs = await Promise.all(
-        active.map(async (habit) => {
-          const isCompletedToday = entriesByHabit[habit.id]?.some(
-            (entry) =>
-              entry.entry_date === dashboardTodayISO &&
-              (entry.status === "completed" || entry.status === "recovery_completed")
-          );
-          const nextOccurrence = isCompletedToday
-            ? getNextScheduledOccurrence(habit, dashboardNow, 1)
-            : undefined;
-          const targetDate = nextOccurrence
-            ? formatLocalDate(nextOccurrence.date)
-            : dashboardTodayISO;
-
-          return [habit.id, await statisticsApi.prediction(habit.id, targetDate)] as const;
-        })
-      );
-
-      const gamificationData = await gamificationApi.summary();
-
-      setUser(currentUser);
-      setHabits(habitsData);
-      setSummary(summaryData);
-      setPredictions(Object.fromEntries(predictionPairs) as Record<number, Prediction>);
-      setHabitStats(Object.fromEntries(statsPairs) as Record<number, HabitStats>);
-      setHabitEntries(entriesByHabit);
-      setRecommendations(initialRecommendations);
-      setGamification(gamificationData);
+      setUser(dashboardData.user);
+      setHabits(dashboardData.habits);
+      setSummary(dashboardData.summary);
+      setPredictions(dashboardData.predictions);
+      setHabitStats(dashboardData.habit_stats);
+      setHabitEntries(dashboardData.habit_entries);
+      setRecommendations(dashboardData.recommendations);
+      setGamification(dashboardData.gamification);
       setIsOnboardingOpen(
-        (isOpen) => isOpen || getOnboardingStatus(currentUser.id) === "pending"
+        (isOpen) => isOpen || getOnboardingStatus(dashboardData.user.id) === "pending"
       );
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "Не удалось загрузить данные";
@@ -320,19 +298,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  function clearNotice() {
+  const clearNotice = useCallback(() => {
     setNotice("");
     setNoticeDetail("");
     setNoticeReward(undefined);
-  }
+  }, []);
 
-  function showNotice(message: string, detail = "", reward?: RewardPreview) {
+  const showNotice = useCallback((message: string, detail = "", reward?: RewardPreview) => {
     setNotice(message);
     setNoticeDetail(detail);
     setNoticeReward(reward);
-  }
+  }, []);
 
-  function handleAuth(response: AuthResponse, options?: { isNewRegistration?: boolean }) {
+  const handleAuth = useCallback((response: AuthResponse, options?: { isNewRegistration?: boolean }) => {
     if (options?.isNewRegistration) {
       setOnboardingStatus(response.user.id, "pending");
     }
@@ -345,9 +323,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
     showNotice("Вы в Steply", "Сегодня можно начать с ближайшей привычки");
     setActiveSection("dashboard");
-  }
+  }, [showNotice]);
 
-  function logout() {
+  const logout = useCallback(() => {
     clearToken();
     setToken(null);
     setUser(null);
@@ -361,7 +339,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setIsOnboardingOpen(false);
     clearNotice();
     setActiveSection("dashboard");
-  }
+  }, [clearNotice]);
 
   function resetHabitForm() {
     setHabitForm(defaultHabitForm);
@@ -584,6 +562,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       })[0];
   }
 
+  const authValue = useMemo<AuthDataContextValue>(
+    () => ({
+      token,
+      user,
+      handleAuth,
+      login: authApi.login,
+      register: authApi.register,
+      logout
+    }),
+    [handleAuth, logout, token, user]
+  );
+
   const value: AppDataContextValue = {
     token,
     activeSection,
@@ -631,13 +621,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getTodayEntry
   };
 
-  return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
+  return (
+    <AuthDataContext.Provider value={authValue}>
+      <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>
+    </AuthDataContext.Provider>
+  );
 }
 
 export function useAppData() {
   const context = useContext(AppDataContext);
   if (!context) {
     throw new Error("useAppData must be used inside AppProvider");
+  }
+  return context;
+}
+
+export function useAuthData() {
+  const context = useContext(AuthDataContext);
+  if (!context) {
+    throw new Error("useAuthData must be used inside AppProvider");
   }
   return context;
 }

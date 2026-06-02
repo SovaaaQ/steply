@@ -23,7 +23,7 @@ XPReason = Literal["completed_on_time", "recovery_completed"]
 class UserCreate(BaseModel):
     email: EmailStr
     full_name: str = Field(min_length=2, max_length=255)
-    password: str = Field(min_length=6, max_length=128)
+    password: str = Field(min_length=10, max_length=128)
 
 
 class UserLogin(BaseModel):
@@ -302,3 +302,19 @@ class GamificationSummaryRead(BaseModel):
     goals: list[GamificationGoalRead]
     recent_events: list[RewardEventRead]
     next_best_action: NextBestActionRead
+
+
+class DaySyncRead(BaseModel):
+    auto_missed_created: int
+    gamification: GamificationSummaryRead
+
+
+class DashboardRead(BaseModel):
+    user: UserRead
+    habits: list[HabitRead]
+    summary: UserActivitySummary
+    habit_stats: dict[int, HabitStats]
+    habit_entries: dict[int, list[HabitEntryRead]]
+    predictions: dict[int, PredictionRead]
+    recommendations: list[RecommendationRead]
+    gamification: GamificationSummaryRead

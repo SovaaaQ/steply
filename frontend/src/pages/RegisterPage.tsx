@@ -91,8 +91,8 @@ export function RegisterPage({
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              minLength={6}
-              placeholder="Минимум 6 символов"
+              minLength={10}
+              placeholder="Минимум 10 символов"
               required
             />
           </label>

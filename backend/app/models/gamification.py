@@ -19,6 +19,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.time import utc_now
 from app.db.session import Base
 
 
@@ -67,9 +68,9 @@ class UserGamificationProfile(Base):
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
         server_default=text("CURRENT_TIMESTAMP"),
         nullable=False,
     )
@@ -111,8 +112,8 @@ class Achievement(Base):
         nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+        DateTime(timezone=True),
+        default=utc_now,
         server_default=text("CURRENT_TIMESTAMP"),
         nullable=False,
     )
@@ -146,16 +147,16 @@ class UserAchievement(Base):
         nullable=False,
     )
     target: Mapped[int] = mapped_column(Integer, default=1, server_default=text("1"), nullable=False)
-    unlocked_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    unlocked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     reward_event_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("reward_events.id", ondelete="SET NULL"),
         index=True,
         nullable=True,
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
         server_default=text("CURRENT_TIMESTAMP"),
         nullable=False,
     )
@@ -205,8 +206,8 @@ class Goal(Base):
         nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+        DateTime(timezone=True),
+        default=utc_now,
         server_default=text("CURRENT_TIMESTAMP"),
         nullable=False,
     )
@@ -251,16 +252,16 @@ class UserGoalProgress(Base):
         server_default=text("'active'"),
         nullable=False,
     )
-    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     reward_event_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("reward_events.id", ondelete="SET NULL"),
         index=True,
         nullable=True,
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        DateTime(timezone=True),
+        default=utc_now,
+        onupdate=utc_now,
         server_default=text("CURRENT_TIMESTAMP"),
         nullable=False,
     )
@@ -297,8 +298,8 @@ class RewardEvent(Base):
         nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+        DateTime(timezone=True),
+        default=utc_now,
         server_default=text("CURRENT_TIMESTAMP"),
         nullable=False,
     )
@@ -338,8 +339,8 @@ class XPHistory(Base):
     xp_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     reason: Mapped[str] = mapped_column(String(40), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+        DateTime(timezone=True),
+        default=utc_now,
         server_default=text("CURRENT_TIMESTAMP"),
         nullable=False,
     )

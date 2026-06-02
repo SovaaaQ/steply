@@ -35,6 +35,23 @@ def is_habit_scheduled_on(habit: Any, target_date: date) -> bool:
     return WEEKDAY_KEYS[target_date.weekday()] in get_schedule_days(habit)
 
 
+def get_next_scheduled_date(
+    habit: Any,
+    start_date: date,
+    start_day_offset: int = 0,
+) -> Optional[date]:
+    schedule_days = get_schedule_days(habit)
+    if not schedule_days:
+        return None
+
+    for day_offset in range(start_day_offset, start_day_offset + 8):
+        target_date = start_date.fromordinal(start_date.toordinal() + day_offset)
+        if WEEKDAY_KEYS[target_date.weekday()] in schedule_days:
+            return target_date
+
+    return None
+
+
 def is_first_occurrence_deferred(habit: Any, now: datetime) -> bool:
     created_at = getattr(habit, "created_at", None)
     preferred_time = getattr(habit, "preferred_time", None)

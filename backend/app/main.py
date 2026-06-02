@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from app.api.routes import analytics, auth, gamification, habits, recommendations
+from app.api.routes import analytics, auth, dashboard, day, gamification, habits, recommendations
 from app.core.config import get_settings
 from app.db.init_db import init_db
 from app.db.session import SessionLocal
@@ -25,13 +25,15 @@ app = FastAPI(title=settings.app_name, lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_origin_regex=settings.backend_cors_origin_regex or None,
+    allow_origin_regex=settings.cors_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(auth.router, prefix="/api")
+app.include_router(day.router, prefix="/api")
+app.include_router(dashboard.router, prefix="/api")
 app.include_router(habits.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(recommendations.router, prefix="/api")

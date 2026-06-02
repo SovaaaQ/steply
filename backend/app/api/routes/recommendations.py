@@ -35,9 +35,10 @@ def generate_user_recommendations(
     client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> list[Recommendation]:
-    if ensure_auto_missed_entries(db, current_user, client_today):
-        db.commit()
-    return generate_recommendations(db, current_user, client_today)
+    ensure_auto_missed_entries(db, current_user, client_today)
+    recommendations = generate_recommendations(db, current_user, client_today)
+    db.commit()
+    return recommendations
 
 
 @router.patch("/{recommendation_id}/read", response_model=RecommendationRead)

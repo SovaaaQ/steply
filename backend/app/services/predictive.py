@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date
 from typing import Optional, Union
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.time import utc_now
 from app.models import Habit, HabitEntry, Prediction, User
+from app.schemas import HabitStats, UserActivitySummary
 from app.services.analytics import calculate_habit_stats, calculate_user_activity_summary
 
 
@@ -48,8 +50,34 @@ def calculate_risk(
     target_date = target_date or date.today()
     stats = calculate_habit_stats(db, habit, target_date)
     user_activity = calculate_user_activity_summary(db, user, target_date)
-    entries = [entry for entry in habit.entries if entry.user_id == user.id]
+    entries = list(
+        db.scalars(
+            select(HabitEntry).where(
+                HabitEntry.habit_id == habit.id,
+                HabitEntry.user_id == user.id,
+            )
+        )
+    )
+    return calculate_risk_from_stats(
+        user=user,
+        habit=habit,
+        stats=stats,
+        user_activity=user_activity,
+        entries=entries,
+        target_date=target_date,
+    )
 
+
+def calculate_risk_from_stats(
+    *,
+    user: User,
+    habit: Habit,
+    stats: HabitStats,
+    user_activity: UserActivitySummary,
+    entries: list[HabitEntry],
+    target_date: Optional[date] = None,
+) -> RiskCalculation:
+    target_date = target_date or date.today()
     completion_rate = stats.completion_rate
     recent_miss_rate = _recent_miss_rate(entries)
     history_confidence = min(stats.total_entries / 14, 1.0)
@@ -142,7 +170,7 @@ def create_prediction(
         prediction.miss_risk = calculation.miss_risk
         prediction.risk_level = calculation.risk_level
         prediction.features = calculation.features
-        prediction.created_at = datetime.utcnow()
+        prediction.created_at = utc_now()
     else:
         prediction = Prediction(
             habit_id=habit.id,
@@ -152,9 +180,9 @@ def create_prediction(
             miss_risk=calculation.miss_risk,
             risk_level=calculation.risk_level,
             features=calculation.features,
-            created_at=datetime.utcnow(),
+            created_at=utc_now(),
         )
         db.add(prediction)
-    db.commit()
+    db.flush()
     db.refresh(prediction)
     return prediction
