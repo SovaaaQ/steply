@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_client_today, get_current_user
 from app.db.session import get_db
-from app.models import Habit, HabitEntry, Recommendation, User
+from app.models import Habit, HabitEntry, User
 from app.schemas import DashboardRead, PredictionRead
 from app.services.analytics import (
     calculate_habit_stats_from_entries,
@@ -18,6 +18,7 @@ from app.services.analytics import (
 from app.services.gamification import read_user_gamification_summary
 from app.services.habit_schedule import get_next_scheduled_date
 from app.services.predictive import calculate_risk_from_stats
+from app.services.recommendations import list_current_recommendations
 
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -97,13 +98,7 @@ def get_dashboard(
         for habit_id, entries in entries_by_habit.items()
         if habit_id in active_habit_ids
     }
-    recommendations = list(
-        db.scalars(
-            select(Recommendation)
-            .where(Recommendation.user_id == current_user.id)
-            .order_by(Recommendation.is_read.asc(), Recommendation.created_at.desc())
-        )
-    )
+    recommendations = list_current_recommendations(db, current_user, active_habit_ids)
     gamification = read_user_gamification_summary(db, current_user, today=client_today)
 
     return DashboardRead(

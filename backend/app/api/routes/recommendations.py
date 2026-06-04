@@ -1,7 +1,6 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_client_today, get_current_user
@@ -10,7 +9,7 @@ from app.models import Recommendation, User
 from app.schemas import RecommendationRead
 from app.services.gamification import record_recommendation_read
 from app.services.habit_entries import ensure_auto_missed_entries
-from app.services.recommendations import generate_recommendations
+from app.services.recommendations import generate_recommendations, list_current_recommendations
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
@@ -20,13 +19,7 @@ def list_recommendations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list[Recommendation]:
-    return list(
-        db.scalars(
-            select(Recommendation)
-            .where(Recommendation.user_id == current_user.id)
-            .order_by(Recommendation.is_read.asc(), Recommendation.created_at.desc())
-        )
-    )
+    return list_current_recommendations(db, current_user)
 
 
 @router.post("/generate", response_model=list[RecommendationRead])

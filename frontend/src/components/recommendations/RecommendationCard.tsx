@@ -37,7 +37,9 @@ export function RecommendationCard({
         </div>
         <p className="recommendation-advice">{advice}</p>
         <p className="recommendation-reason">
-          <strong>Причина:</strong> {reason}
+          <strong>Причина:</strong>
+          {"\u00a0"}
+          {reason}
         </p>
       </div>
       <Button

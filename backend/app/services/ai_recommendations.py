@@ -10,7 +10,7 @@ from datetime import date
 from typing import Any, Optional
 
 from app.core.config import get_settings
-from app.models import Habit, Prediction
+from app.models import Habit, Prediction, User
 
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,8 @@ class AIRecommendationDraft:
 
 
 MAX_TITLE_CHARS = 70
-MAX_MESSAGE_CHARS = 180
+MAX_MESSAGE_CHARS = 520
+MAX_MESSAGE_WORDS = 60
 
 
 def _clean_text(value: str) -> str:
@@ -43,16 +44,31 @@ def _clip_text(value: str, max_length: int) -> str:
     return clipped.rstrip(" ,;:.!?") + "."
 
 
+def _clip_words(value: str, max_words: int) -> str:
+    text = _clean_text(value)
+    words = text.split()
+    if len(words) <= max_words:
+        return text
+    return " ".join(words[:max_words]).rstrip(" ,;:.!?") + "."
+
+
 def _compact_features(features: dict[str, Any]) -> dict[str, Any]:
     allowed_keys = {
         "total_entries",
         "completed_count",
         "missed_count",
         "completion_rate",
+        "completed_last_7_days",
+        "missed_last_7_days",
+        "completion_rate_last_7",
+        "total_last_7_days",
         "recent_miss_rate",
         "consecutive_missed",
         "current_streak",
         "longest_streak",
+        "completed_today",
+        "missed_today",
+        "latest_entry_status",
         "weekday",
         "weekday_success_rate",
         "days_since_last_completion",
@@ -66,7 +82,10 @@ def _compact_features(features: dict[str, Any]) -> dict[str, Any]:
 
 def _normalize_ai_payload(payload: dict[str, Any]) -> Optional[AIRecommendationDraft]:
     title = _clip_text(str(payload.get("title") or ""), MAX_TITLE_CHARS)
-    message = _clip_text(str(payload.get("message") or ""), MAX_MESSAGE_CHARS)
+    message = _clip_text(
+        _clip_words(str(payload.get("message") or ""), MAX_MESSAGE_WORDS),
+        MAX_MESSAGE_CHARS,
+    )
 
     if not title or not message:
         return None
@@ -81,8 +100,9 @@ def _build_context(
     base_type: str,
     base_title: str,
     base_message: str,
+    user: Optional[User] = None,
 ) -> dict[str, Any]:
-    return {
+    context: dict[str, Any] = {
         "today": today.isoformat(),
         "habit": {
             "title": habit.title,
@@ -106,6 +126,14 @@ def _build_context(
         },
     }
 
+    if user:
+        context["user"] = {
+            "pet_type": user.pet_type,
+            "pet_name": user.pet_name,
+        }
+
+    return context
+
 
 def _system_instructions() -> str:
     return (
@@ -114,13 +142,25 @@ def _system_instructions() -> str:
         "время и историю конкретной привычки. Не копируй базовый совет дословно и не "
         "возвращай один и тот же текст для разных привычек. Дай маленький, предметный "
         "шаг именно для этой привычки: что сделать, когда и как упростить при риске. "
+        "Если recommendation_type равен first_step, не оценивай риск и не проси историю: "
+        "дай стартовый совет для первого выполнения привычки сегодня. "
+        "Если тип after_completion, on_track_support, streak_maintenance или streak_support, "
+        "поддержи успешное выполнение и предложи, как закрепить ритм без повышения нагрузки. "
+        "Если тип early_recovery, miss_streak_recovery, risk_recovery, soft_recovery, "
+        "risk_ignored_recovery или reset_plan, не повторяй общие фразы про риск: предложи "
+        "снижение барьера, перенос времени, микрошаг или перезапуск условий. "
+        "Для risk_ignored_recovery и reset_plan признай, что прежний формат пока слишком тяжелый, "
+        "но без обвинений и стыда. "
+        "Если тип plan_ahead, помоги подготовить выполнение заранее до пропуска. "
         "Ответ должен звучать как короткая человеческая подсказка, не как список. "
-        "title до 4 слов, message 1-2 коротких предложения до 170 символов. "
+        "title до 4 слов, message до 60 слов. "
         "Не используй нумерацию, '1)', '2)', маркированные списки и слово 'Шаги'. "
         "Не обещай медицинский эффект, не ставь "
         "диагнозы и не назначай лечение. Если привычка связана со здоровьем, зависимостью, "
         "курением, алкоголем, питанием или лекарствами, добавь мягкую фразу о том, что при "
-        "выраженных симптомах или зависимости стоит обратиться к специалисту. Не используй "
+        "выраженных симптомах или зависимости стоит обратиться к специалисту. Не добавляй эту "
+        "фразу для обычных учебных, рабочих, бытовых или творческих привычек без явной темы "
+        "здоровья. Не используй "
         "слово 'нейросеть'. Не ругай пользователя и не усиливай чувство вины."
     )
 
@@ -179,6 +219,7 @@ def generate_ai_recommendation(
     base_type: str,
     base_title: str,
     base_message: str,
+    user: Optional[User] = None,
 ) -> Optional[AIRecommendationDraft]:
     settings = get_settings()
     provider = settings.ai_provider.lower()
@@ -192,6 +233,7 @@ def generate_ai_recommendation(
         base_type=base_type,
         base_title=base_title,
         base_message=base_message,
+        user=user,
     )
 
     if provider != "bothub":

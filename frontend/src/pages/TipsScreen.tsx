@@ -25,6 +25,76 @@ interface AdviceItem {
   recommendationId?: number;
 }
 
+const MAX_ADVICE_WORDS = 60;
+const URGENT_RECOMMENDATION_TYPES = new Set([
+  "risk_ignored_recovery",
+  "reset_plan",
+  "miss_streak_recovery",
+  "risk_recovery",
+  "recovery_mode"
+]);
+const RECOVERY_RECOMMENDATION_TYPES = new Set([
+  "risk_ignored_recovery",
+  "reset_plan",
+  "miss_streak_recovery",
+  "early_recovery",
+  "risk_recovery",
+  "soft_recovery",
+  "recovery_mode",
+  "reduce_difficulty",
+  "restore_regular_activity"
+]);
+const POSITIVE_RECOMMENDATION_TYPES = new Set([
+  "after_completion",
+  "on_track_support",
+  "streak_maintenance",
+  "streak_support",
+  "motivation",
+  "keep_regular"
+]);
+
+function normalizeAdviceText(value: string) {
+  const withoutListTail = value.split(/\s(?:Шаги|Действия)\s*:/i)[0] || value;
+  const text = withoutListTail.replace(/\s+/g, " ").trim();
+  const words = text.split(" ").filter(Boolean);
+  if (words.length <= MAX_ADVICE_WORDS) {
+    return text;
+  }
+  return `${words.slice(0, MAX_ADVICE_WORDS).join(" ").replace(/[ ,;:.!?]+$/, "")}.`;
+}
+
+function getRecommendationKey(recommendation: Recommendation) {
+  return recommendation.habit_id
+    ? `habit-${recommendation.habit_id}`
+    : `general-${recommendation.type}`;
+}
+
+function getRecommendationTimestamp(recommendation: Recommendation) {
+  return new Date(recommendation.created_at).getTime() || 0;
+}
+
+function dedupeRecommendations(recommendations: Recommendation[]) {
+  const byKey = new Map<string, Recommendation>();
+
+  recommendations.forEach((recommendation) => {
+    const key = getRecommendationKey(recommendation);
+    const current = byKey.get(key);
+    if (
+      !current ||
+      getRecommendationTimestamp(recommendation) > getRecommendationTimestamp(current)
+    ) {
+      byKey.set(key, recommendation);
+    }
+  });
+
+  return Array.from(byKey.values()).sort((left, right) => {
+    if (left.is_read !== right.is_read) {
+      return Number(left.is_read) - Number(right.is_read);
+    }
+    return getRecommendationTimestamp(right) - getRecommendationTimestamp(left);
+  });
+}
+
 function getTodayFollowUpAdvice(habit?: Habit) {
   if (!habit) {
     return "Сегодня уже отмечено. Следующий совет появится после новых отметок";
@@ -59,7 +129,10 @@ function getAdviceLabel(tone: AdviceItem["tone"]) {
 }
 
 function getRecommendationTone(recommendation: Recommendation): AdviceItem["tone"] {
-  if (recommendation.priority === "high" || recommendation.type === "recovery_mode") {
+  if (
+    recommendation.priority === "high" ||
+    URGENT_RECOMMENDATION_TYPES.has(recommendation.type)
+  ) {
     return "urgent";
   }
   if (recommendation.type === "data_collection") {
@@ -78,13 +151,23 @@ function formatMarks(count: number) {
   return `${count} отметок`;
 }
 
+function formatConsecutiveMisses(count: number) {
+  if (count === 1) {
+    return "1 пропуск подряд";
+  }
+  if (count > 1 && count < 5) {
+    return `${count} пропуска подряд`;
+  }
+  return `${count} пропусков подряд`;
+}
+
 function getRiskReason(stats: HabitStats | undefined, risk: number | undefined) {
   const parts: string[] = [];
   if (typeof risk === "number") {
     parts.push(`риск пропуска ${percent(risk)}`);
   }
   if (stats?.consecutive_missed) {
-    parts.push(`${stats.consecutive_missed} пропуска подряд`);
+    parts.push(formatConsecutiveMisses(stats.consecutive_missed));
   }
   if (typeof stats?.completion_rate_last_7 === "number") {
     parts.push(`за 7 дней выполнено ${percent(stats.completion_rate_last_7)}`);
@@ -105,8 +188,69 @@ function getPredictionRiskReason(
   return `${formatRiskDisplay(prediction, stats)}; ${context}`;
 }
 
+function getPositiveReason(stats: HabitStats | undefined, isDone: boolean) {
+  const parts: string[] = [];
+  if (isDone) {
+    parts.push("сегодня выполнено");
+  }
+  if (stats?.current_streak && stats.current_streak > 1) {
+    parts.push(`серия ${stats.current_streak} подряд`);
+  }
+  if (stats && stats.total_entries >= 3) {
+    parts.push(`за 7 дней выполнено ${percent(stats.completion_rate_last_7)}`);
+  }
+  return parts.length > 0 ? parts.join(", ") : "Привычка идет по плану";
+}
+
+function getRecommendationReason(
+  recommendation: Recommendation,
+  stats: HabitStats | undefined,
+  prediction: Prediction | undefined,
+  isDone: boolean
+) {
+  if (recommendation.type === "first_step") {
+    return "Стартовый совет после создания привычки и выбора питомца";
+  }
+  if (POSITIVE_RECOMMENDATION_TYPES.has(recommendation.type)) {
+    return getPositiveReason(stats, isDone);
+  }
+  if (RECOVERY_RECOMMENDATION_TYPES.has(recommendation.type)) {
+    return getRiskReason(stats, prediction?.miss_risk);
+  }
+  if (recommendation.type === "plan_ahead") {
+    return prediction
+      ? getRiskReason(stats, prediction.miss_risk)
+      : "Готовим следующий повтор заранее";
+  }
+  if (prediction) {
+    return `${isDone ? "Это риск на следующий раз. " : ""}${getPredictionRiskReason(stats, prediction)}`;
+  }
+  return "Совет собран по истории привычек и последним отметкам";
+}
+
 function getRecommendationAdvice(recommendation: Recommendation, habit?: Habit) {
   switch (recommendation.type) {
+    case "risk_ignored_recovery":
+      return "Пересоберите условия привычки и оставьте только минимальный шаг";
+    case "reset_plan":
+      return "Перезапустите привычку через самую короткую версию";
+    case "miss_streak_recovery":
+      return "Вернитесь через короткий шаг без попытки наверстать пропуски";
+    case "early_recovery":
+      return "Сделайте минимальный вариант, пока пропуск не стал серией";
+    case "risk_recovery":
+      return "Сузьте задачу до самого простого действия на сегодня";
+    case "soft_recovery":
+      return "Уменьшите объем и заранее решите, где закончится минимум";
+    case "plan_ahead":
+      return "Подготовьте первый шаг и время выполнения заранее";
+    case "after_completion":
+      return "Закрепите выполнение и подготовьте следующий повтор";
+    case "on_track_support":
+      return "Уберите один барьер, чтобы следующий повтор прошел так же спокойно";
+    case "streak_maintenance":
+    case "streak_support":
+      return "Сохраните текущий темп без резкого усложнения";
     case "reduce_difficulty":
       return "Сделайте шаг проще на сегодня и отметьте результат";
     case "soft_reminder":
@@ -199,7 +343,7 @@ export function TipsScreen() {
       };
     });
 
-  const recommendationItems: AdviceItem[] = recommendations
+  const recommendationItems: AdviceItem[] = dedupeRecommendations(recommendations)
     .map((recommendation): AdviceItem => {
       const habit = recommendation.habit_id
         ? activeHabitById.get(recommendation.habit_id)
@@ -215,12 +359,12 @@ export function TipsScreen() {
         tone,
         habit,
         habitTitle: getHabitTitle(habit),
-        advice: recommendation.message || (isDone
-          ? getTodayFollowUpAdvice(habit)
-          : getRecommendationAdvice(recommendation, habit)),
-        reason: prediction
-          ? `${isDone ? "Это риск на следующий раз. " : ""}${getPredictionRiskReason(stats, prediction)}`
-          : "Совет собран по истории привычек и последним отметкам",
+        advice: normalizeAdviceText(
+          recommendation.message || (isDone
+            ? getTodayFollowUpAdvice(habit)
+            : getRecommendationAdvice(recommendation, habit))
+        ),
+        reason: getRecommendationReason(recommendation, stats, prediction, isDone),
         ctaLabel: "Перейти к привычке" as const,
         recommendationId: recommendation.id
       };
@@ -230,7 +374,12 @@ export function TipsScreen() {
   const adviceItems = recommendationItems.length > 0 ? recommendationItems : fallbackAdviceItems;
   const primaryAdvice = adviceItems[0];
   const secondaryAdviceItems = adviceItems.filter((item) => item.id !== primaryAdvice?.id);
-  const insightItems = [...urgentItems, ...dataItems].slice(0, 3);
+  const riskyAdviceCount = adviceItems.filter((item) => item.tone === "urgent").length;
+  const dataAdviceCount = adviceItems.filter((item) => item.tone === "data").length;
+  const insightSource = recommendationItems.length > 0
+    ? adviceItems.filter((item) => item.tone !== "normal")
+    : fallbackAdviceItems;
+  const insightItems = insightSource.slice(0, 3);
 
   function handleAdviceAction(item: AdviceItem) {
     if (item.habit && item.markStatus) {
@@ -303,11 +452,11 @@ export function TipsScreen() {
                   <span>советов</span>
                 </div>
                 <div>
-                  <strong>{urgentItems.length}</strong>
+                  <strong>{riskyAdviceCount}</strong>
                   <span>в риске</span>
                 </div>
                 <div>
-                  <strong>{dataItems.length}</strong>
+                  <strong>{dataAdviceCount}</strong>
                   <span>мало истории</span>
                 </div>
               </div>

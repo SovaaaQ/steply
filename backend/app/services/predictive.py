@@ -7,6 +7,7 @@ from typing import Optional, Union
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.gamification_rules import COMPLETION_STATUSES
 from app.core.time import utc_now
 from app.models import Habit, HabitEntry, Prediction, User
 from app.schemas import HabitStats, UserActivitySummary
@@ -18,7 +19,7 @@ class RiskCalculation:
     completion_probability: float
     miss_risk: float
     risk_level: str
-    features: dict[str, Optional[Union[float, int, str]]]
+    features: dict[str, Optional[Union[float, int, str, bool]]]
 
 
 def _clamp(value: float, lower: float = 0.05, upper: float = 0.95) -> float:
@@ -98,6 +99,10 @@ def calculate_risk_from_stats(
         weekday_success_rate = completion_rate
 
     days_since_last = stats.days_since_last_completion
+    entries_for_today = [entry for entry in entries if entry.entry_date == target_date]
+    completed_today = any(entry.status in COMPLETION_STATUSES for entry in entries_for_today)
+    missed_today = any(entry.status == "missed" for entry in entries_for_today)
+    latest_entry = max(entries, key=lambda item: item.entry_date, default=None)
     recency_penalty = min((days_since_last or 7) / 14, 1.0)
     difficulty_penalty = {"easy": 0.02, "medium": 0.06, "hard": 0.12}.get(
         habit.difficulty,
@@ -124,16 +129,23 @@ def calculate_risk_from_stats(
     )
     miss_risk = round(1 - completion_probability, 3)
 
-    features: dict[str, Optional[Union[float, int, str]]] = {
+    features: dict[str, Optional[Union[float, int, str, bool]]] = {
         # Признаки сохранены явно, чтобы на защите можно было объяснить прогноз.
         "total_entries": stats.total_entries,
         "completed_count": stats.completed_count,
         "missed_count": stats.missed_count,
         "completion_rate": round(completion_rate, 3),
+        "completed_last_7_days": stats.completed_last_7_days,
+        "missed_last_7_days": stats.missed_last_7_days,
+        "completion_rate_last_7": stats.completion_rate_last_7,
+        "total_last_7_days": stats.completed_last_7_days + stats.missed_last_7_days,
         "recent_miss_rate": round(recent_miss_rate, 3),
         "consecutive_missed": stats.consecutive_missed,
         "current_streak": stats.current_streak,
         "longest_streak": stats.longest_streak,
+        "completed_today": completed_today,
+        "missed_today": missed_today,
+        "latest_entry_status": latest_entry.status if latest_entry else None,
         "weekday": weekday_key,
         "weekday_success_rate": round(weekday_success_rate, 3),
         "days_since_last_completion": days_since_last,
