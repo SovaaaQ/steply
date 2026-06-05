@@ -11,6 +11,7 @@ from app.models import User
 from app.schemas import DaySyncRead
 from app.services.gamification import refresh_user_gamification
 from app.services.habit_entries import ensure_auto_missed_entries
+from app.services.recommendations import generate_recommendations
 
 
 router = APIRouter(prefix="/day", tags=["day"])
@@ -24,5 +25,7 @@ def sync_day(
 ) -> DaySyncRead:
     created_count = ensure_auto_missed_entries(db, current_user, client_today)
     gamification = refresh_user_gamification(db, current_user, today=client_today)
+    if created_count > 0:
+        generate_recommendations(db, current_user, client_today)
     db.commit()
     return DaySyncRead(auto_missed_created=created_count, gamification=gamification)

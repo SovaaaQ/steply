@@ -9,6 +9,7 @@ import { percent } from "../utils/formatDate";
 import { shouldActivateRecoveryMode } from "../utils/gamification";
 import {
   formatNextScheduledOccurrence,
+  getHabitScheduleAvailability,
   getNextScheduledOccurrence
 } from "../utils/habitSchedule";
 import { formatRiskDisplay, hasEnoughRiskData } from "../utils/risk";
@@ -20,12 +21,12 @@ interface AdviceItem {
   habitTitle: string;
   advice: string;
   reason: string;
-  ctaLabel: "Перейти к привычке" | "Отметить";
+  ctaLabel: "Перейти к привычке" | "Отметить" | "Отметить минимум";
   markStatus?: EntryStatus;
   recommendationId?: number;
 }
 
-const MAX_ADVICE_WORDS = 60;
+const MAX_ADVICE_WORDS = 48;
 const URGENT_RECOMMENDATION_TYPES = new Set([
   "risk_ignored_recovery",
   "reset_plan",
@@ -55,12 +56,29 @@ const POSITIVE_RECOMMENDATION_TYPES = new Set([
 
 function normalizeAdviceText(value: string) {
   const withoutListTail = value.split(/\s(?:Шаги|Действия)\s*:/i)[0] || value;
-  const text = withoutListTail.replace(/\s+/g, " ").trim();
+  const text = stripOuterQuotes(withoutListTail.replace(/\s+/g, " ").trim());
   const words = text.split(" ").filter(Boolean);
   if (words.length <= MAX_ADVICE_WORDS) {
     return text;
   }
   return `${words.slice(0, MAX_ADVICE_WORDS).join(" ").replace(/[ ,;:.!?]+$/, "")}.`;
+}
+
+function stripOuterQuotes(value: string) {
+  const quotePairs: Record<string, string> = {
+    "\"": "\"",
+    "'": "'",
+    "«": "»",
+    "“": "”",
+    "„": "“"
+  };
+  let text = value.trim();
+
+  while (text.length >= 2 && quotePairs[text[0]] === text[text.length - 1]) {
+    text = text.slice(1, -1).trim();
+  }
+
+  return text;
 }
 
 function getRecommendationKey(recommendation: Recommendation) {
@@ -266,9 +284,43 @@ function getRecommendationAdvice(recommendation: Recommendation, habit?: Habit) 
   }
 }
 
+function isCompletedToday(status: EntryStatus | undefined) {
+  return status === "completed" || status === "recovery_completed";
+}
+
+function getRecommendationAction(
+  recommendation: Recommendation,
+  canMarkToday: boolean
+): Pick<AdviceItem, "ctaLabel" | "markStatus"> {
+  if (!canMarkToday) {
+    return { ctaLabel: "Перейти к привычке" };
+  }
+
+  if (RECOVERY_RECOMMENDATION_TYPES.has(recommendation.type) || recommendation.priority === "high") {
+    return {
+      ctaLabel: "Отметить минимум",
+      markStatus: "recovery_completed"
+    };
+  }
+
+  if (
+    recommendation.type === "first_step" ||
+    recommendation.type === "data_collection" ||
+    recommendation.type === "plan_ahead"
+  ) {
+    return {
+      ctaLabel: "Отметить",
+      markStatus: "completed"
+    };
+  }
+
+  return { ctaLabel: "Перейти к привычке" };
+}
+
 export function TipsScreen() {
   const {
     habitStats,
+    habitEntries,
     predictions,
     getTodayEntry,
     markHabit,
@@ -283,14 +335,14 @@ export function TipsScreen() {
   } = useRecommendations();
 
   const activeHabitById = new Map(activeHabits.map((habit) => [habit.id, habit]));
+  const now = new Date();
 
   const urgentItems: AdviceItem[] = activeHabits
     .map((habit): AdviceItem | null => {
       const stats = habitStats[habit.id];
       const prediction = predictions[habit.id];
       const todayEntry = getTodayEntry(habit.id);
-      const isDone =
-        todayEntry?.status === "completed" || todayEntry?.status === "recovery_completed";
+      const isDone = isCompletedToday(todayEntry?.status);
       const hasRiskData = hasEnoughRiskData(prediction, stats);
       const isUrgent =
         (hasRiskData && prediction.risk_level === "high") ||
@@ -325,8 +377,14 @@ export function TipsScreen() {
     .map((habit) => {
       const totalEntries = habitStats[habit.id]?.total_entries ?? 0;
       const todayEntry = getTodayEntry(habit.id);
-      const isDone =
-        todayEntry?.status === "completed" || todayEntry?.status === "recovery_completed";
+      const isDone = isCompletedToday(todayEntry?.status);
+      const canMarkToday =
+        !todayEntry &&
+        getHabitScheduleAvailability(
+          habit,
+          now,
+          (habitEntries[habit.id]?.length ?? 0) > 0
+        ).isAvailableToday;
       return {
         id: `data-${habit.id}`,
         tone: "data" as const,
@@ -338,8 +396,8 @@ export function TipsScreen() {
         reason: isDone
           ? `Сегодня уже учтено; сейчас есть ${formatMarks(totalEntries)}`
           : `Сейчас есть ${formatMarks(totalEntries)}, для прогноза нужно немного больше истории`,
-        ctaLabel: isDone ? "Перейти к привычке" as const : "Отметить" as const,
-        markStatus: isDone ? undefined : "completed" as const
+        ctaLabel: canMarkToday ? "Отметить" as const : "Перейти к привычке" as const,
+        markStatus: canMarkToday ? "completed" as const : undefined
       };
     });
 
@@ -351,9 +409,16 @@ export function TipsScreen() {
       const prediction = habit ? predictions[habit.id] : undefined;
       const stats = habit ? habitStats[habit.id] : undefined;
       const todayEntry = habit ? getTodayEntry(habit.id) : undefined;
-      const isDone =
-        todayEntry?.status === "completed" || todayEntry?.status === "recovery_completed";
+      const isDone = isCompletedToday(todayEntry?.status);
       const tone = getRecommendationTone(recommendation);
+      const canMarkToday = habit && !todayEntry
+        ? getHabitScheduleAvailability(
+            habit,
+            now,
+            (habitEntries[habit.id]?.length ?? 0) > 0
+          ).isAvailableToday
+        : false;
+      const action = getRecommendationAction(recommendation, canMarkToday);
       return {
         id: `recommendation-${recommendation.id}`,
         tone,
@@ -365,7 +430,8 @@ export function TipsScreen() {
             : getRecommendationAdvice(recommendation, habit))
         ),
         reason: getRecommendationReason(recommendation, stats, prediction, isDone),
-        ctaLabel: "Перейти к привычке" as const,
+        ctaLabel: action.ctaLabel,
+        markStatus: action.markStatus,
         recommendationId: recommendation.id
       };
     });
@@ -373,13 +439,23 @@ export function TipsScreen() {
   const fallbackAdviceItems = [...urgentItems, ...dataItems];
   const adviceItems = recommendationItems.length > 0 ? recommendationItems : fallbackAdviceItems;
   const primaryAdvice = adviceItems[0];
-  const secondaryAdviceItems = adviceItems.filter((item) => item.id !== primaryAdvice?.id);
+  const secondaryAdviceItems = adviceItems.filter(
+    (item) =>
+      item.id !== primaryAdvice?.id &&
+      (!primaryAdvice?.habit || item.habit?.id !== primaryAdvice.habit.id)
+  );
   const riskyAdviceCount = adviceItems.filter((item) => item.tone === "urgent").length;
   const dataAdviceCount = adviceItems.filter((item) => item.tone === "data").length;
   const insightSource = recommendationItems.length > 0
     ? adviceItems.filter((item) => item.tone !== "normal")
     : fallbackAdviceItems;
-  const insightItems = insightSource.slice(0, 3);
+  const insightItems = insightSource
+    .filter(
+      (item) =>
+        item.id !== primaryAdvice?.id &&
+        (!primaryAdvice?.habit || item.habit?.id !== primaryAdvice.habit.id)
+    )
+    .slice(0, 3);
 
   function handleAdviceAction(item: AdviceItem) {
     if (item.habit && item.markStatus) {

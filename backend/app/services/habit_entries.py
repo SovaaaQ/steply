@@ -17,6 +17,12 @@ from app.services.habit_schedule import is_habit_scheduled_on
 AUTO_MISSED_META = {"source": "auto", "auto_missed": True}
 
 
+def normalize_created_rowcount(rowcount: int | None, pending_count: int) -> int:
+    if rowcount is None or rowcount < 0:
+        return pending_count
+    return rowcount
+
+
 def _is_deferred_creation_date(habit: Habit, target_date: date) -> bool:
     return bool(
         habit.created_at
@@ -106,7 +112,7 @@ def ensure_auto_missed_entries(
             .values(pending_entries)
             .on_conflict_do_nothing(constraint="uq_habit_entry_date")
         )
-        created_count = int(result.rowcount or 0)
+        created_count = normalize_created_rowcount(result.rowcount, len(pending_entries))
     else:
         for entry_data in pending_entries:
             db.add(HabitEntry(**entry_data))

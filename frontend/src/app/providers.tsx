@@ -389,7 +389,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       setIsHabitFormOpen(false);
       resetHabitForm();
-      await recommendationsApi.generate().catch(() => []);
       await loadDashboard();
     } catch (habitError) {
       setError(habitError instanceof Error ? habitError.message : "Не удалось сохранить привычку");
@@ -450,7 +449,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     try {
       const entry = await habitsApi.mark(habitId, status, todayISO);
-      await recommendationsApi.generate().catch(() => []);
       const reward =
         entry.xp_awarded > 0
           ? {
@@ -523,10 +521,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   async function refreshRecommendations() {
     setError("");
     clearNotice();
+    setIsLoading(true);
     try {
       const generated = await recommendationsApi.generate();
       setRecommendations(generated);
-      showNotice("Советы обновлены по последним отметкам");
+      showNotice("Советы обновлены", "ИИ пересчитал подсказки по последним отметкам");
       await loadDashboard();
     } catch (recommendationError) {
       setError(
@@ -534,6 +533,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ? recommendationError.message
           : "Не удалось обновить советы"
       );
+    } finally {
+      setIsLoading(false);
     }
   }
 

@@ -7,7 +7,11 @@ import pytest
 from fastapi import HTTPException
 
 from app.schemas import HabitEntryCreate
-from app.services.habit_entries import get_auto_missed_dates, validate_entry_transition
+from app.services.habit_entries import (
+    get_auto_missed_dates,
+    normalize_created_rowcount,
+    validate_entry_transition,
+)
 
 
 def make_habit(
@@ -79,6 +83,12 @@ def test_auto_missed_skips_deferred_first_occurrence() -> None:
     missed_dates = get_auto_missed_dates(habit, today=date(2026, 5, 23), existing_dates=set())
 
     assert missed_dates == []
+
+
+def test_negative_insert_rowcount_falls_back_to_pending_count() -> None:
+    assert normalize_created_rowcount(-1, pending_count=4) == 4
+    assert normalize_created_rowcount(None, pending_count=2) == 2
+    assert normalize_created_rowcount(1, pending_count=4) == 1
 
 
 def test_completed_period_cannot_be_skipped() -> None:

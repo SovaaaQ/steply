@@ -14,7 +14,7 @@ from app.services.ai_recommendations import generate_ai_recommendation
 from app.services.predictive import create_prediction
 
 
-MAX_RECOMMENDATION_MESSAGE_WORDS = 60
+MAX_RECOMMENDATION_MESSAGE_WORDS = 48
 _PRIORITY_WEIGHT = {"high": 3, "normal": 2, "low": 1}
 _LIST_TAIL_PATTERN = re.compile(r"\b(?:Шаги|Действия)\s*:", re.IGNORECASE)
 _NUMBERED_TAIL_PATTERN = re.compile(r"(?:^|\s)\d+[.)]\s+.*$", re.DOTALL)
@@ -67,10 +67,6 @@ def _day_start(today: date) -> datetime:
     return utc_start_of_day(today)
 
 
-def _has_fresh_recommendation(recommendation: Recommendation, today: date) -> bool:
-    return recommendation.created_at.date() == today
-
-
 def _clean_text(value: str) -> str:
     return " ".join(value.split()).strip()
 
@@ -100,7 +96,29 @@ def _lower_first(value: str) -> str:
     return f"{text[0].lower()}{text[1:]}"
 
 
+def _habit_context_text(habit: Habit) -> str:
+    return f"{habit.title or ''} {habit.description or ''}".lower()
+
+
+def _has_custom_recovery_task(habit: Habit) -> bool:
+    return isinstance(habit.recovery_task, str) and bool(habit.recovery_task.strip())
+
+
 def _recovery_task_fragment(habit: Habit) -> str:
+    if not _has_custom_recovery_task(habit):
+        context = _habit_context_text(habit)
+        if any(keyword in context for keyword in ("англий", "english", "слова", "язык")):
+            return "повторите три слова или прочитайте один короткий диалог"
+        if any(keyword in context for keyword in ("диплом", "курсов", "учеб", "проект")):
+            return "откройте файл и поправьте один абзац или план из двух пунктов"
+        if any(keyword in context for keyword in ("python", "пайтон", "код", "программ")):
+            return "откройте редактор и решите одну маленькую задачу или прочитайте пример"
+        if any(keyword in context for keyword in ("чтен", "книг")):
+            return "прочитайте одну страницу или один короткий фрагмент"
+        if any(keyword in context for keyword in ("спорт", "трен", "заряд")):
+            return "сделайте две минуты разминки без полной тренировки"
+        if any(keyword in context for keyword in ("курен", "сигар", "никотин")):
+            return "сделайте паузу на пять минут и запишите, что запустило желание"
     return _lower_first(getRecoveryTask(habit).strip().rstrip(" ."))
 
 
@@ -122,10 +140,24 @@ def _strip_list_tail(value: str) -> str:
     return text
 
 
+def _strip_outer_quotes(value: str) -> str:
+    text = value.strip()
+    quote_pairs = {
+        '"': '"',
+        "'": "'",
+        "«": "»",
+        "“": "”",
+        "„": "“",
+    }
+    while len(text) >= 2 and text[0] in quote_pairs and text[-1] == quote_pairs[text[0]]:
+        text = text[1:-1].strip()
+    return text
+
+
 def _normalize_recommendation_message(value: str) -> str:
-    text = _clean_text(_strip_list_tail(value))
+    text = _strip_outer_quotes(_clean_text(_strip_list_tail(value)))
     if not text:
-        text = _clean_text(value)
+        text = _strip_outer_quotes(_clean_text(value))
 
     words = text.split()
     if len(words) > MAX_RECOMMENDATION_MESSAGE_WORDS:
@@ -392,8 +424,8 @@ def _build_recommendation_text(
             "Вернуться мягко",
             (
                 f"У привычки «{habit.title}» уже {consecutive_missed} пропуска подряд. "
-                "Не пытайтесь наверстать весь объем: выберите короткую версию, выполните ее сегодня "
-                "и сохраните отметку как возвращение в ритм."
+                "Не пытайтесь наверстать весь объем. Сегодня сделайте только минимальный шаг: "
+                f"{recovery_task}, и сохраните отметку как возвращение в ритм."
             ),
             "high" if consecutive_missed >= 3 else "normal",
         )
@@ -526,12 +558,6 @@ def _upsert_recommendation(
         previous_type=existing.type if existing else None,
     )
     message = _normalize_recommendation_message(message)
-
-    if existing and _has_fresh_recommendation(existing, today) and existing.type == rec_type:
-        _normalize_recommendation(existing)
-        db.flush()
-        db.refresh(existing)
-        return existing
 
     should_use_ai = _is_ai_worthwhile(rec_type, prediction) and _daily_ai_budget_available(
         db,

@@ -324,10 +324,18 @@ def test_normalize_recommendation_message_removes_ai_step_tail() -> None:
     )
 
 
-def test_normalize_recommendation_message_caps_to_sixty_words() -> None:
+def test_normalize_recommendation_message_caps_to_forty_eight_words() -> None:
     message = " ".join(f"слово{index}" for index in range(70))
 
     normalized = _normalize_recommendation_message(message)
 
-    assert len(normalized.split()) == 60
+    assert len(normalized.split()) == 48
     assert normalized.endswith(".")
+
+
+def test_normalize_recommendation_message_removes_outer_quotes() -> None:
+    message = "«Сегодня откройте файл диплома и напишите один короткий абзац.»"
+
+    assert _normalize_recommendation_message(message) == (
+        "Сегодня откройте файл диплома и напишите один короткий абзац."
+    )

@@ -14,6 +14,7 @@ from app.schemas import HabitCreate, HabitEntryCreate, HabitEntryRead, HabitRead
 from app.services.gamification import refresh_user_gamification, sync_habit_entry_reward
 from app.services.habit_entries import ensure_auto_missed_entries, validate_entry_transition
 from app.services.habit_schedule import is_habit_scheduled_on
+from app.services.recommendations import generate_recommendations
 
 router = APIRouter(prefix="/habits", tags=["habits"])
 
@@ -114,6 +115,7 @@ def create_habit(
     db.add(habit)
     db.flush()
     refresh_user_gamification(db, current_user, today=client_today)
+    generate_recommendations(db, current_user, client_today)
     db.commit()
     db.refresh(habit)
     return _normalize_habit_for_response(habit)
@@ -143,6 +145,7 @@ def update_habit(
         updates["schedule_days"] = _normalize_schedule_days(payload) or []
     for field, value in updates.items():
         setattr(habit, field, value)
+    generate_recommendations(db, current_user, client_today)
     db.commit()
     db.refresh(habit)
     return _normalize_habit_for_response(habit)
@@ -214,6 +217,7 @@ def upsert_habit_entry(
 
     db.flush()
     sync_habit_entry_reward(db, current_user, habit, entry)
+    generate_recommendations(db, current_user, client_today)
     db.commit()
     db.refresh(entry)
     return entry

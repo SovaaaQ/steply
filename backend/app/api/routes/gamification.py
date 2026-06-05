@@ -19,6 +19,7 @@ from app.schemas import (
 )
 from app.services.gamification import read_user_gamification_summary, refresh_user_gamification
 from app.services.habit_entries import ensure_auto_missed_entries
+from app.services.recommendations import generate_recommendations
 
 router = APIRouter(prefix="/gamification", tags=["gamification"])
 
@@ -79,6 +80,8 @@ def update_pet(
         award_milestones=was_configured,
         today=client_today,
     )
+    if not was_configured and current_user.pet_type and current_user.pet_name:
+        generate_recommendations(db, current_user, client_today)
     db.commit()
     return summary["pet"]
 

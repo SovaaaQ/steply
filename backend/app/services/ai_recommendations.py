@@ -24,7 +24,7 @@ class AIRecommendationDraft:
 
 MAX_TITLE_CHARS = 70
 MAX_MESSAGE_CHARS = 520
-MAX_MESSAGE_WORDS = 60
+MAX_MESSAGE_WORDS = 48
 
 
 def _clean_text(value: str) -> str:
@@ -50,6 +50,20 @@ def _clip_words(value: str, max_words: int) -> str:
     if len(words) <= max_words:
         return text
     return " ".join(words[:max_words]).rstrip(" ,;:.!?") + "."
+
+
+def _strip_outer_quotes(value: str) -> str:
+    text = value.strip()
+    quote_pairs = {
+        '"': '"',
+        "'": "'",
+        "«": "»",
+        "“": "”",
+        "„": "“",
+    }
+    while len(text) >= 2 and text[0] in quote_pairs and text[-1] == quote_pairs[text[0]]:
+        text = text[1:-1].strip()
+    return text
 
 
 def _compact_features(features: dict[str, Any]) -> dict[str, Any]:
@@ -82,10 +96,10 @@ def _compact_features(features: dict[str, Any]) -> dict[str, Any]:
 
 def _normalize_ai_payload(payload: dict[str, Any]) -> Optional[AIRecommendationDraft]:
     title = _clip_text(str(payload.get("title") or ""), MAX_TITLE_CHARS)
-    message = _clip_text(
+    message = _strip_outer_quotes(_clip_text(
         _clip_words(str(payload.get("message") or ""), MAX_MESSAGE_WORDS),
         MAX_MESSAGE_CHARS,
-    )
+    ))
 
     if not title or not message:
         return None
@@ -153,7 +167,7 @@ def _system_instructions() -> str:
         "но без обвинений и стыда. "
         "Если тип plan_ahead, помоги подготовить выполнение заранее до пропуска. "
         "Ответ должен звучать как короткая человеческая подсказка, не как список. "
-        "title до 4 слов, message до 60 слов. "
+        "title до 4 слов, message 30-48 слов. "
         "Не используй нумерацию, '1)', '2)', маркированные списки и слово 'Шаги'. "
         "Не обещай медицинский эффект, не ставь "
         "диагнозы и не назначай лечение. Если привычка связана со здоровьем, зависимостью, "

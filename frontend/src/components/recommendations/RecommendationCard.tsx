@@ -6,7 +6,7 @@ interface RecommendationCardProps {
   advice: string;
   reason: string;
   tone: "urgent" | "normal" | "data";
-  ctaLabel: "Перейти к привычке" | "Отметить";
+  ctaLabel: "Перейти к привычке" | "Отметить" | "Отметить минимум";
   metaLabel?: string;
   featured?: boolean;
   onAction: () => void;
@@ -22,6 +22,8 @@ export function RecommendationCard({
   featured = false,
   onAction
 }: RecommendationCardProps) {
+  const isDirectAction = ctaLabel === "Отметить" || ctaLabel === "Отметить минимум";
+
   return (
     <article
       className={cn(
@@ -45,7 +47,7 @@ export function RecommendationCard({
       <Button
         className="recommendation-cta"
         type="button"
-        variant={ctaLabel === "Отметить" ? "cta" : "secondary"}
+        variant={isDirectAction ? "cta" : "secondary"}
         onClick={onAction}
       >
         {ctaLabel}
