@@ -2,7 +2,12 @@ import { FormEvent, useEffect, useState } from "react";
 
 import type { PetType } from "../../types/auth";
 import type { Pet } from "../../types/gamification";
-import { petEmoji, petTypeDescriptions, petTypeLabels } from "../../utils/gamification";
+import {
+  formatPetCaption,
+  petEmoji,
+  petTypeDescriptions,
+  petTypeLabels
+} from "../../utils/gamification";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 
@@ -11,10 +16,18 @@ const petTypes: PetType[] = ["dog", "cat", "parrot", "hamster"];
 interface PetSetupProps {
   pet?: Pet;
   title?: string;
+  description?: string;
+  submitLabel?: string;
   onSubmit: (payload: { pet_type: PetType; pet_name: string }) => Promise<void>;
 }
 
-export function PetSetup({ pet, title = "Выберите питомца", onSubmit }: PetSetupProps) {
+export function PetSetup({
+  pet,
+  title = "Выберите питомца",
+  description,
+  submitLabel = "Сохранить питомца",
+  onSubmit
+}: PetSetupProps) {
   const [petType, setPetType] = useState<PetType>(pet?.pet_type ?? "dog");
   const [petName, setPetName] = useState(pet?.pet_name ?? "");
   const [isSaving, setIsSaving] = useState(false);
@@ -40,27 +53,35 @@ export function PetSetup({ pet, title = "Выберите питомца", onSub
 
   return (
     <form className="pet-setup" onSubmit={handleSubmit}>
-      <div>
+      <div className="pet-setup-head">
         <span className="page-kicker">Виртуальный питомец</span>
         <h3>{title}</h3>
+        {description && <p>{formatPetCaption(description)}</p>}
       </div>
 
-      <div className="pet-type-grid" role="radiogroup" aria-label="Тип питомца">
-        {petTypes.map((type) => (
-          <button
-            aria-checked={petType === type}
-            className={`pet-option pet-option-${type} ${petType === type ? "active" : ""}`}
-            key={type}
-            onClick={() => setPetType(type)}
-            role="radio"
-            type="button"
-          >
-            <span className="pet-option-emoji">{petEmoji[type]}</span>
-            <span className="pet-option-name">{petTypeLabels[type]}</span>
-            <span className="pet-option-description">{petTypeDescriptions[type]}</span>
-          </button>
-        ))}
-      </div>
+      <fieldset className="pet-type-field">
+        <legend>Тип питомца</legend>
+        <div className="pet-type-grid">
+          {petTypes.map((type) => (
+            <label
+              className={`pet-option pet-option-${type} ${petType === type ? "active" : ""}`}
+              key={type}
+            >
+              <input
+                checked={petType === type}
+                className="pet-option-input"
+                name="pet-type"
+                onChange={() => setPetType(type)}
+                type="radio"
+                value={type}
+              />
+              <span className="pet-option-emoji">{petEmoji[type]}</span>
+              <span className="pet-option-name">{petTypeLabels[type]}</span>
+              <span className="pet-option-description">{petTypeDescriptions[type]}</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <label>
         Имя питомца
@@ -68,12 +89,13 @@ export function PetSetup({ pet, title = "Выберите питомца", onSub
           value={petName}
           onChange={(event) => setPetName(event.target.value)}
           placeholder="Например, Бади"
+          maxLength={80}
           required
         />
       </label>
 
       <Button variant="cta" disabled={isSaving || !petName.trim()}>
-        {isSaving ? "Сохраняем" : "Сохранить питомца"}
+        {isSaving ? "Сохраняем" : submitLabel}
       </Button>
     </form>
   );

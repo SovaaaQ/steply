@@ -96,12 +96,18 @@ def _lower_first(value: str) -> str:
     return f"{text[0].lower()}{text[1:]}"
 
 
+def _habit_text_field(habit: Habit, field: str) -> str:
+    value = getattr(habit, field, "")
+    return value if isinstance(value, str) else ""
+
+
 def _habit_context_text(habit: Habit) -> str:
-    return f"{habit.title or ''} {habit.description or ''}".lower()
+    return f"{_habit_text_field(habit, 'title')} {_habit_text_field(habit, 'description')}".lower()
 
 
 def _has_custom_recovery_task(habit: Habit) -> bool:
-    return isinstance(habit.recovery_task, str) and bool(habit.recovery_task.strip())
+    recovery_task = getattr(habit, "recovery_task", None)
+    return isinstance(recovery_task, str) and bool(recovery_task.strip())
 
 
 def _recovery_task_fragment(habit: Habit) -> str:

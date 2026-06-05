@@ -2,15 +2,51 @@ import { useEffect, useRef, useState } from "react";
 
 import { PetSetup } from "../components/gamification/PetSetup";
 import { PetStatusCard } from "../components/gamification/PetStatusCard";
+import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { useAppData } from "../app/providers";
+import { formatPetCaption } from "../utils/gamification";
 import type { PetType } from "../types/auth";
+import type { Goal, RewardEvent } from "../types/gamification";
+
+const rewardDateFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  month: "short"
+});
+
+function getActiveGoals(goals: Goal[]) {
+  return goals
+    .filter((goal) => !goal.empty && goal.status !== "completed")
+    .slice(0, 3);
+}
+
+function getRecentPositiveEvents(events: RewardEvent[]) {
+  return events.filter((event) => event.xp_amount > 0).slice(0, 4);
+}
+
+function getProgressPercent(progress: number, target: number) {
+  if (target <= 0) {
+    return 0;
+  }
+  return Math.max(0, Math.min(Math.round((progress / target) * 100), 100));
+}
+
+function formatRewardDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return rewardDateFormatter.format(date);
+}
 
 export function PetScreen() {
   const { gamification, updatePet, setActiveSection } = useAppData();
   const [isEditing, setIsEditing] = useState(false);
   const editFormRef = useRef<HTMLDivElement | null>(null);
   const pet = gamification.pet;
+  const activeGoals = getActiveGoals(gamification.goals);
+  const recentEvents = getRecentPositiveEvents(gamification.recent_events);
+  const nextAction = gamification.next_best_action;
 
   useEffect(() => {
     if (!isEditing) {
@@ -32,6 +68,10 @@ export function PetScreen() {
     setIsEditing(false);
   }
 
+  function handleNextAction() {
+    setActiveSection(nextAction.cta_section);
+  }
+
   if (!pet.is_configured) {
     return (
       <section className="pet-screen page-stack">
@@ -43,12 +83,16 @@ export function PetScreen() {
             </h2>
             <p>
               Питомец будет давать спокойную обратную связь: регулярность помогает
-              ему расти, а после пропусков появляются подсказки для возвращения.
+              ему расти, а после пропусков появляются подсказки для возвращения
             </p>
           </div>
         </div>
         <Card className="pet-setup-card">
-          <PetSetup pet={pet} onSubmit={handlePetSubmit} />
+          <PetSetup
+            description="После выбора можно сразу создать первую привычку: XP, цели и подсказки начнут собираться автоматически"
+            pet={pet}
+            onSubmit={handlePetSubmit}
+          />
         </Card>
       </section>
     );
@@ -63,13 +107,19 @@ export function PetScreen() {
             Связь привычек и <span className="hand-underline">поддержки</span>
           </h2>
           <p>
-            Когда привычки идут регулярно, питомец набирает XP и растет в уровне.
-            После пропусков Steply предложит мягкий шаг для возвращения.
+            Когда привычки идут регулярно, питомец набирает XP и растет в уровне,
+            а после пропусков Steply предложит мягкий шаг для возвращения
           </p>
         </div>
       </div>
 
-      <PetStatusCard pet={pet} onEdit={() => setIsEditing((current) => !current)} />
+      <PetStatusCard
+        nextAction={nextAction}
+        onAction={handleNextAction}
+        onEdit={() => setIsEditing((current) => !current)}
+        pet={pet}
+        streak={gamification.streak}
+      />
 
       {isEditing && (
         <div ref={editFormRef} className="pet-edit-anchor">
@@ -83,14 +133,80 @@ export function PetScreen() {
         </div>
       )}
 
-      <Card className="pet-account-link" tone="soft">
-        <span className="page-kicker">Следующий шаг</span>
-        <h3>Поддержать питомца привычкой</h3>
-        <p>Откройте список привычек и отметьте ближайший реальный шаг</p>
-        <button type="button" className="button button-secondary" onClick={() => setActiveSection("habits")}>
-          Перейти к привычкам
-        </button>
-      </Card>
+      <section className="pet-action-grid">
+        <Card className="pet-goals-card" tone="soft">
+          <div className="pet-panel-head">
+            <span className="page-kicker">Цели</span>
+            <h3>Что двигает уровень</h3>
+          </div>
+
+          {activeGoals.length > 0 ? (
+            <div className="pet-goal-list">
+              {activeGoals.map((goal) => {
+                const progressPercent = getProgressPercent(goal.progress, goal.target);
+
+                return (
+                  <article className={`pet-goal-item pet-goal-${goal.tone}`} key={goal.id}>
+                    <div>
+                      <strong>{goal.title}</strong>
+                      <span>{formatPetCaption(goal.next_step)}</span>
+                    </div>
+                    <div
+                      aria-label={`Прогресс цели ${goal.title}`}
+                      aria-valuemax={goal.target}
+                      aria-valuemin={0}
+                      aria-valuenow={goal.progress}
+                      className="pet-goal-progress"
+                      role="progressbar"
+                    >
+                      <span style={{ width: `${progressPercent}%` }} />
+                    </div>
+                    <small>
+                      {goal.progress}/{goal.target} · +{goal.reward_xp} XP
+                    </small>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => setActiveSection(goal.cta_section)}
+                    >
+                      {goal.cta_label}
+                    </Button>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="pet-panel-empty">
+              Активные цели закрыты, следующий прогресс появится после новых отметок
+            </p>
+          )}
+        </Card>
+
+        <Card className="pet-events-card">
+          <div className="pet-panel-head">
+            <span className="page-kicker">XP</span>
+            <h3>Последние события</h3>
+          </div>
+
+          {recentEvents.length > 0 ? (
+            <div className="pet-event-list">
+              {recentEvents.map((event) => (
+                <article className="pet-event-item" key={event.id}>
+                  <span>+{event.xp_amount} XP</span>
+                  <div>
+                    <strong>{formatPetCaption(event.description)}</strong>
+                    <small>{formatRewardDate(event.created_at)}</small>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="pet-panel-empty">
+              Здесь появится история XP после первых привычек, целей и советов
+            </p>
+          )}
+        </Card>
+      </section>
     </section>
   );
 }

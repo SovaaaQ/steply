@@ -251,8 +251,9 @@ make migrate
 
 ```bash
 cd backend
-python3 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
+python --version
 pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0
 ```
@@ -370,7 +371,7 @@ Backend:
 ```bash
 cd backend
 source .venv/bin/activate
-PYTHONPYCACHEPREFIX=/private/tmp/steply-pycache python3 -m compileall app
+PYTHONPYCACHEPREFIX=/private/tmp/steply-pycache python -m compileall app
 uvicorn app.main:app --reload --host 0.0.0.0
 ```
 

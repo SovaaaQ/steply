@@ -26,20 +26,24 @@ export const petTypeDescriptions: Record<PetType, string> = {
 export const petStateLabels: Record<PetState, string> = {
   happy: "Питомец в форме",
   neutral: "Питомцу нужна забота",
-  sad: "Питомец грустит"
+  sad: "Ритм на паузе"
 };
 
 export const petStateShortLabels: Record<PetState, string> = {
   happy: "в форме",
   neutral: "нужна забота",
-  sad: "грустит"
+  sad: "ритм на паузе"
 };
 
 export const petMiniPhrases: Record<PetState, string> = {
   happy: "Так держать, питомец доволен",
   neutral: "Отметьте привычку, чтобы поддержать питомца",
-  sad: "Питомцу не хватает вашего ритма"
+  sad: "Можно вернуться одним коротким шагом"
 };
+
+export function formatPetCaption(value: string) {
+  return value.trim().replace(/\s*\.+\s*$/g, "");
+}
 
 const difficultyXP: Record<Difficulty, number> = {
   easy: 5,

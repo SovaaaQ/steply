@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 
 import { HabitForm } from "../components/habits/HabitForm";
 import { HabitList } from "../components/habits/HabitList";
+import { PetSetup } from "../components/gamification/PetSetup";
 import { Button } from "../components/ui/Button";
 import { ErrorState } from "../components/ui/ErrorState";
 import { useAppData } from "../app/providers";
@@ -14,7 +15,7 @@ export function HabitsPage() {
     gamification,
     isHabitFormOpen,
     openHabitCreator,
-    setActiveSection
+    updatePet
   } = useAppData();
   const drawerRef = useRef<HTMLElement>(null);
   const {
@@ -145,21 +146,13 @@ export function HabitsPage() {
               />
             ) : (
               <div className="pet-required-panel">
-                <strong>Сначала выберите питомца</strong>
-                <p>
-                  После выбора питомца привычки начнут влиять на его состояние
-                  и прогресс дня.
-                </p>
-                <Button
-                  type="button"
-                  variant="cta"
-                  onClick={() => {
-                    closeHabitForm();
-                    setActiveSection("pet");
-                  }}
-                >
-                  Выбрать питомца
-                </Button>
+                <PetSetup
+                  description="Сохраним питомца и сразу продолжим создание привычки в этой же форме"
+                  onSubmit={updatePet}
+                  pet={gamification.pet}
+                  submitLabel="Продолжить к привычке"
+                  title="Сначала выберите спутника"
+                />
               </div>
             )}
           </article>

@@ -796,11 +796,38 @@ li {
   gap: 16px;
 }
 
+.pet-setup-head {
+  display: grid;
+  gap: 6px;
+}
+
 .pet-setup h3 {
   margin: 0;
   color: var(--color-heading);
   font-size: var(--type-title);
   line-height: 1.1;
+}
+
+.pet-setup-head p {
+  margin: 0;
+  color: var(--color-muted-strong);
+  font-size: var(--type-body);
+  line-height: 1.45;
+}
+
+.pet-type-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.pet-type-field legend {
+  color: var(--color-muted-strong);
+  font-size: var(--type-body);
+  font-weight: var(--font-semibold);
 }
 
 .pet-type-grid {
@@ -810,6 +837,7 @@ li {
 }
 
 .pet-option {
+  position: relative;
   display: grid;
   min-width: 0;
   min-height: 146px;
@@ -824,6 +852,29 @@ li {
   font-size: var(--type-sm);
   font-weight: var(--font-semibold);
   text-align: center;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) ease,
+    background var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
+}
+
+.pet-option:hover {
+  transform: translateY(-1px);
+}
+
+.pet-option:has(.pet-option-input:focus-visible) {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.pet-option-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .pet-option-emoji {
@@ -1224,22 +1275,22 @@ li {
 
 .pet-required-panel {
   display: grid;
-  gap: 12px;
-  border: 1px solid rgba(47, 115, 224, 0.22);
+  gap: 14px;
+  border: 1px solid rgba(94, 122, 0, 0.2);
   border-radius: var(--radius-card);
-  background: var(--color-blue-soft);
+  background:
+    linear-gradient(135deg, rgba(246, 251, 220, 0.92), rgba(255, 255, 255, 0.82)),
+    var(--color-surface-soft);
   padding: 16px;
 }
 
-.pet-required-panel strong {
-  color: var(--color-heading);
-  font-size: 18px;
+.pet-required-panel .pet-type-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.pet-required-panel p {
-  margin: 0;
-  color: var(--color-muted-strong);
-  line-height: 1.5;
+.pet-required-panel .pet-option {
+  min-height: 128px;
+  background: rgba(255, 255, 255, 0.62);
 }
 
 .pet-required-panel .button {
@@ -2343,12 +2394,12 @@ textarea.field-control {
 
 .dashboard-hero-calm {
   grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
-  align-items: center;
+  align-items: start;
 }
 
 .today-summary {
   display: grid;
-  align-content: center;
+  align-content: start;
   gap: 14px;
 }
 
@@ -2739,6 +2790,7 @@ textarea.field-control {
 .pet-animation {
   position: relative;
   overflow: hidden;
+  isolation: isolate;
   display: grid;
   gap: 8px;
   place-items: center;
@@ -2751,21 +2803,35 @@ textarea.field-control {
 
 .pet-animation::before {
   position: absolute;
-  inset: 14%;
+  inset: 10%;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.5);
+  background:
+    radial-gradient(circle at 42% 36%, rgba(255, 255, 255, 0.68), transparent 42%),
+    radial-gradient(circle at 68% 68%, rgba(255, 255, 255, 0.32), transparent 52%);
   content: "";
-  filter: blur(8px);
+  filter: blur(7px);
+  animation: pet-scene-pulse 5.8s ease-in-out infinite;
 }
 
-.pet-animation-emoji,
-.pet-animation-caption {
+.pet-animation-caption,
+.pet-animation-level {
   position: relative;
   z-index: 1;
 }
 
-.pet-animation-emoji {
-  font-size: 1em;
+.pet-animation-level {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: 1px solid rgba(11, 15, 13, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--color-heading);
+  padding: 5px 8px;
+  font-size: var(--type-xs);
+  font-weight: var(--font-bold);
+  line-height: 1;
+  box-shadow: var(--shadow-inset-line);
 }
 
 .pet-animation-caption {
@@ -2793,12 +2859,15 @@ textarea.field-control {
   display: none;
 }
 
+.pet-animation-mini .pet-animation-level {
+  display: none;
+}
+
 .pet-animation-large {
-  width: clamp(160px, 18vw, 230px);
-  height: clamp(160px, 18vw, 230px);
+  width: clamp(164px, 18vw, 232px);
+  height: clamp(164px, 18vw, 232px);
   align-content: center;
   padding: 18px;
-  font-size: clamp(92px, 11vw, 136px);
 }
 
 .pet-animation-happy {
@@ -2807,7 +2876,6 @@ textarea.field-control {
     radial-gradient(circle at 30% 18%, rgba(199, 241, 40, 0.68), transparent 36%),
     linear-gradient(145deg, rgba(240, 255, 198, 0.96), rgba(255, 255, 255, 0.82));
   box-shadow: 0 20px 40px rgba(94, 122, 0, 0.12);
-  animation: pet-bounce 2.4s ease-in-out infinite;
 }
 
 .pet-animation-neutral {
@@ -2815,7 +2883,6 @@ textarea.field-control {
   background:
     radial-gradient(circle at 70% 24%, rgba(198, 237, 255, 0.78), transparent 38%),
     linear-gradient(145deg, rgba(248, 251, 255, 0.96), rgba(238, 246, 255, 0.9));
-  animation: pet-idle 3.8s ease-in-out infinite;
 }
 
 .pet-animation-sad {
@@ -2823,11 +2890,230 @@ textarea.field-control {
   background:
     radial-gradient(circle at 64% 18%, rgba(255, 232, 191, 0.76), transparent 34%),
     linear-gradient(145deg, rgba(250, 247, 241, 0.96), rgba(241, 236, 226, 0.94));
-  animation: pet-slow-sway 4.4s ease-in-out infinite;
 }
 
-.pet-animation-sad .pet-animation-emoji {
-  filter: grayscale(0.22) saturate(0.82);
+.pet-animation-unconfigured {
+  border-color: rgba(255, 255, 255, 0.18);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
+}
+
+.pet-mascot {
+  position: relative;
+  z-index: 1;
+  width: min(90%, 198px);
+  height: min(90%, 198px);
+  overflow: visible;
+  transform-origin: center bottom;
+  will-change: transform;
+  --pet-body: #f4c76f;
+  --pet-head: #f7d889;
+  --pet-accent: #d78f44;
+  --pet-soft: #ffe9be;
+  --pet-mark: #18211c;
+  --pet-line: rgba(42, 38, 25, 0.18);
+}
+
+.pet-animation-mini .pet-mascot {
+  width: 54px;
+  height: 54px;
+}
+
+.pet-mascot-dog {
+  --pet-body: #d89a58;
+  --pet-head: #f2c879;
+  --pet-accent: #9a5d35;
+  --pet-soft: #fff0cf;
+  --pet-mark: #171b18;
+}
+
+.pet-mascot-cat {
+  --pet-body: #f0c95e;
+  --pet-head: #f8d979;
+  --pet-accent: #c98735;
+  --pet-soft: #ffe6b0;
+  --pet-mark: #151a17;
+}
+
+.pet-mascot-parrot {
+  --pet-body: #55b981;
+  --pet-head: #78d6a3;
+  --pet-accent: #2f73e0;
+  --pet-soft: #f6fbdc;
+  --pet-mark: #121815;
+}
+
+.pet-mascot-hamster {
+  --pet-body: #d9a86a;
+  --pet-head: #efc886;
+  --pet-accent: #b87845;
+  --pet-soft: #ffe7bf;
+  --pet-mark: #171713;
+}
+
+.pet-mascot-unconfigured {
+  --pet-body: rgba(255, 255, 255, 0.62);
+  --pet-head: rgba(255, 255, 255, 0.72);
+  --pet-accent: rgba(255, 255, 255, 0.52);
+  --pet-soft: rgba(255, 255, 255, 0.7);
+  --pet-mark: rgba(255, 255, 255, 0.84);
+}
+
+.pet-mascot-character,
+.pet-mascot-tail,
+.pet-mascot-wing,
+.pet-mascot-crest,
+.pet-mascot-ear,
+.pet-mascot-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.pet-mascot-character {
+  transform-origin: center bottom;
+}
+
+.pet-mascot-body,
+.pet-mascot-head,
+.pet-mascot-ear,
+.pet-mascot-tail,
+.pet-mascot-wing,
+.pet-mascot-crest,
+.pet-mascot-paw {
+  stroke: rgba(42, 38, 25, 0.16);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pet-mascot-body {
+  fill: var(--pet-body);
+}
+
+.pet-mascot-head,
+.pet-mascot-ear {
+  fill: var(--pet-head);
+}
+
+.pet-mascot-tail,
+.pet-mascot-wing,
+.pet-mascot-crest {
+  fill: none;
+  stroke: var(--pet-accent);
+  stroke-width: 8;
+}
+
+.pet-mascot-wing {
+  fill: var(--pet-accent);
+  stroke-width: 3;
+}
+
+.pet-mascot-ear-inner,
+.pet-mascot-muzzle,
+.pet-mascot-face-patch,
+.pet-mascot-cheek {
+  fill: var(--pet-soft);
+  opacity: 0.92;
+}
+
+.pet-mascot-eye,
+.pet-mascot-nose {
+  fill: var(--pet-mark);
+  stroke: none;
+}
+
+.pet-mascot-mouth,
+.pet-mascot-whisker,
+.pet-mascot-paw {
+  fill: none;
+  stroke: var(--pet-mark);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pet-mascot-beak {
+  fill: #ffcf45;
+  stroke: rgba(42, 38, 25, 0.16);
+  stroke-width: 3;
+  stroke-linejoin: round;
+}
+
+.pet-mascot-highlight {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.52);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.pet-mascot-question {
+  fill: none;
+  stroke: var(--pet-mark);
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.pet-mascot-question-dot {
+  fill: var(--pet-mark);
+}
+
+.pet-mascot-happy {
+  animation: pet-mascot-float 1.7s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+
+.pet-mascot-neutral,
+.pet-mascot-unconfigured {
+  animation: pet-mascot-float-soft 2.35s ease-in-out infinite;
+}
+
+.pet-mascot-sad {
+  animation: pet-mascot-sad-drift 3.4s ease-in-out infinite;
+}
+
+.pet-mascot-happy .pet-mascot-character {
+  animation: pet-mascot-hop 1.7s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+
+.pet-mascot-neutral .pet-mascot-character,
+.pet-mascot-unconfigured .pet-mascot-character {
+  animation: pet-mascot-breathe 2.5s ease-in-out infinite;
+}
+
+.pet-mascot-sad .pet-mascot-character {
+  animation: pet-mascot-rest 3.2s ease-in-out infinite;
+  filter: saturate(0.78);
+}
+
+.pet-mascot-eye {
+  animation: pet-mascot-blink 4.2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.pet-mascot-happy .pet-mascot-tail {
+  animation: pet-mascot-tail-wag 0.68s ease-in-out infinite;
+  transform-origin: 18% 72%;
+}
+
+.pet-mascot-happy .pet-mascot-wing,
+.pet-mascot-happy .pet-mascot-crest {
+  animation: pet-mascot-wing-flap 0.82s ease-in-out infinite;
+  transform-origin: 70% 50%;
+}
+
+.pet-mascot-happy .pet-mascot-ear-left {
+  animation: pet-mascot-ear-left 0.95s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.pet-mascot-happy .pet-mascot-ear-right {
+  animation: pet-mascot-ear-right 0.95s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.pet-mascot-neutral .pet-mascot-tail,
+.pet-mascot-neutral .pet-mascot-wing {
+  animation: pet-mascot-small-wiggle 1.9s ease-in-out infinite;
 }
 
 .pet-status-card {
@@ -2877,7 +3163,8 @@ textarea.field-control {
 
 .pet-hero-grid p,
 .pet-explanation p,
-.pet-account-link p {
+.pet-next-action p,
+.pet-panel-empty {
   margin: 0;
   color: var(--color-muted);
   font-size: var(--type-body);
@@ -2904,14 +3191,14 @@ textarea.field-control {
 }
 
 .pet-explanation,
-.pet-help-list,
-.pet-account-link {
+.pet-next-action,
+.pet-panel-head {
   display: grid;
   gap: 8px;
 }
 
 .pet-explanation,
-.pet-help-list {
+.pet-next-action {
   border: 1px solid rgba(11, 15, 13, 0.08);
   border-radius: var(--radius-card);
   background: var(--color-surface-soft);
@@ -2919,19 +3206,158 @@ textarea.field-control {
 }
 
 .pet-explanation span,
-.pet-help-list span {
+.pet-next-action span {
   color: var(--color-primary-strong);
   font-size: var(--type-sm);
   font-weight: var(--font-bold);
   text-transform: uppercase;
 }
 
-.pet-help-list ul {
+.pet-next-action {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.pet-next-action strong {
+  display: block;
+  color: var(--color-heading);
+  font-size: var(--type-title);
+  line-height: 1.15;
+}
+
+.pet-action-grid {
   display: grid;
-  gap: 7px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.pet-goals-card,
+.pet-events-card {
+  display: grid;
+  gap: 14px;
+}
+
+.pet-panel-head h3 {
   margin: 0;
-  padding-left: 18px;
-  color: var(--color-muted-strong);
+  color: var(--color-heading);
+  font-size: var(--type-title);
+  line-height: 1.15;
+}
+
+.pet-goal-list,
+.pet-event-list {
+  display: grid;
+  gap: 10px;
+}
+
+.pet-goal-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(11, 15, 13, 0.09);
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.66);
+  padding: 13px;
+}
+
+.pet-goal-item > div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pet-goal-item strong {
+  overflow-wrap: anywhere;
+  color: var(--color-heading);
+  font-size: var(--type-body-large);
+  line-height: 1.2;
+}
+
+.pet-goal-item span,
+.pet-goal-item small {
+  color: var(--color-muted);
+  font-size: var(--type-sm);
+  font-weight: var(--font-semibold);
+  line-height: 1.35;
+}
+
+.pet-goal-progress {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  height: 9px;
+  border: 1px solid rgba(11, 15, 13, 0.08);
+  border-radius: 999px;
+  background: rgba(11, 15, 13, 0.06);
+}
+
+.pet-goal-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-lime), var(--color-forest));
+}
+
+.pet-goal-item small {
+  color: var(--color-primary-strong);
+}
+
+.pet-goal-item .button {
+  min-height: 36px;
+  padding-inline: 12px;
+}
+
+.pet-goal-recovery {
+  border-color: rgba(209, 122, 0, 0.2);
+  background: rgba(255, 240, 200, 0.5);
+}
+
+.pet-goal-insight {
+  border-color: rgba(47, 115, 224, 0.18);
+  background: rgba(234, 241, 255, 0.56);
+}
+
+.pet-event-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(11, 15, 13, 0.08);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-soft);
+  padding: 12px;
+}
+
+.pet-event-item > span {
+  display: inline-grid;
+  min-width: 70px;
+  min-height: 34px;
+  place-items: center;
+  border-radius: var(--radius-small);
+  background: var(--color-lime-faint);
+  color: var(--color-primary-strong);
+  font-size: var(--type-sm);
+  font-weight: var(--font-bold);
+}
+
+.pet-event-item div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pet-event-item strong {
+  overflow-wrap: anywhere;
+  color: var(--color-heading);
+  font-size: var(--type-body);
+  line-height: 1.25;
+}
+
+.pet-event-item small {
+  color: var(--color-muted);
+  font-size: var(--type-xs);
+  font-weight: var(--font-semibold);
 }
 
 
@@ -2971,33 +3397,151 @@ textarea.field-control {
   font-weight: var(--font-semibold);
 }
 
-@keyframes pet-bounce {
+@keyframes pet-scene-pulse {
   0%,
   100% {
-    transform: translateY(0) rotate(0);
+    opacity: 0.78;
+    transform: scale(0.98);
   }
   50% {
-    transform: translateY(-8px) rotate(-2deg);
+    opacity: 1;
+    transform: scale(1.04);
   }
 }
 
-@keyframes pet-idle {
+@keyframes pet-mascot-float {
   0%,
   100% {
-    transform: translateY(0);
+    transform: translateY(0) rotate(0) scale(1);
   }
-  50% {
-    transform: translateY(-3px);
+  32% {
+    transform: translateY(-7px) rotate(-1.6deg) scale(1.035);
+  }
+  58% {
+    transform: translateY(2px) rotate(1.2deg) scale(0.99);
   }
 }
 
-@keyframes pet-slow-sway {
+@keyframes pet-mascot-float-soft {
   0%,
   100% {
-    transform: rotate(-1.5deg);
+    transform: translateY(0) rotate(-0.4deg);
   }
   50% {
-    transform: rotate(1.5deg);
+    transform: translateY(-6px) rotate(0.8deg);
+  }
+}
+
+@keyframes pet-mascot-sad-drift {
+  0%,
+  100% {
+    transform: translateY(1px) rotate(-1.6deg);
+  }
+  50% {
+    transform: translateY(5px) rotate(1.2deg);
+  }
+}
+
+@keyframes pet-mascot-hop {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0) scale(1);
+  }
+  28% {
+    transform: translateY(-8px) rotate(-2.4deg) scale(1.05, 0.96);
+  }
+  56% {
+    transform: translateY(2px) rotate(1.8deg) scale(0.97, 1.04);
+  }
+  74% {
+    transform: translateY(-2px) rotate(-0.8deg) scale(1.02, 0.99);
+  }
+}
+
+@keyframes pet-mascot-breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  48% {
+    transform: translateY(-5px) scale(1.045, 0.98);
+  }
+  68% {
+    transform: translateY(1px) scale(0.99, 1.02);
+  }
+}
+
+@keyframes pet-mascot-rest {
+  0%,
+  100% {
+    transform: translateY(1px) rotate(-2deg) scale(0.99);
+  }
+  50% {
+    transform: translateY(6px) rotate(1.8deg) scale(0.97, 1.025);
+  }
+}
+
+@keyframes pet-mascot-blink {
+  0%,
+  5%,
+  32%,
+  37%,
+  100% {
+    transform: scaleY(1);
+  }
+  2%,
+  34% {
+    transform: scaleY(0.12);
+  }
+}
+
+@keyframes pet-mascot-tail-wag {
+  0%,
+  100% {
+    transform: rotate(-13deg);
+  }
+  50% {
+    transform: rotate(16deg);
+  }
+}
+
+@keyframes pet-mascot-wing-flap {
+  0%,
+  100% {
+    transform: rotate(-8deg) scaleY(0.96);
+  }
+  50% {
+    transform: rotate(12deg) scaleY(1.05);
+  }
+}
+
+@keyframes pet-mascot-ear-left {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(7deg);
+  }
+}
+
+@keyframes pet-mascot-ear-right {
+  0%,
+  100% {
+    transform: translateY(0) rotate(5deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(-7deg);
+  }
+}
+
+@keyframes pet-mascot-small-wiggle {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(6deg);
   }
 }
 
@@ -3086,7 +3630,8 @@ textarea.field-control {
 
 @media (max-width: 1180px) {
   .dashboard-main-grid,
-  .tips-dashboard-grid {
+  .tips-dashboard-grid,
+  .pet-action-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -3338,8 +3883,17 @@ textarea.field-control {
   }
 
   .pet-hero-grid,
+  .pet-next-action,
   .today-row {
     grid-template-columns: 1fr;
+  }
+
+  .pet-screen {
+    padding-bottom: 92px;
+  }
+
+  .pet-next-action .button {
+    width: fit-content;
   }
 }
 
@@ -3451,6 +4005,16 @@ textarea.field-control {
   .pet-level-grid,
   .next-habit-facts {
     grid-template-columns: 1fr;
+  }
+
+  .pet-goal-item,
+  .pet-event-item {
+    grid-template-columns: 1fr;
+  }
+
+  .pet-goal-item .button,
+  .pet-next-action .button {
+    width: 100%;
   }
 
   .mobile-nav button {

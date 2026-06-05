@@ -1,21 +1,42 @@
-import type { Pet } from "../../types/gamification";
-import { petStateLabels, petTypeLabels } from "../../utils/gamification";
+import type { NextBestAction, Pet, StreakState } from "../../types/gamification";
+import { formatPetCaption, petStateLabels, petTypeLabels } from "../../utils/gamification";
 import { Button } from "../ui/Button";
 import { XPProgressBar } from "./XPProgressBar";
 import { PetAnimation } from "./PetAnimation";
 
 interface PetStatusCardProps {
   pet: Pet;
+  nextAction: NextBestAction;
+  streak: StreakState;
+  onAction: () => void;
   onEdit: () => void;
 }
 
-const stateReason = {
-  happy: "в хорошей форме: привычки идут регулярно",
-  neutral: "ждёт ближайшую отметку, чтобы не терять ритм",
-  sad: "заметил несколько пропусков. Можно начать с мягкого шага"
-};
+function getTodayProgressLabel(streak: StreakState) {
+  if (streak.scheduled_today === 0) {
+    return "на сегодня нет запланированных привычек";
+  }
+  return `сегодня выполнено ${streak.completed_today} из ${streak.scheduled_today}`;
+}
 
-export function PetStatusCard({ pet, onEdit }: PetStatusCardProps) {
+function getStateReason(petName: string, petState: Pet["pet_state"], streak: StreakState) {
+  const todayProgress = getTodayProgressLabel(streak);
+  if (petState === "happy") {
+    return `${petName} в форме: ${todayProgress}, регулярность держится`;
+  }
+  if (petState === "neutral") {
+    return `${petName} ждёт ближайший шаг: ${todayProgress}`;
+  }
+  return `${petName} на паузе после пропусков, начните с короткого шага без компенсации объёма`;
+}
+
+export function PetStatusCard({
+  pet,
+  nextAction,
+  streak,
+  onAction,
+  onEdit
+}: PetStatusCardProps) {
   const petType = pet.pet_type ?? "dog";
   const petName = pet.pet_name || "Питомец";
   const isMaxLevel = pet.level >= 5 && pet.xp_to_next_level === 0;
@@ -23,7 +44,7 @@ export function PetStatusCard({ pet, onEdit }: PetStatusCardProps) {
   return (
     <section className={`pet-status-card pet-state-${pet.pet_state}`}>
       <div className="pet-hero-grid">
-        <PetAnimation petType={petType} state={pet.pet_state} />
+        <PetAnimation petType={petType} state={pet.pet_state} level={pet.level} />
         <div>
           <span className="page-kicker">Питомец</span>
           <h2>{petName}</h2>
@@ -59,16 +80,18 @@ export function PetStatusCard({ pet, onEdit }: PetStatusCardProps) {
 
       <div className="pet-explanation">
         <span>Почему так</span>
-        <p>{petName} {stateReason[pet.pet_state]}</p>
+        <p>{getStateReason(petName, pet.pet_state, streak)}</p>
       </div>
 
-      <div className="pet-help-list">
-        <span>Что поможет</span>
-        <ul>
-          <li>Отметить ближайшую привычку</li>
-          <li>Сделать минимальную версию</li>
-          <li>Вернуться к ритму без давления</li>
-        </ul>
+      <div className="pet-next-action">
+        <div>
+          <span>Ближайшее действие</span>
+          <strong>{nextAction.title}</strong>
+          <p>{formatPetCaption(nextAction.description)}</p>
+        </div>
+        <Button type="button" variant="cta" onClick={onAction}>
+          {nextAction.cta_label}
+        </Button>
       </div>
     </section>
   );

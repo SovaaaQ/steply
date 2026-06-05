@@ -2,7 +2,7 @@
 
 ## Что нужно
 
-- Python 3.11+ для локального backend. Docker image использует Python 3.12.
+- Python 3.12.x для локального backend. Docker image тоже использует Python 3.12.
 - Node.js 20+ и `npm` для локального frontend.
 - PostgreSQL 16 для локального запуска без Docker.
 - Docker Desktop / Docker Engine с Compose plugin для контейнерного сценария.
@@ -137,8 +137,9 @@ psql -d steply_db -c "ALTER USER steply_user WITH PASSWORD 'steply_password';"
 ```bash
 cp backend/.env.example backend/.env
 cd backend
-python3 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
+python --version
 pip install -r requirements.txt
 alembic upgrade head
 uvicorn app.main:app --reload --host 0.0.0.0
