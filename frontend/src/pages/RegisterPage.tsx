@@ -100,7 +100,7 @@ export function RegisterPage({
           {error && <ErrorState message={error} />}
 
           <Button variant="cta" disabled={isLoading}>
-            {isLoading ? "Создаем" : "Создать аккаунт"}
+            {isLoading ? "Создаём" : "Создать аккаунт"}
           </Button>
         </form>
         <AuthQrCard />

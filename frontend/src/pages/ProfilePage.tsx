@@ -17,7 +17,7 @@ export function ProfilePage() {
   const petType = gamification.pet.pet_type;
   const petCaption = petType
     ? `${petTypeLabels[petType]} · ${petStateShortLabels[gamification.pet.pet_state]}`
-    : "Питомец еще не выбран";
+    : "Питомец ещё не выбран";
 
   return (
     <section className="profile-page page-stack">

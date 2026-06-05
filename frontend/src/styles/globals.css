@@ -3143,14 +3143,20 @@ textarea.field-control {
   .mobile-nav {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
+    position: fixed;
+    z-index: 70;
+    right: auto;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: 50%;
     gap: 2px;
-    width: 100%;
-    margin-top: 16px;
+    width: min(calc(100% - 24px), 780px);
+    margin-top: 0;
     border: 1px solid var(--color-border-inverse);
     border-radius: var(--radius-card);
     background: var(--color-graphite);
     box-shadow: var(--shadow-soft);
     padding: 6px;
+    transform: translateX(-50%);
   }
 
   .mobile-nav button {
@@ -3355,7 +3361,7 @@ textarea.field-control {
 
   .app-header {
     margin-bottom: 12px;
-    padding: 6px 0 12px;
+    padding: 14px 16px;
   }
 
   .onboarding-overlay {
@@ -3450,6 +3456,12 @@ textarea.field-control {
   .mobile-nav button {
     min-height: 50px;
     font-size: 9px;
+  }
+
+  .mobile-nav {
+    bottom: max(9px, env(safe-area-inset-bottom));
+    width: min(calc(100% - 18px), 440px);
+    padding: 5px;
   }
 
   .habit-card-accent {

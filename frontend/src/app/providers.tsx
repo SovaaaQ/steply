@@ -60,7 +60,7 @@ const emptyGamificationSummary: GamificationSummary = {
     current: 0,
     best: 0,
     status: "empty",
-    label: "Серия еще не началась",
+    label: "Серия ещё не началась",
     next_step: "Создайте привычку и отметьте первый короткий шаг",
     is_at_risk: false,
     last_active_date: null,
@@ -475,7 +475,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   async function deleteHabit(habitId: number) {
-    if (!window.confirm("Удалить привычку и историю ее выполнения?")) {
+    if (!window.confirm("Удалить привычку и историю её выполнения?")) {
       return;
     }
     setError("");
@@ -494,7 +494,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     clearNotice();
     try {
       await gamificationApi.updatePet(payload);
-      showNotice("Питомец сохранен");
+      showNotice("Питомец сохранён");
       await loadDashboard();
     } catch (petError) {
       setError(petError instanceof Error ? petError.message : "Не удалось сохранить питомца");

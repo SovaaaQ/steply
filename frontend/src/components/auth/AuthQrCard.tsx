@@ -406,7 +406,7 @@ export function AuthQrCard({
           {resolvedEyebrow && <span className="auth-qr-eyebrow">{resolvedEyebrow}</span>}
           <strong>QR появится на публичном адресе</strong>
           <span>
-            На хостинге он возьмет текущий домен сайта. Для локального показа задайте
+            На хостинге он возьмёт текущий домен сайта. Для локального показа задайте
             <code>VITE_PUBLIC_APP_URL=http://IP:5173</code> в root <code>.env</code>.
           </span>
         </div>

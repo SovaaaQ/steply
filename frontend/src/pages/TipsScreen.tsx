@@ -217,7 +217,7 @@ function getPositiveReason(stats: HabitStats | undefined, isDone: boolean) {
   if (stats && stats.total_entries >= 3) {
     parts.push(`за 7 дней выполнено ${percent(stats.completion_rate_last_7)}`);
   }
-  return parts.length > 0 ? parts.join(", ") : "Привычка идет по плану";
+  return parts.length > 0 ? parts.join(", ") : "Привычка идёт по плану";
 }
 
 function getRecommendationReason(
