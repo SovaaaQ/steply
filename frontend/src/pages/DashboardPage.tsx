@@ -58,7 +58,6 @@ export function DashboardPage() {
             onMark={(habitId, status) => void markHabit(habitId, status)}
           />
           <PetMiniWidget pet={gamification.pet} onOpen={() => setActiveSection("pet")} />
-          <AuthQrCard variant="demo" />
         </div>
       </section>
 
@@ -112,10 +111,13 @@ export function DashboardPage() {
           )}
         </section>
 
-        <DailyRecommendationCard
-          recommendation={recommendationOfDay}
-          onOpen={() => setActiveSection("recommendations")}
-        />
+        <div className="dashboard-secondary-stack">
+          <DailyRecommendationCard
+            recommendation={recommendationOfDay}
+            onOpen={() => setActiveSection("recommendations")}
+          />
+          <AuthQrCard variant="demo" />
+        </div>
       </section>
     </div>
   );
