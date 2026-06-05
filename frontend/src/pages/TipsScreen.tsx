@@ -26,7 +26,7 @@ interface AdviceItem {
   recommendationId?: number;
 }
 
-const MAX_ADVICE_WORDS = 48;
+const MAX_ADVICE_WORDS = 56;
 const URGENT_RECOMMENDATION_TYPES = new Set([
   "risk_ignored_recovery",
   "reset_plan",
@@ -56,12 +56,19 @@ const POSITIVE_RECOMMENDATION_TYPES = new Set([
 
 function normalizeAdviceText(value: string) {
   const withoutListTail = value.split(/\s(?:Шаги|Действия)\s*:/i)[0] || value;
-  const text = stripOuterQuotes(withoutListTail.replace(/\s+/g, " ").trim());
+  const text = stripOuterQuotes(
+    withoutListTail
+      .replace(/\u00a0/g, " ")
+      .replace(/[—–−]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .replace(/\.+$/g, "")
+  );
   const words = text.split(" ").filter(Boolean);
   if (words.length <= MAX_ADVICE_WORDS) {
     return text;
   }
-  return `${words.slice(0, MAX_ADVICE_WORDS).join(" ").replace(/[ ,;:.!?]+$/, "")}.`;
+  return words.slice(0, MAX_ADVICE_WORDS).join(" ").replace(/[ ,;:.!?]+$/, "");
 }
 
 function stripOuterQuotes(value: string) {
@@ -561,8 +568,8 @@ export function TipsScreen() {
 
           <section className="tips-section-panel tips-advice-panel">
             <div className="tips-section-heading">
-              <h2>Следующие советы</h2>
-              <p>Практичные подсказки по привычкам, регулярности и возвращению</p>
+              <h2>Что сделать дальше</h2>
+              <p>Короткие действия по привычкам, регулярности и возвращению</p>
             </div>
             <div className="tips-card-list tips-card-list-wide">
               {secondaryAdviceItems.length > 0 ? (

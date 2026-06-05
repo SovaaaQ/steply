@@ -24,11 +24,14 @@ class AIRecommendationDraft:
 
 MAX_TITLE_CHARS = 70
 MAX_MESSAGE_CHARS = 520
-MAX_MESSAGE_WORDS = 48
+MAX_MESSAGE_WORDS = 56
 
 
 def _clean_text(value: str) -> str:
-    return " ".join(value.split()).strip()
+    without_dashes = value.replace("\u00a0", " ")
+    for dash in ("—", "–", "−"):
+        without_dashes = without_dashes.replace(dash, " ")
+    return " ".join(without_dashes.split()).strip()
 
 
 def _clip_text(value: str, max_length: int) -> str:
@@ -41,7 +44,7 @@ def _clip_text(value: str, max_length: int) -> str:
         if position >= max_length * 0.55:
             clipped = clipped[:position]
             break
-    return clipped.rstrip(" ,;:.!?") + "."
+    return clipped.rstrip(" ,;:.!?")
 
 
 def _clip_words(value: str, max_words: int) -> str:
@@ -49,7 +52,7 @@ def _clip_words(value: str, max_words: int) -> str:
     words = text.split()
     if len(words) <= max_words:
         return text
-    return " ".join(words[:max_words]).rstrip(" ,;:.!?") + "."
+    return " ".join(words[:max_words]).rstrip(" ,;:.!?")
 
 
 def _strip_outer_quotes(value: str) -> str:
@@ -166,9 +169,14 @@ def _system_instructions() -> str:
         "Для risk_ignored_recovery и reset_plan признай, что прежний формат пока слишком тяжелый, "
         "но без обвинений и стыда. "
         "Если тип plan_ahead, помоги подготовить выполнение заранее до пропуска. "
-        "Ответ должен звучать как короткая человеческая подсказка, не как список. "
-        "title до 4 слов, message 30-48 слов. "
-        "Не используй нумерацию, '1)', '2)', маркированные списки и слово 'Шаги'. "
+        "Message должен быть практическим планом из трех коротких предложений строго в формате: "
+        "'Сегодня: ... Минимум: ... Готово: ...'. "
+        "В 'Сегодня' назови конкретное наблюдаемое действие, в 'Минимум' - облегченный вариант "
+        "на случай нехватки сил или риска, в 'Готово' - понятный критерий завершения. "
+        "title до 4 слов, message 28-52 слова. "
+        "Не ставь точки в конце предложений и не используй длинные тире. "
+        "Не используй нумерацию, '1)', '2)', маркированные списки, слово 'Шаги' и абстрактные "
+        "формулировки вроде 'уберите барьер' без конкретизации. "
         "Не обещай медицинский эффект, не ставь "
         "диагнозы и не назначай лечение. Если привычка связана со здоровьем, зависимостью, "
         "курением, алкоголем, питанием или лекарствами, добавь мягкую фразу о том, что при "
@@ -182,8 +190,9 @@ def _system_instructions() -> str:
 def _user_prompt(context: dict[str, Any]) -> str:
     return (
         "Сформируй совет на сегодня на основе контекста. Верни только JSON вида "
-        '{"title":"...","message":"...","actions":[]}. '
-        "Никакого текста вне JSON. Message должен быть мини-рассказом на 1-2 коротких предложения. "
+        '{"title":"...","message":"Сегодня: ... Минимум: ... Готово: ..."}. '
+        "Никакого текста вне JSON. Не добавляй actions или другие поля. "
+        "В message не ставь точки в конце сегментов. "
         f"Контекст: {json.dumps(context, ensure_ascii=False)}"
     )
 

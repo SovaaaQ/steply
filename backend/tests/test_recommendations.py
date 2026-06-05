@@ -80,6 +80,13 @@ def make_prediction(
     )
 
 
+def assert_action_plan(message: str) -> None:
+    assert message.startswith("Сегодня: ")
+    assert " Минимум: " in message
+    assert " Готово: " in message
+    assert not message.endswith(".")
+
+
 def test_select_current_recommendations_keeps_latest_per_active_habit() -> None:
     now = datetime(2026, 6, 4, 8, 0, tzinfo=timezone.utc)
     recommendations = [
@@ -104,7 +111,8 @@ def test_first_step_recommendation_is_used_for_first_habit_without_history() -> 
 
     assert rec_type == FIRST_STEP_RECOMMENDATION_TYPE
     assert title == "Первый шаг"
-    assert "Привычка «диплом» создана" in message
+    assert_action_plan(message)
+    assert "самый маленький шаг" in message
     assert priority == "normal"
 
 
@@ -156,7 +164,8 @@ def test_early_recovery_wins_over_data_collection_when_history_has_miss() -> Non
 
     assert rec_type == EARLY_RECOVERY_RECOMMENDATION_TYPE
     assert title == "Раннее восстановление"
-    assert "пропуск уже появился" in message
+    assert_action_plan(message)
+    assert "минимальный вариант" in message
     assert priority == "normal"
 
 
@@ -177,7 +186,8 @@ def test_miss_streak_recovery_is_used_for_three_consecutive_misses() -> None:
 
     assert rec_type == MISS_STREAK_RECOVERY_RECOMMENDATION_TYPE
     assert title == "Вернуться мягко"
-    assert "3 пропуска подряд" in message
+    assert_action_plan(message)
+    assert "минимальный шаг" in message
     assert priority == "high"
 
 
@@ -200,7 +210,8 @@ def test_risk_ignored_recovery_changes_repeated_high_risk_advice() -> None:
 
     assert rec_type == RISK_IGNORED_RECOVERY_RECOMMENDATION_TYPE
     assert title == "Пересоберите условия"
-    assert "пропуски продолжаются" in message
+    assert_action_plan(message)
+    assert "полной версии" in message
     assert priority == "high"
 
 
@@ -221,7 +232,8 @@ def test_reset_plan_is_used_for_long_pause_without_previous_risk_advice() -> Non
 
     assert rec_type == RESET_PLAN_RECOMMENDATION_TYPE
     assert title == "План перезапуска"
-    assert "длинная пауза" in message
+    assert_action_plan(message)
+    assert "перезапустите" in message
     assert priority == "high"
 
 
@@ -259,7 +271,8 @@ def test_after_completion_advice_is_used_for_early_success() -> None:
 
     assert rec_type == AFTER_COMPLETION_RECOMMENDATION_TYPE
     assert title == "После отметки"
-    assert "уже отметили" in message
+    assert_action_plan(message)
+    assert "видимую подсказку" in message
     assert priority == "normal"
 
 
@@ -283,7 +296,8 @@ def test_on_track_support_is_used_after_regular_completion() -> None:
 
     assert rec_type == ON_TRACK_SUPPORT_RECOMMENDATION_TYPE
     assert title == "Идет по плану"
-    assert "выполнена вовремя" in message
+    assert_action_plan(message)
+    assert "предмет, файл или место старта" in message
     assert priority == "low"
 
 
@@ -307,7 +321,8 @@ def test_streak_maintenance_is_used_when_everything_is_on_time() -> None:
 
     assert rec_type == STREAK_MAINTENANCE_RECOMMENDATION_TYPE
     assert title == "Удержать серию"
-    assert "сегодня выполнена" in message
+    assert_action_plan(message)
+    assert "следующему повтору" in message
     assert priority == "low"
 
 
@@ -320,22 +335,22 @@ def test_normalize_recommendation_message_removes_ai_step_tail() -> None:
 
     assert _normalize_recommendation_message(message) == (
         "Сегодня откройте файл диплома и приведите в порядок один небольшой фрагмент. "
-        "Этого достаточно, чтобы сохранить контакт с задачей."
+        "Этого достаточно, чтобы сохранить контакт с задачей"
     )
 
 
-def test_normalize_recommendation_message_caps_to_forty_eight_words() -> None:
+def test_normalize_recommendation_message_caps_to_fifty_six_words() -> None:
     message = " ".join(f"слово{index}" for index in range(70))
 
     normalized = _normalize_recommendation_message(message)
 
-    assert len(normalized.split()) == 48
-    assert normalized.endswith(".")
+    assert len(normalized.split()) == 56
+    assert not normalized.endswith(".")
 
 
 def test_normalize_recommendation_message_removes_outer_quotes() -> None:
     message = "«Сегодня откройте файл диплома и напишите один короткий абзац.»"
 
     assert _normalize_recommendation_message(message) == (
-        "Сегодня откройте файл диплома и напишите один короткий абзац."
+        "Сегодня откройте файл диплома и напишите один короткий абзац"
     )

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Iterable, Sequence
 from datetime import date, datetime
 import re
@@ -14,10 +16,12 @@ from app.services.ai_recommendations import generate_ai_recommendation
 from app.services.predictive import create_prediction
 
 
-MAX_RECOMMENDATION_MESSAGE_WORDS = 48
+MAX_RECOMMENDATION_MESSAGE_WORDS = 56
 _PRIORITY_WEIGHT = {"high": 3, "normal": 2, "low": 1}
 _LIST_TAIL_PATTERN = re.compile(r"\b(?:Шаги|Действия)\s*:", re.IGNORECASE)
 _NUMBERED_TAIL_PATTERN = re.compile(r"(?:^|\s)\d+[.)]\s+.*$", re.DOTALL)
+_LONG_DASH_PATTERN = re.compile(r"[—–−]+")
+_WHITESPACE_PATTERN = re.compile(r"\s+")
 FIRST_STEP_RECOMMENDATION_TYPE = "first_step"
 AFTER_COMPLETION_RECOMMENDATION_TYPE = "after_completion"
 ON_TRACK_SUPPORT_RECOMMENDATION_TYPE = "on_track_support"
@@ -68,7 +72,8 @@ def _day_start(today: date) -> datetime:
 
 
 def _clean_text(value: str) -> str:
-    return " ".join(value.split()).strip()
+    without_dashes = _LONG_DASH_PATTERN.sub(" ", value.replace("\u00a0", " "))
+    return _WHITESPACE_PATTERN.sub(" ", without_dashes).strip()
 
 
 def _feature_int(features: dict, key: str, default: int = 0) -> int:
@@ -128,13 +133,35 @@ def _recovery_task_fragment(habit: Habit) -> str:
     return _lower_first(getRecoveryTask(habit).strip().rstrip(" ."))
 
 
-def _ensure_sentence_end(value: str) -> str:
-    text = value.rstrip(" ,;:")
-    if not text:
-        return text
-    if text[-1] in ".!?":
-        return text
-    return f"{text}."
+def _strip_terminal_punctuation(value: str) -> str:
+    return value.rstrip(" ,;:.!?")
+
+
+def _sentence_fragment(value: str) -> str:
+    return _clean_text(value).rstrip(" ,;:.!?")
+
+
+def _format_minutes(value: int | None) -> str:
+    minutes = max(int(value or 5), 1)
+    if minutes % 10 == 1 and minutes % 100 != 11:
+        unit = "минута"
+    elif minutes % 10 in {2, 3, 4} and minutes % 100 not in {12, 13, 14}:
+        unit = "минуты"
+    else:
+        unit = "минут"
+    return f"{minutes} {unit}"
+
+
+def _recovery_time_fragment(habit: Habit) -> str:
+    return _format_minutes(getattr(habit, "recovery_minutes", None))
+
+
+def _action_plan_message(today: str, minimum: str, done: str) -> str:
+    return (
+        f"Сегодня: {_sentence_fragment(today)} "
+        f"Минимум: {_sentence_fragment(minimum)} "
+        f"Готово: {_sentence_fragment(done)}"
+    )
 
 
 def _strip_list_tail(value: str) -> str:
@@ -169,7 +196,7 @@ def _normalize_recommendation_message(value: str) -> str:
     if len(words) > MAX_RECOMMENDATION_MESSAGE_WORDS:
         text = " ".join(words[:MAX_RECOMMENDATION_MESSAGE_WORDS])
 
-    return _ensure_sentence_end(text)
+    return _strip_terminal_punctuation(text)
 
 
 def _normalize_recommendation(recommendation: Recommendation) -> None:
@@ -308,10 +335,10 @@ def _build_first_step_recommendation_text(user: User, habit: Habit) -> tuple[str
     return (
         FIRST_STEP_RECOMMENDATION_TYPE,
         "Первый шаг",
-        (
-            f"Привычка «{habit.title}» создана. Сегодня сделайте самый маленький шаг: "
-            f"{action}{pet_hint}. После первой отметки Steply начнет точнее "
-            "подбирать советы."
+        _action_plan_message(
+            f"сделайте самый маленький шаг для «{habit.title}»: {action}",
+            f"{_recovery_time_fragment(habit)} без полной версии привычки",
+            f"поставлена первая отметка{pet_hint}",
         ),
         "normal",
     )
@@ -343,6 +370,7 @@ def _build_recommendation_text(
     completed_today = _feature_bool(features, "completed_today")
     missed_today = _feature_bool(features, "missed_today")
     recovery_task = _recovery_task_fragment(habit)
+    recovery_time = _recovery_time_fragment(habit)
     is_on_track_period = (
         total_last_7 >= 3
         and missed_last_7 == 0
@@ -363,10 +391,13 @@ def _build_recommendation_text(
             return (
                 STREAK_MAINTENANCE_RECOMMENDATION_TYPE,
                 "Удержать серию",
-                (
-                    f"Привычка «{habit.title}» сегодня выполнена, {series_text}. "
-                    "Чтобы завтра не начинать с нуля, "
-                    "подготовьте самый простой вход заранее: место, файл, одежду или первый вопрос."
+                _action_plan_message(
+                    (
+                        "подготовьте самый простой вход к следующему повтору: "
+                        "место, файл, одежду или первый вопрос"
+                    ),
+                    "оставьте одну видимую подсказку и не повышайте нагрузку",
+                    f"следующий старт понятен заранее, {series_text}",
                 ),
                 "low",
             )
@@ -375,10 +406,10 @@ def _build_recommendation_text(
             return (
                 AFTER_COMPLETION_RECOMMENDATION_TYPE,
                 "После отметки",
-                (
-                    f"Вы уже отметили «{habit.title}» сегодня. Закрепите старт: "
-                    "оставьте видимую подсказку для следующего выполнения и не повышайте нагрузку, "
-                    "пока привычка не повторится несколько раз."
+                _action_plan_message(
+                    f"оставьте видимую подсказку для следующего выполнения «{habit.title}»",
+                    "не повышайте нагрузку, пока привычка не повторится несколько раз",
+                    "подсказка лежит там, где начнется следующий повтор",
                 ),
                 "normal",
             )
@@ -386,10 +417,13 @@ def _build_recommendation_text(
         return (
             ON_TRACK_SUPPORT_RECOMMENDATION_TYPE,
             "Идет по плану",
-            (
-                f"Сегодня «{habit.title}» выполнена вовремя. Используйте этот момент: "
-                "заранее уберите один лишний барьер для следующего раза, чтобы повторить действие "
-                "без долгой подготовки."
+            _action_plan_message(
+                (
+                    "подготовьте первый предмет, файл или место старта для следующего "
+                    f"выполнения «{habit.title}»"
+                ),
+                "уберите один лишний поиск или решение перед стартом",
+                "следующий повтор можно начать без долгой подготовки",
             ),
             "low",
         )
@@ -402,10 +436,10 @@ def _build_recommendation_text(
         return (
             RISK_IGNORED_RECOVERY_RECOMMENDATION_TYPE,
             "Пересоберите условия",
-            (
-                f"У привычки «{habit.title}» пропуски продолжаются после риск-сигнала. "
-                "Сегодня не возвращайтесь к полной версии: уменьшите цель до самого короткого шага "
-                f"и сделайте только его: {recovery_task}."
+            _action_plan_message(
+                f"не возвращайтесь к полной версии, сделайте только {recovery_task}",
+                f"ограничьте попытку до {recovery_time} и остановитесь",
+                "засчитан минимальный шаг, а формат привычки стал легче",
             ),
             "high",
         )
@@ -416,10 +450,10 @@ def _build_recommendation_text(
         return (
             RESET_PLAN_RECOMMENDATION_TYPE,
             "План перезапуска",
-            (
-                f"У привычки «{habit.title}» накопилась длинная пауза. "
-                "На сегодня снизьте формат до минимума, поменяйте время на более реальное "
-                f"и отметьте только один шаг: {recovery_task}."
+            _action_plan_message(
+                f"перезапустите «{habit.title}» через один короткий шаг: {recovery_task}",
+                f"{recovery_time} в более реальное время без попытки наверстать паузу",
+                "отмечен минимум и выбран более легкий следующий повтор",
             ),
             "high",
         )
@@ -428,10 +462,10 @@ def _build_recommendation_text(
         return (
             MISS_STREAK_RECOVERY_RECOMMENDATION_TYPE,
             "Вернуться мягко",
-            (
-                f"У привычки «{habit.title}» уже {consecutive_missed} пропуска подряд. "
-                "Не пытайтесь наверстать весь объем. Сегодня сделайте только минимальный шаг: "
-                f"{recovery_task}, и сохраните отметку как возвращение в ритм."
+            _action_plan_message(
+                f"сделайте только минимальный шаг для «{habit.title}»: {recovery_task}",
+                f"{recovery_time} без компенсации прошлых пропусков",
+                "поставлена отметка возвращения, а не попытка наверстать все",
             ),
             "high" if consecutive_missed >= 3 else "normal",
         )
@@ -440,10 +474,10 @@ def _build_recommendation_text(
         return (
             EARLY_RECOVERY_RECOMMENDATION_TYPE,
             "Раннее восстановление",
-            (
-                f"По привычке «{habit.title}» истории еще мало, но пропуск уже появился. "
-                "Сегодня важнее не точный прогноз, а быстрый возврат: сделайте минимальный вариант "
-                f"без компенсации пропуска: {recovery_task}."
+            _action_plan_message(
+                f"верните «{habit.title}» через минимальный вариант: {recovery_task}",
+                f"{recovery_time} без компенсации первого пропуска",
+                "появилась новая отметка, и история стала точнее",
             ),
             "normal",
         )
@@ -452,10 +486,10 @@ def _build_recommendation_text(
         return (
             RISK_RECOVERY_RECOMMENDATION_TYPE,
             "Риск пропуска",
-            (
-                f"По привычке «{habit.title}» сегодня высокий риск пропуска. "
-                "Сузьте задачу до самого простого действия и выполните его в ближайшее удобное окно: "
-                f"{recovery_task}."
+            _action_plan_message(
+                f"сделайте самый простой вариант «{habit.title}»: {recovery_task}",
+                f"{recovery_time} в ближайшее удобное окно",
+                "отмечен минимум до того, как риск стал пропуском",
             ),
             "high",
         )
@@ -465,20 +499,20 @@ def _build_recommendation_text(
             return (
                 SOFT_RECOVERY_RECOMMENDATION_TYPE,
                 "Сделайте проще",
-                (
-                    f"У привычки «{habit.title}» появились недавние пропуски. "
-                    "На сегодня уменьшите объем и заранее решите, где закончится минимальная версия, "
-                    "чтобы отметка не зависела от идеального настроя."
+                _action_plan_message(
+                    f"уменьшите объем «{habit.title}» и заранее назовите точку остановки",
+                    f"сделайте только {recovery_task}",
+                    "минимальная версия завершена и отмечена без идеального настроя",
                 ),
                 "normal",
             )
         return (
             PLAN_AHEAD_RECOMMENDATION_TYPE,
             "Запланируйте заранее",
-            (
-                f"Для привычки «{habit.title}» риск пока средний. "
-                "Выберите конкретное время, подготовьте первый шаг и оставьте рядом то, что нужно "
-                "для выполнения без лишнего поиска."
+            _action_plan_message(
+                f"выберите конкретное окно для «{habit.title}» и подготовьте первый шаг",
+                "оставьте рядом только то, что нужно для старта",
+                "время и место старта понятны до выполнения",
             ),
             "normal",
         )
@@ -487,9 +521,10 @@ def _build_recommendation_text(
         return (
             DATA_COLLECTION_RECOMMENDATION_TYPE,
             "Пока рано считать риск",
-            (
-                f"По привычке «{habit.title}» пока мало отметок. "
-                "Отмечайте ее несколько дней, и Steply точнее поймет ваш ритм."
+            _action_plan_message(
+                f"выполните «{habit.title}» в обычном минимальном формате",
+                f"если день плотный, сделайте только {recovery_task}",
+                "добавлена отметка, которая делает будущий прогноз точнее",
             ),
             "normal",
         )
@@ -498,10 +533,10 @@ def _build_recommendation_text(
         return (
             STREAK_SUPPORT_RECOMMENDATION_TYPE,
             "Серия укрепляется",
-            (
-                f"У привычки «{habit.title}» хорошая серия: {current_streak} подряд. "
-                "Сохраните темп без резкого усложнения: заранее подготовьте следующий повтор "
-                "и оставьте цель такой же простой."
+            _action_plan_message(
+                f"подготовьте следующий повтор «{habit.title}» без усложнения цели",
+                "оставьте такую же простую версию, как в удачные дни",
+                f"серия {current_streak} подряд защищена от резкого роста нагрузки",
             ),
             "low",
         )
@@ -510,10 +545,10 @@ def _build_recommendation_text(
         return (
             STREAK_MAINTENANCE_RECOMMENDATION_TYPE,
             "Ритм держится",
-            (
-                f"Привычка «{habit.title}» идет ровно: за последние отметки нет пропусков. "
-                "Продолжайте в том же формате и заранее защитите ближайший сложный день "
-                "минимальной версией."
+            _action_plan_message(
+                f"оставьте «{habit.title}» в том же формате и выберите мини-версию для сложного дня",
+                f"в сложный день достаточно {recovery_task}",
+                "есть понятный план на обычный и облегченный повтор",
             ),
             "low",
         )
@@ -522,10 +557,10 @@ def _build_recommendation_text(
         return (
             SOFT_RECOVERY_RECOMMENDATION_TYPE,
             "Вернитесь к ритму",
-            (
-                f"Привычка «{habit.title}» давно не выполнялась. "
-                "Начните с короткого шага без попытки наверстать все сразу, а затем отметьте "
-                "возвращение в приложении."
+            _action_plan_message(
+                f"верните «{habit.title}» через короткий шаг: {recovery_task}",
+                f"{recovery_time} без попытки наверстать все сразу",
+                "возвращение отмечено в приложении",
             ),
             "normal",
         )
@@ -533,10 +568,10 @@ def _build_recommendation_text(
     return (
         KEEP_REGULAR_RECOMMENDATION_TYPE,
         "Ритм держится",
-        (
-            f"Привычка «{habit.title}» идет стабильно. "
-            f"Выполнение сейчас: {round(completion_rate * 100)}%. "
-            "Продолжайте отмечать ее, чтобы советы оставались точными."
+        _action_plan_message(
+            f"повторите «{habit.title}» в привычное время",
+            f"если день плотный, сделайте только {recovery_task}",
+            f"отметка добавлена, текущая регулярность {round(completion_rate * 100)}% сохранена",
         ),
         "low",
     )

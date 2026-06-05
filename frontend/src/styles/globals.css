@@ -1809,15 +1809,18 @@ textarea.field-control {
 }
 
 .recommendation-habit {
+  min-width: 0;
   color: var(--color-heading);
   font-size: 17px;
   font-weight: var(--font-bold);
-  overflow-wrap: anywhere;
+  hyphens: none;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .recommendation-card-featured .recommendation-habit {
-  font-size: clamp(20px, 1.7vw, 25px);
-  line-height: 1.1;
+  font-size: clamp(19px, 1.45vw, 22px);
+  line-height: 1.14;
 }
 
 .recommendation-meta {
@@ -1846,12 +1849,81 @@ textarea.field-control {
   color: var(--color-muted-strong);
 }
 
+.recommendation-action-plan {
+  display: grid;
+  gap: 6px;
+}
+
+.recommendation-action-plan p {
+  display: grid;
+  grid-template-columns: minmax(76px, auto) 1fr;
+  gap: 10px;
+  align-items: baseline;
+  margin: 0;
+  color: var(--color-muted-strong);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.recommendation-action-plan strong {
+  color: var(--color-heading);
+  font-size: 10px;
+  font-weight: var(--font-bold);
+  letter-spacing: 0;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.recommendation-action-plan span {
+  min-width: 0;
+}
+
+@media (max-width: 520px) {
+  .recommendation-card {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .recommendation-card-featured {
+    padding: 14px;
+  }
+
+  .recommendation-card-heading {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .recommendation-card-featured .recommendation-habit {
+    font-size: 24px;
+    line-height: 1.08;
+  }
+
+  .recommendation-meta {
+    justify-self: start;
+    white-space: normal;
+  }
+
+  .recommendation-action-plan p {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+}
+
 .recommendation-card-featured .recommendation-advice {
   max-width: 680px;
   color: var(--color-heading);
   font-size: clamp(15px, 1.1vw, 17px);
   font-weight: var(--font-semibold);
   line-height: 1.38;
+}
+
+.recommendation-card-featured .recommendation-action-plan p {
+  max-width: 720px;
+  color: var(--color-heading);
+  font-size: clamp(14px, 1vw, 16px);
+  font-weight: var(--font-medium);
+  line-height: 1.36;
 }
 
 .recommendation-reason {
