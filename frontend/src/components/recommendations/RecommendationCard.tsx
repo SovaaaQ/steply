@@ -6,6 +6,12 @@ interface ActionPlanSegment {
   text: string;
 }
 
+const actionPlanUiLabels: Record<ActionPlanSegment["label"], string> = {
+  Сегодня: "Сделать сейчас",
+  Минимум: "Если тяжело",
+  Готово: "Засчитать"
+};
+
 interface RecommendationCardProps {
   habitTitle: string;
   advice: string;
@@ -23,7 +29,7 @@ function cleanDisplayText(value: string) {
     .replace(/[—–−]+/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .replace(/\.+$/g, "");
+    .replace(/[ ,;:.!?]+$/g, "");
 }
 
 function normalizeActionPlanLabel(value: string): ActionPlanSegment["label"] | null {
@@ -81,6 +87,8 @@ export function RecommendationCard({
   const actionPlan = parseActionPlan(advice);
   const displayAdvice = cleanDisplayText(advice);
   const displayReason = cleanDisplayText(reason);
+  const primaryStep = actionPlan?.[0];
+  const supportSteps = actionPlan?.slice(1) ?? [];
 
   return (
     <article
@@ -95,20 +103,28 @@ export function RecommendationCard({
           <span className="recommendation-habit">{habitTitle}</span>
           {metaLabel && <span className="recommendation-meta">{metaLabel}</span>}
         </div>
-        {actionPlan ? (
-          <div className="recommendation-action-plan">
-            {actionPlan.map((segment) => (
-              <p key={segment.label}>
-                <strong>{segment.label}</strong>
-                <span>{segment.text}</span>
-              </p>
-            ))}
+        {primaryStep ? (
+          <div className="recommendation-action-plan" aria-label="План действия">
+            <div className="recommendation-primary-step">
+              <span>{actionPlanUiLabels[primaryStep.label]}</span>
+              <p>{primaryStep.text}</p>
+            </div>
+            {supportSteps.length > 0 && (
+              <div className="recommendation-support-steps">
+                {supportSteps.map((segment) => (
+                  <p key={segment.label}>
+                    <strong>{actionPlanUiLabels[segment.label]}</strong>
+                    <span>{segment.text}</span>
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <p className="recommendation-advice">{displayAdvice}</p>
         )}
         <p className="recommendation-reason">
-          <strong>Причина:</strong>
+          <strong>Почему сейчас</strong>
           {" "}
           {displayReason}
         </p>

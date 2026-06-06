@@ -44,11 +44,17 @@ def make_user() -> SimpleNamespace:
     return SimpleNamespace(pet_type="cat", pet_name="Типа")
 
 
-def make_habit() -> SimpleNamespace:
+def make_habit(
+    title: str = "диплом",
+    description: str | None = None,
+    recovery_minutes: int = 10,
+    recovery_task: str | None = None,
+) -> SimpleNamespace:
     return SimpleNamespace(
-        title="диплом",
-        recovery_task=None,
-        recovery_minutes=10,
+        title=title,
+        description=description,
+        recovery_task=recovery_task,
+        recovery_minutes=recovery_minutes,
     )
 
 
@@ -253,6 +259,37 @@ def test_high_risk_without_miss_streak_uses_risk_recovery() -> None:
 
     assert rec_type == RISK_RECOVERY_RECOMMENDATION_TYPE
     assert title == "Риск пропуска"
+
+
+def test_default_recovery_minutes_do_not_make_same_five_minute_advice() -> None:
+    habits = [
+        (make_habit("Английский", "Повторить слова", recovery_minutes=5), "три знакомых слова"),
+        (make_habit("Диплом", "Писать диплом", recovery_minutes=5), "один абзац"),
+        (make_habit("Пайтон", "Решать задачи по Python", recovery_minutes=5), "пример кода"),
+        (make_habit("Чтение", "Открыть книгу", recovery_minutes=5), "книгу на закладке"),
+        (make_habit("Курение", "Отложить сигарету", recovery_minutes=5), "первую сигарету"),
+    ]
+
+    messages: list[str] = []
+    for habit, expected_fragment in habits:
+        rec_type, _, message, _ = _build_recommendation_text(
+            make_user(),
+            habit,
+            make_prediction(
+                total_entries=4,
+                risk_level="high",
+                completed_count=2,
+                missed_count=1,
+                consecutive_missed=0,
+            ),
+            active_habit_count=len(habits),
+        )
+        assert rec_type == RISK_RECOVERY_RECOMMENDATION_TYPE
+        assert expected_fragment in message
+        assert "5 минут" not in message
+        messages.append(message)
+
+    assert len(set(messages)) == len(habits)
 
 
 def test_after_completion_advice_is_used_for_early_success() -> None:

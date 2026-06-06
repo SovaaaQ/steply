@@ -110,6 +110,40 @@ def _habit_context_text(habit: Habit) -> str:
     return f"{_habit_text_field(habit, 'title')} {_habit_text_field(habit, 'description')}".lower()
 
 
+def _habit_topic(habit: Habit) -> str:
+    context = _habit_context_text(habit)
+    if any(keyword in context for keyword in ("англий", "english", "слова", "язык")):
+        return "language"
+    if any(keyword in context for keyword in ("диплом", "курсов", "учеб", "проект")):
+        return "study"
+    if any(keyword in context for keyword in ("python", "пайтон", "код", "программ")):
+        return "code"
+    if any(keyword in context for keyword in ("чтен", "книг")):
+        return "reading"
+    if any(keyword in context for keyword in ("курен", "сигар", "никотин")):
+        return "smoking"
+    if any(keyword in context for keyword in ("спорт", "трен", "заряд")):
+        return "sport"
+    return "general"
+
+
+def _habit_title_fragment(habit: Habit) -> str:
+    title = _clean_text(getattr(habit, "title", "") or "привычка")
+    return f"«{title}»"
+
+
+def _preferred_time_fragment(habit: Habit) -> str:
+    preferred_time = getattr(habit, "preferred_time", None)
+    if not preferred_time:
+        return ""
+    if hasattr(preferred_time, "strftime"):
+        return f" в {preferred_time.strftime('%H:%M')}"
+    text = str(preferred_time)
+    if len(text) >= 5:
+        return f" в {text[:5]}"
+    return ""
+
+
 def _has_custom_recovery_task(habit: Habit) -> bool:
     recovery_task = getattr(habit, "recovery_task", None)
     return isinstance(recovery_task, str) and bool(recovery_task.strip())
@@ -117,20 +151,81 @@ def _has_custom_recovery_task(habit: Habit) -> bool:
 
 def _recovery_task_fragment(habit: Habit) -> str:
     if not _has_custom_recovery_task(habit):
-        context = _habit_context_text(habit)
-        if any(keyword in context for keyword in ("англий", "english", "слова", "язык")):
-            return "повторите три слова или прочитайте один короткий диалог"
-        if any(keyword in context for keyword in ("диплом", "курсов", "учеб", "проект")):
-            return "откройте файл и поправьте один абзац или план из двух пунктов"
-        if any(keyword in context for keyword in ("python", "пайтон", "код", "программ")):
-            return "откройте редактор и решите одну маленькую задачу или прочитайте пример"
-        if any(keyword in context for keyword in ("чтен", "книг")):
-            return "прочитайте одну страницу или один короткий фрагмент"
-        if any(keyword in context for keyword in ("спорт", "трен", "заряд")):
+        topic = _habit_topic(habit)
+        if topic == "language":
+            return "повторите три знакомых слова вслух или один короткий диалог"
+        if topic == "study":
+            return "откройте файл и поправьте один абзац или два пункта плана"
+        if topic == "code":
+            return "запустите редактор и повторите один простой пример кода"
+        if topic == "reading":
+            return "откройте книгу на закладке и прочитайте один короткий фрагмент"
+        if topic == "sport":
             return "сделайте две минуты разминки без полной тренировки"
-        if any(keyword in context for keyword in ("курен", "сигар", "никотин")):
-            return "сделайте паузу на пять минут и запишите, что запустило желание"
+        if topic == "smoking":
+            return "отложите первую сигарету и запишите, что именно запустило желание"
+        return "сделайте самый маленький видимый шаг"
     return _lower_first(getRecoveryTask(habit).strip().rstrip(" ."))
+
+
+def _primary_action_fragment(habit: Habit) -> str:
+    title = _habit_title_fragment(habit)
+    time_hint = _preferred_time_fragment(habit)
+    topic = _habit_topic(habit)
+    if topic == "language":
+        return "повторите вслух три знакомых слова и один короткий диалог"
+    if topic == "study":
+        return f"откройте файл {title}{time_hint} и поправьте один конкретный абзац"
+    if topic == "code":
+        return f"откройте редактор для {title} и решите одну маленькую задачу"
+    if topic == "reading":
+        return "откройте книгу на закладке и прочитайте один короткий фрагмент"
+    if topic == "sport":
+        return "сделайте короткую разминку и завершите на первом легком повторе"
+    if topic == "smoking":
+        return "отложите первую сигарету, выпейте воды и отметьте момент тяги"
+    return f"сделайте один короткий шаг для {title}"
+
+
+def _minimum_action_fragment(habit: Habit) -> str:
+    if _has_custom_recovery_task(habit):
+        return f"только {_recovery_task_fragment(habit)}"
+
+    topic = _habit_topic(habit)
+    if topic == "language":
+        return "только три слова вслух без новой темы"
+    if topic == "study":
+        return "только откройте документ и выделите место следующей правки"
+    if topic == "code":
+        return "только запустите среду и прочитайте один короткий пример"
+    if topic == "reading":
+        return "одна страница с закладки без нормы по времени"
+    if topic == "sport":
+        return "две минуты разминки без полной тренировки"
+    if topic == "smoking":
+        return "пауза без спора с собой: вода, дыхание и запись триггера"
+    return "один видимый шаг без полной версии привычки"
+
+
+def _completion_criteria_fragment(habit: Habit) -> str:
+    title = _habit_title_fragment(habit)
+    topic = _habit_topic(habit)
+    if topic == "language":
+        return "слова произнесены или завершен один короткий диалог"
+    if topic == "study":
+        return "файл сохранен с одной правкой или двумя пунктами плана"
+    if topic == "code":
+        return "пример запущен или одна строка кода изменена"
+    if topic == "reading":
+        return "фрагмент дочитан и чтение отмечено"
+    if topic == "sport":
+        return "разминка сделана и отмечена"
+    if topic == "smoking":
+        return (
+            "пауза отмечена и триггер записан; при сильной тяге стоит обратиться "
+            "к специалисту"
+        )
+    return f"шаг для {title} отмечен в приложении"
 
 
 def _strip_terminal_punctuation(value: str) -> str:
@@ -330,15 +425,17 @@ def _should_create_first_step_recommendation(
 def _build_first_step_recommendation_text(user: User, habit: Habit) -> tuple[str, str, str, str]:
     pet_name = _clean_text(user.pet_name or "")
     pet_hint = f", а {pet_name} получит первый повод радоваться" if pet_name else ""
-    action = _recovery_task_fragment(habit)
+    action = _primary_action_fragment(habit)
+    minimum = _minimum_action_fragment(habit)
+    done = _completion_criteria_fragment(habit)
 
     return (
         FIRST_STEP_RECOMMENDATION_TYPE,
         "Первый шаг",
         _action_plan_message(
             f"сделайте самый маленький шаг для «{habit.title}»: {action}",
-            f"{_recovery_time_fragment(habit)} без полной версии привычки",
-            f"поставлена первая отметка{pet_hint}",
+            minimum,
+            f"{done}, поставлена первая отметка{pet_hint}",
         ),
         "normal",
     )
@@ -370,7 +467,9 @@ def _build_recommendation_text(
     completed_today = _feature_bool(features, "completed_today")
     missed_today = _feature_bool(features, "missed_today")
     recovery_task = _recovery_task_fragment(habit)
-    recovery_time = _recovery_time_fragment(habit)
+    primary_action = _primary_action_fragment(habit)
+    minimum_action = _minimum_action_fragment(habit)
+    completion_criteria = _completion_criteria_fragment(habit)
     is_on_track_period = (
         total_last_7 >= 3
         and missed_last_7 == 0
@@ -394,9 +493,9 @@ def _build_recommendation_text(
                 _action_plan_message(
                     (
                         "подготовьте самый простой вход к следующему повтору: "
-                        "место, файл, одежду или первый вопрос"
+                        f"{primary_action}"
                     ),
-                    "оставьте одну видимую подсказку и не повышайте нагрузку",
+                    minimum_action,
                     f"следующий старт понятен заранее, {series_text}",
                 ),
                 "low",
@@ -407,9 +506,9 @@ def _build_recommendation_text(
                 AFTER_COMPLETION_RECOMMENDATION_TYPE,
                 "После отметки",
                 _action_plan_message(
-                    f"оставьте видимую подсказку для следующего выполнения «{habit.title}»",
+                    f"оставьте видимую подсказку для следующего выполнения: {primary_action}",
                     "не повышайте нагрузку, пока привычка не повторится несколько раз",
-                    "подсказка лежит там, где начнется следующий повтор",
+                    f"подсказка лежит там, где начнется следующий повтор; {completion_criteria}",
                 ),
                 "normal",
             )
@@ -420,9 +519,9 @@ def _build_recommendation_text(
             _action_plan_message(
                 (
                     "подготовьте первый предмет, файл или место старта для следующего "
-                    f"выполнения «{habit.title}»"
+                    f"выполнения: {primary_action}"
                 ),
-                "уберите один лишний поиск или решение перед стартом",
+                minimum_action,
                 "следующий повтор можно начать без долгой подготовки",
             ),
             "low",
@@ -438,8 +537,8 @@ def _build_recommendation_text(
             "Пересоберите условия",
             _action_plan_message(
                 f"не возвращайтесь к полной версии, сделайте только {recovery_task}",
-                f"ограничьте попытку до {recovery_time} и остановитесь",
-                "засчитан минимальный шаг, а формат привычки стал легче",
+                minimum_action,
+                f"засчитан минимальный шаг; {completion_criteria}",
             ),
             "high",
         )
@@ -452,8 +551,8 @@ def _build_recommendation_text(
             "План перезапуска",
             _action_plan_message(
                 f"перезапустите «{habit.title}» через один короткий шаг: {recovery_task}",
-                f"{recovery_time} в более реальное время без попытки наверстать паузу",
-                "отмечен минимум и выбран более легкий следующий повтор",
+                f"{minimum_action} без попытки наверстать паузу",
+                f"отмечен минимум; {completion_criteria}",
             ),
             "high",
         )
@@ -464,8 +563,8 @@ def _build_recommendation_text(
             "Вернуться мягко",
             _action_plan_message(
                 f"сделайте только минимальный шаг для «{habit.title}»: {recovery_task}",
-                f"{recovery_time} без компенсации прошлых пропусков",
-                "поставлена отметка возвращения, а не попытка наверстать все",
+                f"{minimum_action} без компенсации прошлых пропусков",
+                f"поставлена отметка возвращения; {completion_criteria}",
             ),
             "high" if consecutive_missed >= 3 else "normal",
         )
@@ -476,8 +575,8 @@ def _build_recommendation_text(
             "Раннее восстановление",
             _action_plan_message(
                 f"верните «{habit.title}» через минимальный вариант: {recovery_task}",
-                f"{recovery_time} без компенсации первого пропуска",
-                "появилась новая отметка, и история стала точнее",
+                f"{minimum_action} без компенсации первого пропуска",
+                f"появилась новая отметка; {completion_criteria}",
             ),
             "normal",
         )
@@ -488,8 +587,8 @@ def _build_recommendation_text(
             "Риск пропуска",
             _action_plan_message(
                 f"сделайте самый простой вариант «{habit.title}»: {recovery_task}",
-                f"{recovery_time} в ближайшее удобное окно",
-                "отмечен минимум до того, как риск стал пропуском",
+                minimum_action,
+                f"отмечен минимум до пропуска; {completion_criteria}",
             ),
             "high",
         )
@@ -501,8 +600,8 @@ def _build_recommendation_text(
                 "Сделайте проще",
                 _action_plan_message(
                     f"уменьшите объем «{habit.title}» и заранее назовите точку остановки",
-                    f"сделайте только {recovery_task}",
-                    "минимальная версия завершена и отмечена без идеального настроя",
+                    minimum_action,
+                    f"минимальная версия завершена; {completion_criteria}",
                 ),
                 "normal",
             )
@@ -510,8 +609,8 @@ def _build_recommendation_text(
             PLAN_AHEAD_RECOMMENDATION_TYPE,
             "Запланируйте заранее",
             _action_plan_message(
-                f"выберите конкретное окно для «{habit.title}» и подготовьте первый шаг",
-                "оставьте рядом только то, что нужно для старта",
+                f"выберите конкретное окно для «{habit.title}» и подготовьте первый шаг: {primary_action}",
+                minimum_action,
                 "время и место старта понятны до выполнения",
             ),
             "normal",
@@ -522,9 +621,9 @@ def _build_recommendation_text(
             DATA_COLLECTION_RECOMMENDATION_TYPE,
             "Пока рано считать риск",
             _action_plan_message(
-                f"выполните «{habit.title}» в обычном минимальном формате",
-                f"если день плотный, сделайте только {recovery_task}",
-                "добавлена отметка, которая делает будущий прогноз точнее",
+                primary_action,
+                minimum_action,
+                f"добавлена отметка; {completion_criteria}",
             ),
             "normal",
         )
@@ -534,8 +633,8 @@ def _build_recommendation_text(
             STREAK_SUPPORT_RECOMMENDATION_TYPE,
             "Серия укрепляется",
             _action_plan_message(
-                f"подготовьте следующий повтор «{habit.title}» без усложнения цели",
-                "оставьте такую же простую версию, как в удачные дни",
+                f"подготовьте следующий повтор «{habit.title}» без усложнения цели: {primary_action}",
+                minimum_action,
                 f"серия {current_streak} подряд защищена от резкого роста нагрузки",
             ),
             "low",
@@ -547,7 +646,7 @@ def _build_recommendation_text(
             "Ритм держится",
             _action_plan_message(
                 f"оставьте «{habit.title}» в том же формате и выберите мини-версию для сложного дня",
-                f"в сложный день достаточно {recovery_task}",
+                minimum_action,
                 "есть понятный план на обычный и облегченный повтор",
             ),
             "low",
@@ -559,8 +658,8 @@ def _build_recommendation_text(
             "Вернитесь к ритму",
             _action_plan_message(
                 f"верните «{habit.title}» через короткий шаг: {recovery_task}",
-                f"{recovery_time} без попытки наверстать все сразу",
-                "возвращение отмечено в приложении",
+                f"{minimum_action} без попытки наверстать все сразу",
+                f"возвращение отмечено; {completion_criteria}",
             ),
             "normal",
         )
@@ -569,8 +668,8 @@ def _build_recommendation_text(
         KEEP_REGULAR_RECOMMENDATION_TYPE,
         "Ритм держится",
         _action_plan_message(
-            f"повторите «{habit.title}» в привычное время",
-            f"если день плотный, сделайте только {recovery_task}",
+            primary_action,
+            minimum_action,
             f"отметка добавлена, текущая регулярность {round(completion_rate * 100)}% сохранена",
         ),
         "low",

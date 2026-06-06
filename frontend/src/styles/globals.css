@@ -1851,30 +1851,57 @@ textarea.field-control {
 
 .recommendation-action-plan {
   display: grid;
-  gap: 6px;
+  gap: 10px;
 }
 
-.recommendation-action-plan p {
+.recommendation-primary-step,
+.recommendation-support-steps p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.recommendation-primary-step {
   display: grid;
-  grid-template-columns: minmax(76px, auto) 1fr;
+  gap: 5px;
+}
+
+.recommendation-primary-step span,
+.recommendation-support-steps strong {
+  color: var(--color-muted-strong);
+  font-size: 12px;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.recommendation-primary-step p {
+  margin: 0;
+  color: var(--color-heading);
+  font-size: 17px;
+  font-weight: var(--font-semibold);
+  line-height: 1.35;
+}
+
+.recommendation-support-steps {
+  display: grid;
+  gap: 5px;
+}
+
+.recommendation-support-steps p {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) 1fr;
   gap: 10px;
   align-items: baseline;
   margin: 0;
   color: var(--color-muted-strong);
-  line-height: 1.45;
-  overflow-wrap: anywhere;
+  line-height: 1.42;
 }
 
-.recommendation-action-plan strong {
-  color: var(--color-heading);
-  font-size: 10px;
-  font-weight: var(--font-bold);
-  letter-spacing: 0;
-  text-transform: uppercase;
+.recommendation-support-steps strong {
   white-space: nowrap;
 }
 
-.recommendation-action-plan span {
+.recommendation-support-steps span {
   min-width: 0;
 }
 
@@ -1904,7 +1931,7 @@ textarea.field-control {
     white-space: normal;
   }
 
-  .recommendation-action-plan p {
+  .recommendation-support-steps p {
     grid-template-columns: 1fr;
     gap: 3px;
   }
@@ -1924,6 +1951,16 @@ textarea.field-control {
   font-size: clamp(14px, 1vw, 16px);
   font-weight: var(--font-medium);
   line-height: 1.36;
+}
+
+.recommendation-card-featured .recommendation-primary-step p {
+  max-width: 720px;
+  font-size: clamp(17px, 1.25vw, 20px);
+  line-height: 1.32;
+}
+
+.recommendation-card-featured .recommendation-support-steps p {
+  color: var(--color-muted-strong);
 }
 
 .recommendation-reason {
@@ -3056,6 +3093,11 @@ textarea.field-control {
   --pet-mark: #171713;
 }
 
+.pet-mascot-hamster .pet-mascot-whisker {
+  stroke-width: 2;
+  opacity: 0.78;
+}
+
 .pet-mascot-unconfigured {
   --pet-body: rgba(255, 255, 255, 0.62);
   --pet-head: rgba(255, 255, 255, 0.72);
@@ -3221,14 +3263,18 @@ textarea.field-control {
   animation: pet-mascot-small-wiggle 1.9s ease-in-out infinite;
 }
 
+.pet-screen.page-stack {
+  gap: clamp(18px, 2vw, 26px);
+}
+
 .pet-status-card {
   display: grid;
-  gap: 18px;
+  gap: clamp(20px, 2.4vw, 28px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface-raised);
   box-shadow: var(--shadow-card);
-  padding: clamp(20px, 3vw, 30px);
+  padding: clamp(24px, 3.4vw, 36px);
 }
 
 .pet-status-card.pet-state-happy {
@@ -3255,8 +3301,19 @@ textarea.field-control {
 .pet-hero-grid {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: clamp(14px, 2.4vw, 24px);
+  gap: clamp(20px, 3vw, 34px);
   align-items: center;
+}
+
+.pet-hero-grid > div:last-child {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pet-hero-grid .page-kicker {
+  margin-bottom: 0;
 }
 
 .pet-hero-grid h2 {
@@ -3264,6 +3321,10 @@ textarea.field-control {
   color: var(--color-heading);
   font-size: clamp(34px, 4.5vw, 58px);
   line-height: 1;
+}
+
+.pet-hero-grid .button {
+  margin-top: 4px;
 }
 
 .pet-hero-grid p,
@@ -3279,7 +3340,7 @@ textarea.field-control {
 .pet-level-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .pet-level-grid div {
@@ -3307,7 +3368,7 @@ textarea.field-control {
   border: 1px solid rgba(11, 15, 13, 0.08);
   border-radius: var(--radius-card);
   background: var(--color-surface-soft);
-  padding: 16px;
+  padding: 18px;
 }
 
 .pet-explanation span,
@@ -3333,7 +3394,7 @@ textarea.field-control {
 .pet-action-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
-  gap: 14px;
+  gap: 18px;
   align-items: start;
 }
 
@@ -3987,10 +4048,22 @@ textarea.field-control {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .pet-hero-grid,
   .pet-next-action,
   .today-row {
     grid-template-columns: 1fr;
+  }
+
+  .pet-status-card {
+    gap: 18px;
+    padding: 20px;
+  }
+
+  .pet-hero-grid {
+    gap: 18px;
+  }
+
+  .pet-hero-grid .pet-animation-large {
+    justify-self: center;
   }
 
   .pet-screen {
@@ -4110,6 +4183,35 @@ textarea.field-control {
   .pet-level-grid,
   .next-habit-facts {
     grid-template-columns: 1fr;
+  }
+
+  .pet-screen.page-stack,
+  .pet-status-card {
+    gap: 16px;
+  }
+
+  .pet-status-card {
+    padding: 16px;
+  }
+
+  .pet-hero-grid {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 14px;
+  }
+
+  .pet-hero-grid > div:last-child {
+    justify-items: center;
+    text-align: center;
+  }
+
+  .pet-hero-grid h2 {
+    font-size: clamp(30px, 9vw, 42px);
+  }
+
+  .pet-hero-grid .pet-animation-large {
+    width: clamp(142px, 42vw, 156px);
+    height: clamp(142px, 42vw, 156px);
   }
 
   .pet-goal-item,

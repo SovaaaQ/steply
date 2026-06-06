@@ -62,7 +62,7 @@ function normalizeAdviceText(value: string) {
       .replace(/[—–−]+/g, " ")
       .replace(/\s+/g, " ")
       .trim()
-      .replace(/\.+$/g, "")
+      .replace(/[ ,;:.!?]+$/g, "")
   );
   const words = text.split(" ").filter(Boolean);
   if (words.length <= MAX_ADVICE_WORDS) {
@@ -122,12 +122,12 @@ function dedupeRecommendations(recommendations: Recommendation[]) {
 
 function getTodayFollowUpAdvice(habit?: Habit) {
   if (!habit) {
-    return "Сегодня уже отмечено. Следующий совет появится после новых отметок";
+    return "Сегодня уже отмечено, следующий совет появится после новых отметок";
   }
 
-  return `Сегодня уже готово. ${formatNextScheduledOccurrence(
+  return `Сегодня уже учтено, ${formatNextScheduledOccurrence(
     getNextScheduledOccurrence(habit, new Date(), 1)
-  )}.`;
+  )}`;
 }
 
 function TipsEmptyState({ children }: { children: string }) {
@@ -140,6 +140,111 @@ function isAdviceItem(item: AdviceItem | null): item is AdviceItem {
 
 function getHabitTitle(habit?: Habit) {
   return habit?.title ?? "Общий совет";
+}
+
+type HabitTopic = "language" | "study" | "code" | "reading" | "smoking" | "sport" | "general";
+
+function getHabitContextText(habit?: Habit) {
+  return `${habit?.title ?? ""} ${habit?.description ?? ""}`.toLowerCase();
+}
+
+function getHabitTopic(habit?: Habit): HabitTopic {
+  const context = getHabitContextText(habit);
+  if (/(англий|english|слова|язык)/.test(context)) {
+    return "language";
+  }
+  if (/(диплом|курсов|учеб|проект)/.test(context)) {
+    return "study";
+  }
+  if (/(python|пайтон|код|программ)/.test(context)) {
+    return "code";
+  }
+  if (/(чтен|книг)/.test(context)) {
+    return "reading";
+  }
+  if (/(курен|сигар|никотин)/.test(context)) {
+    return "smoking";
+  }
+  if (/(спорт|трен|заряд)/.test(context)) {
+    return "sport";
+  }
+  return "general";
+}
+
+function getPreferredTimeHint(habit?: Habit) {
+  return habit?.preferred_time ? ` в ${habit.preferred_time.slice(0, 5)}` : "";
+}
+
+function getPersonalPrimaryAction(habit?: Habit) {
+  const title = getHabitTitle(habit);
+  const timeHint = getPreferredTimeHint(habit);
+  switch (getHabitTopic(habit)) {
+    case "language":
+      return "повторите вслух три знакомых слова и один короткий диалог";
+    case "study":
+      return `откройте файл «${title}»${timeHint} и поправьте один конкретный абзац`;
+    case "code":
+      return `откройте редактор для «${title}» и решите одну маленькую задачу`;
+    case "reading":
+      return "откройте книгу на закладке и прочитайте один короткий фрагмент";
+    case "sport":
+      return "сделайте короткую разминку и завершите на первом легком повторе";
+    case "smoking":
+      return "отложите первую сигарету, выпейте воды и отметьте момент тяги";
+    default:
+      return `сделайте один короткий шаг для «${title}»`;
+  }
+}
+
+function getPersonalMinimumAction(habit?: Habit) {
+  const customTask = habit?.recovery_task?.trim();
+  if (customTask) {
+    return customTask.charAt(0).toLowerCase() + customTask.slice(1).replace(/[ ,;:.!?]+$/g, "");
+  }
+
+  switch (getHabitTopic(habit)) {
+    case "language":
+      return "только три слова вслух без новой темы";
+    case "study":
+      return "только откройте документ и выделите место следующей правки";
+    case "code":
+      return "только запустите среду и прочитайте один короткий пример";
+    case "reading":
+      return "одна страница с закладки без нормы по времени";
+    case "sport":
+      return "две минуты разминки без полной тренировки";
+    case "smoking":
+      return "пауза без спора с собой: вода, дыхание и запись триггера";
+    default:
+      return "один видимый шаг без полной версии привычки";
+  }
+}
+
+function getPersonalDoneCriteria(habit?: Habit) {
+  switch (getHabitTopic(habit)) {
+    case "language":
+      return "слова произнесены или завершен один короткий диалог";
+    case "study":
+      return "файл сохранен с одной правкой или двумя пунктами плана";
+    case "code":
+      return "пример запущен или одна строка кода изменена";
+    case "reading":
+      return "фрагмент дочитан и чтение отмечено";
+    case "sport":
+      return "разминка сделана и отмечена";
+    case "smoking":
+      return "пауза отмечена и триггер записан; при сильной тяге стоит обратиться к специалисту";
+    default:
+      return `шаг для «${getHabitTitle(habit)}» отмечен в приложении`;
+  }
+}
+
+function getPersonalActionPlan(habit?: Habit) {
+  return [
+    `Сегодня: ${getPersonalPrimaryAction(habit)}`,
+    `Минимум: ${getPersonalMinimumAction(habit)}`,
+    `Готово: ${getPersonalDoneCriteria(habit)}`
+  ].join(" ");
 }
 
 function getAdviceLabel(tone: AdviceItem["tone"]) {
@@ -248,12 +353,16 @@ function getRecommendationReason(
       : "Готовим следующий повтор заранее";
   }
   if (prediction) {
-    return `${isDone ? "Это риск на следующий раз. " : ""}${getPredictionRiskReason(stats, prediction)}`;
+    return `${isDone ? "Это риск на следующий раз, " : ""}${getPredictionRiskReason(stats, prediction)}`;
   }
   return "Совет собран по истории привычек и последним отметкам";
 }
 
 function getRecommendationAdvice(recommendation: Recommendation, habit?: Habit) {
+  if (habit) {
+    return getPersonalActionPlan(habit);
+  }
+
   switch (recommendation.type) {
     case "risk_ignored_recovery":
       return "Пересоберите условия привычки и оставьте только минимальный шаг";
@@ -363,7 +472,7 @@ export function TipsScreen() {
         tone: "urgent" as const,
         habit,
         habitTitle: habit.title,
-        advice: "Сделайте минимальную версию сегодня, чтобы не терять ритм",
+        advice: getPersonalActionPlan(habit),
         reason: getPredictionRiskReason(stats, prediction),
         ctaLabel: "Отметить" as const,
         markStatus: "recovery_completed" as const
@@ -399,7 +508,7 @@ export function TipsScreen() {
         habitTitle: habit.title,
         advice: isDone
           ? getTodayFollowUpAdvice(habit)
-          : "Отметьте привычку несколько раз, чтобы риск считался точнее",
+          : getPersonalActionPlan(habit),
         reason: isDone
           ? `Сегодня уже учтено; сейчас есть ${formatMarks(totalEntries)}`
           : `Сейчас есть ${formatMarks(totalEntries)}, для прогноза нужно немного больше истории`,
@@ -495,7 +604,7 @@ export function TipsScreen() {
       {activeHabits.length === 0 ? (
         <section className="tips-section-panel">
           <TipsEmptyState>
-            Создайте первую привычку, и здесь появятся советы по риску и возвращению.
+            Создайте первую привычку, и здесь появятся советы по риску и возвращению
           </TipsEmptyState>
         </section>
       ) : (

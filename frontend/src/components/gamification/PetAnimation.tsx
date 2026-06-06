@@ -117,19 +117,25 @@ function ParrotMascot() {
 function HamsterMascot() {
   return (
     <g className="pet-mascot-character">
-      <circle className="pet-mascot-ear pet-mascot-ear-left" cx="52" cy="50" r="16" />
-      <circle className="pet-mascot-ear pet-mascot-ear-right" cx="108" cy="50" r="16" />
-      <ellipse className="pet-mascot-body" cx="80" cy="91" rx="43" ry="45" />
-      <circle className="pet-mascot-head" cx="80" cy="66" r="38" />
-      <circle className="pet-mascot-ear-inner pet-mascot-ear-left" cx="52" cy="50" r="8" />
-      <circle className="pet-mascot-ear-inner pet-mascot-ear-right" cx="108" cy="50" r="8" />
-      <circle className="pet-mascot-cheek pet-mascot-cheek-left" cx="61" cy="79" r="13" />
-      <circle className="pet-mascot-cheek pet-mascot-cheek-right" cx="99" cy="79" r="13" />
-      <circle className="pet-mascot-eye pet-mascot-eye-left" cx="67" cy="62" r="4.5" />
-      <circle className="pet-mascot-eye pet-mascot-eye-right" cx="93" cy="62" r="4.5" />
-      <path className="pet-mascot-nose" d="M75 74c3-4 7-4 10 0-2 4-8 4-10 0Z" />
-      <path className="pet-mascot-mouth" d="M80 80v8M80 88c-6 5-12 3-15-1M80 88c6 5 12 3 15-1" />
-      <path className="pet-mascot-highlight" d="M60 42c8-7 19-9 31-6" />
+      <ellipse className="pet-mascot-body" cx="80" cy="101" rx="35" ry="34" />
+      <ellipse className="pet-mascot-ear pet-mascot-ear-left" cx="52" cy="57" rx="11" ry="13" />
+      <ellipse className="pet-mascot-ear pet-mascot-ear-right" cx="108" cy="57" rx="11" ry="13" />
+      <ellipse className="pet-mascot-head" cx="80" cy="69" rx="38" ry="34" />
+      <ellipse className="pet-mascot-ear-inner pet-mascot-ear-left" cx="53" cy="59" rx="5.5" ry="7" />
+      <ellipse className="pet-mascot-ear-inner pet-mascot-ear-right" cx="107" cy="59" rx="5.5" ry="7" />
+      <ellipse className="pet-mascot-cheek pet-mascot-cheek-left" cx="63" cy="82" rx="16" ry="14" />
+      <ellipse className="pet-mascot-cheek pet-mascot-cheek-right" cx="97" cy="82" rx="16" ry="14" />
+      <ellipse className="pet-mascot-muzzle" cx="80" cy="79" rx="10" ry="8" />
+      <circle className="pet-mascot-eye pet-mascot-eye-left" cx="68" cy="65" r="4.2" />
+      <circle className="pet-mascot-eye pet-mascot-eye-right" cx="92" cy="65" r="4.2" />
+      <path className="pet-mascot-nose" d="M75 75c3-4 7-4 10 0-1 5-9 5-10 0Z" />
+      <path className="pet-mascot-mouth" d="M80 80v5M80 85c-3 5-9 7-14 3M80 85c3 5 9 7 14 3" />
+      <path className="pet-mascot-whisker" d="M63 80H47M64 87l-15 6M97 80h16M96 87l15 6" />
+      <path className="pet-mascot-paw pet-mascot-paw-left" d="M61 106c4 5 11 5 15 0" />
+      <path className="pet-mascot-paw pet-mascot-paw-right" d="M84 106c4 5 11 5 15 0" />
+      <path className="pet-mascot-paw pet-mascot-foot-left" d="M62 130c4 4 12 4 16 0" />
+      <path className="pet-mascot-paw pet-mascot-foot-right" d="M82 130c4 4 12 4 16 0" />
+      <path className="pet-mascot-highlight" d="M62 49c8-7 21-10 33-6" />
     </g>
   );
 }
