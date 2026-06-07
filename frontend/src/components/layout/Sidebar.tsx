@@ -1,6 +1,7 @@
-import { navigationItems } from "../../app/router";
+import { navigationItems } from "../../app/navigation";
 import { useAppData } from "../../app/providers";
 import { NavIcon } from "./NavIcon";
+import type { MouseEvent } from "react";
 
 export function Sidebar() {
   const { activeSection, setActiveSection, completedToday, habitsForToday } = useAppData();
@@ -16,19 +17,30 @@ export function Sidebar() {
       </div>
 
       <nav className="sidebar-nav" aria-label="Основная навигация">
-        {navigationItems.map((item) => (
-          <button
-            type="button"
-            className={activeSection === item.id ? "active" : ""}
-            key={item.id}
-            onClick={() => setActiveSection(item.id)}
-          >
-            <span className="nav-icon">
-              <NavIcon section={item.id} />
-            </span>
-            {item.label}
-          </button>
-        ))}
+        {navigationItems.map((item) => {
+          const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+              return;
+            }
+
+            event.preventDefault();
+            setActiveSection(item.id);
+          };
+
+          return (
+            <a
+              className={activeSection === item.id ? "active" : ""}
+              href={item.path}
+              key={item.id}
+              onClick={handleClick}
+            >
+              <span className="nav-icon">
+                <NavIcon section={item.id} />
+              </span>
+              {item.label}
+            </a>
+          );
+        })}
       </nav>
 
       <div className="sidebar-progress">

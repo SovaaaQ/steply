@@ -11,4 +11,5 @@ export interface NavigationItem {
   id: AppSection;
   label: string;
   shortLabel: string;
+  path: string;
 }

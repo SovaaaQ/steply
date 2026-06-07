@@ -1,12 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { HabitForm } from "../components/habits/HabitForm";
 import { HabitList } from "../components/habits/HabitList";
 import { PetSetup } from "../components/gamification/PetSetup";
 import { Button } from "../components/ui/Button";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { ErrorState } from "../components/ui/ErrorState";
 import { useAppData } from "../app/providers";
 import { useHabits } from "../hooks/useHabits";
+import type { Habit } from "../types/habit";
 
 export function HabitsPage() {
   const {
@@ -31,6 +33,7 @@ export function HabitsPage() {
     deleteHabit,
     getTodayEntry
   } = useHabits();
+  const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
   const hasPet = gamification.pet.is_configured;
   const drawerTitle = editingHabitId ? "Изменить привычку" : "Создать привычку";
 
@@ -97,10 +100,30 @@ export function HabitsPage() {
           getTodayEntry={getTodayEntry}
           onCreate={openHabitCreator}
           onEdit={startEditHabit}
-          onDelete={(habitId) => void deleteHabit(habitId)}
+          onDelete={(habitId) => {
+            const habit = activeHabits.find((item) => item.id === habitId);
+            if (habit) {
+              setHabitToDelete(habit);
+            }
+          }}
           onMark={(habitId, status) => void markHabit(habitId, status)}
         />
       </div>
+
+      {habitToDelete && (
+        <ConfirmDialog
+          title="Удалить привычку?"
+          description={`«${habitToDelete.title}» будет удалена вместе с историей выполнения.`}
+          confirmLabel="Удалить"
+          tone="danger"
+          onCancel={() => setHabitToDelete(null)}
+          onConfirm={() => {
+            const habitId = habitToDelete.id;
+            setHabitToDelete(null);
+            void deleteHabit(habitId);
+          }}
+        />
+      )}
 
       {isHabitFormOpen && (
         <div

@@ -1,6 +1,58 @@
 import type { PetState, PetType } from "../types/auth";
+import type { GamificationSummary } from "../types/gamification";
 import type { Difficulty, EntryStatus, Habit } from "../types/habit";
 import type { HabitStats } from "../types/statistics";
+
+export const emptyGamificationSummary: GamificationSummary = {
+  profile: {
+    level: 1,
+    title: "Старт маршрута",
+    milestone: "Создайте первую привычку и отметьте первый шаг",
+    total_xp: 0,
+    current_level_xp: 0,
+    current_level_min_xp: 0,
+    next_level: 2,
+    next_level_xp: 100,
+    xp_to_next_level: 100,
+    progress_percent: 0,
+    current_streak: 0,
+    longest_streak: 0,
+    last_active_date: null,
+    streak_status: "empty"
+  },
+  pet: {
+    pet_type: null,
+    pet_name: null,
+    pet_state: "neutral",
+    level: 1,
+    xp: 0,
+    progress_percent: 0,
+    next_level: 2,
+    next_level_xp: 100,
+    xp_to_next_level: 100,
+    is_configured: false
+  },
+  streak: {
+    current: 0,
+    best: 0,
+    status: "empty",
+    label: "Серия ещё не началась",
+    next_step: "Создайте привычку и отметьте первый короткий шаг",
+    is_at_risk: false,
+    last_active_date: null,
+    completed_today: 0,
+    scheduled_today: 0
+  },
+  achievements: [],
+  goals: [],
+  recent_events: [],
+  next_best_action: {
+    title: "Начните с одной привычки",
+    description: "Добавьте первый шаг, чтобы появился прогресс",
+    cta_label: "Создать привычку",
+    cta_section: "habits"
+  }
+};
 
 export const petEmoji: Record<PetType, string> = {
   dog: "🐶",

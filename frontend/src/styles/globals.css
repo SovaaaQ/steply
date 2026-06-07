@@ -200,13 +200,14 @@ li {
   gap: 6px;
 }
 
-.sidebar-nav button,
-.mobile-nav button {
+.sidebar-nav a,
+.mobile-nav a {
   border: 0;
   background: transparent;
+  text-decoration: none;
 }
 
-.sidebar-nav button {
+.sidebar-nav a {
   display: flex;
   min-height: 50px;
   align-items: center;
@@ -225,13 +226,13 @@ li {
     transform var(--duration-fast) ease;
 }
 
-.sidebar-nav button:hover {
+.sidebar-nav a:hover {
   background: rgba(255, 255, 255, 0.07);
   color: var(--color-on-dark);
   transform: translateX(2px);
 }
 
-.sidebar-nav button.active {
+.sidebar-nav a.active {
   border-color: var(--color-lime);
   background: rgba(199, 241, 40, 0.14);
   color: var(--color-lime);
@@ -1246,6 +1247,48 @@ li {
   box-shadow: var(--shadow-focus);
 }
 
+.confirm-dialog-overlay {
+  position: fixed;
+  z-index: 130;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(11, 15, 13, 0.44);
+  padding: 18px;
+  animation: overlay-fade-in var(--duration-fast) ease both;
+}
+
+.confirm-dialog {
+  display: grid;
+  width: min(430px, 100%);
+  gap: 18px;
+  border: 1px solid rgba(11, 15, 13, 0.16);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-raised);
+  box-shadow: 0 26px 70px rgba(11, 15, 13, 0.24);
+  padding: clamp(18px, 4vw, 24px);
+  animation: drawer-rise-in var(--duration-base) cubic-bezier(0.2, 0.72, 0.22, 1) both;
+}
+
+.confirm-dialog h2 {
+  margin: 6px 0 0;
+  color: var(--color-heading);
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.confirm-dialog p {
+  margin: 10px 0 0;
+  color: var(--color-muted-strong);
+  line-height: 1.55;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 @keyframes overlay-fade-in {
   from {
     opacity: 0;
@@ -1616,8 +1659,8 @@ textarea.field-control {
 }
 
 .button:focus-visible,
-.sidebar-nav button:focus-visible,
-.mobile-nav button:focus-visible,
+.sidebar-nav a:focus-visible,
+.mobile-nav a:focus-visible,
 .quick-add:focus-visible,
 .ghost-button:focus-visible,
 .onboarding-skip:focus-visible,
@@ -3870,7 +3913,7 @@ textarea.field-control {
     transform: translateX(-50%);
   }
 
-  .mobile-nav button {
+  .mobile-nav a {
     display: grid;
     min-width: 0;
     min-height: 52px;
@@ -3882,7 +3925,7 @@ textarea.field-control {
     font-weight: var(--font-semibold);
   }
 
-  .mobile-nav button.active {
+  .mobile-nav a.active {
     background: var(--color-lime);
     color: var(--color-ink);
   }
@@ -4224,7 +4267,7 @@ textarea.field-control {
     width: 100%;
   }
 
-  .mobile-nav button {
+  .mobile-nav a {
     min-height: 50px;
     font-size: 9px;
   }

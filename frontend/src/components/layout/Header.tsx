@@ -1,4 +1,4 @@
-import { navigationItems } from "../../app/router";
+import { navigationItems } from "../../app/navigation";
 import { useAppData } from "../../app/providers";
 import { useAuth } from "../../hooks/useAuth";
 

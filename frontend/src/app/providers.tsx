@@ -16,6 +16,8 @@ import { dayApi } from "../services/dayApi";
 import { gamificationApi } from "../services/gamificationApi";
 import { habitsApi } from "../services/habitsApi";
 import { recommendationsApi } from "../services/recommendationsApi";
+import { getOnboardingStatus, setOnboardingStatus } from "./onboardingStorage";
+import { useSectionRouter } from "./useSectionRouter";
 import type { AuthResponse, PetType, User } from "../types/auth";
 import type { EntryStatus, Habit, HabitEntry, HabitFormState } from "../types/habit";
 import type { Prediction, Recommendation } from "../types/recommendation";
@@ -25,80 +27,8 @@ import type { AppSection } from "../types/navigation";
 import { formatLocalDate } from "../utils/formatDate";
 import { buildHabitPayload, defaultHabitForm, weekdayKeys } from "../utils/habitForm";
 import { getHabitScheduleAvailability } from "../utils/habitSchedule";
+import { emptyGamificationSummary } from "../utils/gamification";
 import { emptySummary } from "../utils/risk";
-
-const emptyGamificationSummary: GamificationSummary = {
-  profile: {
-    level: 1,
-    title: "Старт маршрута",
-    milestone: "Создайте первую привычку и отметьте первый шаг",
-    total_xp: 0,
-    current_level_xp: 0,
-    current_level_min_xp: 0,
-    next_level: 2,
-    next_level_xp: 100,
-    xp_to_next_level: 100,
-    progress_percent: 0,
-    current_streak: 0,
-    longest_streak: 0,
-    last_active_date: null,
-    streak_status: "empty"
-  },
-  pet: {
-    pet_type: null,
-    pet_name: null,
-    pet_state: "neutral",
-    level: 1,
-    xp: 0,
-    progress_percent: 0,
-    next_level: 2,
-    next_level_xp: 100,
-    xp_to_next_level: 100,
-    is_configured: false
-  },
-  streak: {
-    current: 0,
-    best: 0,
-    status: "empty",
-    label: "Серия ещё не началась",
-    next_step: "Создайте привычку и отметьте первый короткий шаг",
-    is_at_risk: false,
-    last_active_date: null,
-    completed_today: 0,
-    scheduled_today: 0
-  },
-  achievements: [],
-  goals: [],
-  recent_events: [],
-  next_best_action: {
-    title: "Начните с одной привычки",
-    description: "Добавьте первый шаг, чтобы появился прогресс",
-    cta_label: "Создать привычку",
-    cta_section: "habits"
-  }
-};
-
-const ONBOARDING_STORAGE_PREFIX = "steply:onboarding:";
-
-function getOnboardingKey(userId: number) {
-  return `${ONBOARDING_STORAGE_PREFIX}${userId}`;
-}
-
-function getOnboardingStatus(userId: number) {
-  try {
-    return localStorage.getItem(getOnboardingKey(userId));
-  } catch {
-    return null;
-  }
-}
-
-function setOnboardingStatus(userId: number, status: "pending" | "completed") {
-  try {
-    localStorage.setItem(getOnboardingKey(userId), status);
-  } catch {
-    // The onboarding can still finish for this session when storage is unavailable.
-  }
-}
 
 interface AppDataContextValue {
   token: string | null;
@@ -162,7 +92,7 @@ const AuthDataContext = createContext<AuthDataContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(getStoredToken());
-  const [activeSection, setActiveSection] = useState<AppSection>("dashboard");
+  const { activeSection, setActiveSection } = useSectionRouter();
   const [user, setUser] = useState<User | null>(null);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [summary, setSummary] = useState<Summary>(emptySummary);
@@ -475,9 +405,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   async function deleteHabit(habitId: number) {
-    if (!window.confirm("Удалить привычку и историю её выполнения?")) {
-      return;
-    }
     setError("");
     clearNotice();
     try {
