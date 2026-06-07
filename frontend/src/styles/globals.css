@@ -2406,14 +2406,14 @@ textarea.field-control {
 
 .auth-qr-card {
   display: grid;
-  grid-template-columns: minmax(112px, 142px) minmax(0, 1fr);
+  grid-template-columns: minmax(176px, 190px) minmax(0, 1fr);
   align-items: center;
-  gap: 14px;
+  gap: 20px;
   border: 1px solid rgba(11, 15, 13, 0.12);
   border-radius: var(--radius-card);
   background: rgba(255, 255, 255, 0.86);
   box-shadow: var(--shadow-card);
-  padding: 12px;
+  padding: 16px;
 }
 
 .auth-qr-card-demo {
@@ -2437,7 +2437,7 @@ textarea.field-control {
 
 .auth-qr-code {
   display: grid;
-  width: 142px;
+  width: 190px;
   max-width: 100%;
   aspect-ratio: 1;
   place-items: center;
@@ -2445,7 +2445,7 @@ textarea.field-control {
   border: 1px solid rgba(11, 15, 13, 0.1);
   border-radius: var(--radius-small);
   background: var(--color-surface);
-  padding: 8px;
+  padding: 12px;
 }
 
 .auth-qr-card-demo .auth-qr-code {
@@ -3854,6 +3854,10 @@ textarea.field-control {
 
   .sidebar {
     padding: 14px;
+  }
+
+  .auth-shell .auth-qr-card {
+    display: none;
   }
 }
 
