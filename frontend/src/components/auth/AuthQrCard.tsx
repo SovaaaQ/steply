@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import qrCodeUrl from "../../assets/qr-code.svg";
+
 interface QrConfig {
   version: number;
   dataCodewords: number;
@@ -435,10 +437,7 @@ export function AuthQrCard({
     <aside className={cardClassName} aria-label="QR-код для открытия Steply на телефоне">
       <div className="auth-qr-code" aria-hidden="true">
         {qr ? (
-          <svg viewBox={`-4 -4 ${qr.size + 8} ${qr.size + 8}`} role="img">
-            <rect x="-4" y="-4" width={qr.size + 8} height={qr.size + 8} rx="2" />
-            <path d={qr.path} />
-          </svg>
+          <img src={qrCodeUrl} alt="QR code" />
         ) : (
           <span>S</span>
         )}

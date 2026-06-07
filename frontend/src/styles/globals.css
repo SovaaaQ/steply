@@ -2464,14 +2464,6 @@ textarea.field-control {
   shape-rendering: crispEdges;
 }
 
-.auth-qr-code rect {
-  fill: var(--color-surface);
-}
-
-.auth-qr-code path {
-  fill: var(--color-ink);
-}
-
 .auth-qr-code span {
   display: grid;
   width: 58px;
