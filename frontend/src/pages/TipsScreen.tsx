@@ -586,10 +586,12 @@ export function TipsScreen() {
 
   return (
     <section className="recommendations-page page-stack">
-      <div className="tips-topbar">
-        <p className="tips-subtitle">
-          Сначала конкретный следующий шаг, затем контекст по рискам и истории
-        </p>
+      <div className="page-intro">
+        <div>
+          <span className="page-kicker">Советы</span>
+          <h2>Рекомендации на сегодня</h2>
+          <p>Сначала конкретный следующий шаг, затем контекст по рискам и истории</p>
+        </div>
         <Button
           className="tips-refresh-button"
           type="button"

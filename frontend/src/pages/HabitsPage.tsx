@@ -67,48 +67,46 @@ export function HabitsPage() {
 
   return (
     <section className="page-stack">
-      <div>
-        <div className="section-heading">
-          <div>
-            <span className="page-kicker">Привычки</span>
-            <h2>Ваши привычки</h2>
-          </div>
-          <Button
-            className="habit-page-create"
-            type="button"
-            variant="cta"
-            onClick={openHabitCreator}
-          >
-            Новая привычка
-          </Button>
+      <div className="page-intro">
+        <div>
+          <span className="page-kicker">Привычки</span>
+          <h2>Ваши привычки</h2>
+          <p>Отметьте привычку, чтобы поддержать питомца и сохранить темп дня</p>
         </div>
-        <p className="habit-motivation">Отметьте привычку, чтобы поддержать питомца</p>
-
         <Button
-          className="mobile-habit-create"
+          className="habit-page-create"
           type="button"
           variant="cta"
           onClick={openHabitCreator}
         >
           Новая привычка
         </Button>
-
-        <HabitList
-          habits={activeHabits}
-          predictions={predictions}
-          stats={habitStats}
-          getTodayEntry={getTodayEntry}
-          onCreate={openHabitCreator}
-          onEdit={startEditHabit}
-          onDelete={(habitId) => {
-            const habit = activeHabits.find((item) => item.id === habitId);
-            if (habit) {
-              setHabitToDelete(habit);
-            }
-          }}
-          onMark={(habitId, status) => void markHabit(habitId, status)}
-        />
       </div>
+
+      <Button
+        className="mobile-habit-create"
+        type="button"
+        variant="cta"
+        onClick={openHabitCreator}
+      >
+        Новая привычка
+      </Button>
+
+      <HabitList
+        habits={activeHabits}
+        predictions={predictions}
+        stats={habitStats}
+        getTodayEntry={getTodayEntry}
+        onCreate={openHabitCreator}
+        onEdit={startEditHabit}
+        onDelete={(habitId) => {
+          const habit = activeHabits.find((item) => item.id === habitId);
+          if (habit) {
+            setHabitToDelete(habit);
+          }
+        }}
+        onMark={(habitId, status) => void markHabit(habitId, status)}
+      />
 
       {habitToDelete && (
         <ConfirmDialog
