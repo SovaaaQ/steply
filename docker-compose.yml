@@ -72,7 +72,7 @@ services:
         VITE_PUBLIC_APP_URL: ${VITE_PUBLIC_APP_URL:-}
     container_name: steply_frontend
     ports:
-      - "${FRONTEND_PORT:-5173}:80"
+      - "80:80"
     depends_on:
       backend:
         condition: service_healthy

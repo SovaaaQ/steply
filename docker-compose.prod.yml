@@ -68,26 +68,6 @@ services:
       - steply_public
     restart: unless-stopped
 
-  reverse-proxy:
-    image: nginx:1.27-alpine
-    depends_on:
-      frontend:
-        condition: service_started
-    ports:
-      - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
-    volumes:
-      - ./deploy/nginx/steply.conf.template:/etc/nginx/templates/default.conf.template:ro
-      - ${TLS_CERT_PATH:-./deploy/nginx/certs/fullchain.pem}:/etc/nginx/certs/fullchain.pem:ro
-      - ${TLS_KEY_PATH:-./deploy/nginx/certs/privkey.pem}:/etc/nginx/certs/privkey.pem:ro
-    environment:
-      SERVER_NAME: ${SERVER_NAME:?set SERVER_NAME}
-      TLS_CERT_FILE: /etc/nginx/certs/fullchain.pem
-      TLS_KEY_FILE: /etc/nginx/certs/privkey.pem
-    networks:
-      - steply_private
-      - steply_public
-    restart: unless-stopped
 
 volumes:
   steply_postgres_data:

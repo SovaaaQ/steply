@@ -186,7 +186,7 @@ fi
 configure_mobile_urls
 
 log "Building and starting Steply containers..."
-docker compose up --build -d -f docker-compose.prod.yml
+docker compose up --build -d
 
 wait_for_service postgres
 wait_for_service backend
