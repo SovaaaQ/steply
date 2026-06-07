@@ -2,7 +2,6 @@ import { useMemo } from "react";
 
 import { NextHabitCard } from "../components/dashboard/NextHabitCard";
 import { TodaySummary } from "../components/dashboard/TodaySummary";
-import { AuthQrCard } from "../components/auth/AuthQrCard";
 import { DailyRecommendationCard } from "../components/dashboard/DailyRecommendationCard";
 import { PetMiniWidget } from "../components/gamification/PetMiniWidget";
 import { Button } from "../components/ui/Button";
@@ -116,7 +115,6 @@ export function DashboardPage() {
             recommendation={recommendationOfDay}
             onOpen={() => setActiveSection("recommendations")}
           />
-          <AuthQrCard variant="demo" />
         </div>
       </section>
     </div>
