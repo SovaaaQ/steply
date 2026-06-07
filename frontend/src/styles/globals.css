@@ -2457,10 +2457,12 @@ textarea.field-control {
   width: 118px;
 }
 
-.auth-qr-code svg {
+.auth-qr-code svg,
+.auth-qr-code img {
   display: block;
   width: 100%;
   height: 100%;
+  object-fit: contain;
   shape-rendering: crispEdges;
 }
 
