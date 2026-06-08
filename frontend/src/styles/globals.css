@@ -44,6 +44,11 @@ textarea {
   color: inherit;
 }
 
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
 button {
   cursor: pointer;
 }
@@ -1189,6 +1194,7 @@ li {
   display: grid;
   width: min(560px, 100%);
   max-height: calc(100vh - var(--layout-edge-offset));
+  max-height: calc(100dvh - var(--layout-edge-offset));
   align-content: start;
   gap: var(--section-gap);
   overflow: auto;
@@ -3913,18 +3919,17 @@ textarea.field-control {
     grid-template-columns: repeat(5, minmax(0, 1fr));
     position: fixed;
     z-index: 70;
-    right: auto;
+    right: 0;
     bottom: max(12px, env(safe-area-inset-bottom));
-    left: 50%;
+    left: 0;
     gap: 2px;
     width: min(calc(100% - var(--layout-edge-offset)), 920px);
-    margin-top: 0;
+    margin: 0 auto;
     border: 1px solid var(--color-border-inverse);
     border-radius: var(--radius-card);
     background: var(--color-graphite);
     box-shadow: var(--shadow-soft);
     padding: 6px;
-    transform: translateX(-50%);
   }
 
   .mobile-nav a {
@@ -3942,6 +3947,10 @@ textarea.field-control {
   .mobile-nav a.active {
     background: var(--color-lime);
     color: var(--color-ink);
+  }
+
+  .field-control {
+    font-size: 16px;
   }
 
   .auth-shell {
@@ -4056,6 +4065,7 @@ textarea.field-control {
   .habit-drawer {
     width: 100%;
     max-height: calc(100vh - 20px);
+    max-height: calc(100dvh - 20px);
     padding: 16px;
     animation-name: drawer-rise-in;
   }
