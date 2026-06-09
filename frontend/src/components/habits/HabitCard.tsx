@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Habit, HabitEntry, EntryStatus } from "../../types/habit";
 import type { HabitStats } from "../../types/statistics";
-import type { Prediction } from "../../types/recommendation";
+import type { Prediction, Recommendation } from "../../types/recommendation";
 import { formatPreferredTime, percent } from "../../utils/formatDate";
 import { getXPForCompletion } from "../../utils/gamification";
 import {
@@ -45,10 +45,12 @@ interface HabitCardProps {
   prediction?: Prediction;
   stats?: HabitStats;
   todayEntry?: HabitEntry;
+  recommendation?: Recommendation;
   compact?: boolean;
   onEdit?: (habit: Habit) => void;
   onDelete?: (habitId: number) => void;
   onMark: (habitId: number, status: EntryStatus) => void;
+  onGoToTips?: () => void;
 }
 
 export function HabitCard({
@@ -56,10 +58,12 @@ export function HabitCard({
   prediction,
   stats,
   todayEntry,
+  recommendation,
   compact = false,
   onEdit,
   onDelete,
-  onMark
+  onMark,
+  onGoToTips
 }: HabitCardProps) {
   const [isRiskPopoverOpen, setIsRiskPopoverOpen] = useState(false);
   const riskInfoRef = useRef<HTMLSpanElement>(null);
@@ -234,6 +238,12 @@ export function HabitCard({
             ? riskDescriptions[riskLevel]
             : "Пока рано считать"}
       </p>
+
+      {recommendation && onGoToTips && (
+        <button type="button" className="habit-advice-hint" onClick={onGoToTips}>
+          Есть совет для этой привычки →
+        </button>
+      )}
 
       <RecoverySuggestion
         habit={habit}

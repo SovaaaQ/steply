@@ -1141,6 +1141,31 @@ li {
   background: var(--color-lime-faint);
 }
 
+.habit-advice-hint {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-primary-strong);
+  font-size: var(--type-sm);
+  font-weight: var(--font-medium);
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 2px;
+  transition: text-decoration-color 0.15s, color 0.15s;
+}
+
+.habit-advice-hint:hover {
+  text-decoration-color: currentColor;
+}
+
+.habit-advice-hint:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: 2px;
+}
+
 .recovery-suggestion {
   display: flex;
   align-items: center;

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { HabitForm } from "../components/habits/HabitForm";
 import { HabitList } from "../components/habits/HabitList";
@@ -17,8 +17,23 @@ export function HabitsPage() {
     gamification,
     isHabitFormOpen,
     openHabitCreator,
+    recommendations,
+    setActiveSection,
     updatePet
   } = useAppData();
+
+  const recommendationByHabitId = useMemo(() => {
+    const map: Record<number, (typeof recommendations)[number]> = {};
+    for (const rec of recommendations) {
+      if (rec.habit_id && !rec.is_read) {
+        const existing = map[rec.habit_id];
+        if (!existing || rec.created_at > existing.created_at) {
+          map[rec.habit_id] = rec;
+        }
+      }
+    }
+    return map;
+  }, [recommendations]);
   const drawerRef = useRef<HTMLElement>(null);
   const {
     activeHabits,
@@ -97,9 +112,11 @@ export function HabitsPage() {
         habits={activeHabits}
         predictions={predictions}
         stats={habitStats}
+        recommendations={recommendationByHabitId}
         getTodayEntry={getTodayEntry}
         onCreate={openHabitCreator}
         onEdit={startEditHabit}
+        onGoToTips={() => setActiveSection("recommendations")}
         onDelete={(habitId) => {
           const habit = activeHabits.find((item) => item.id === habitId);
           if (habit) {

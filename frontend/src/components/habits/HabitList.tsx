@@ -1,6 +1,6 @@
 import type { Habit, EntryStatus } from "../../types/habit";
 import type { HabitStats } from "../../types/statistics";
-import type { Prediction } from "../../types/recommendation";
+import type { Prediction, Recommendation } from "../../types/recommendation";
 import type { HabitEntry } from "../../types/habit";
 import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/EmptyState";
@@ -10,24 +10,28 @@ interface HabitListProps {
   habits: Habit[];
   predictions: Record<number, Prediction>;
   stats: Record<number, HabitStats>;
+  recommendations?: Record<number, Recommendation>;
   getTodayEntry: (habitId: number) => HabitEntry | undefined;
   compact?: boolean;
   onCreate?: () => void;
   onEdit?: (habit: Habit) => void;
   onDelete?: (habitId: number) => void;
   onMark: (habitId: number, status: EntryStatus) => void;
+  onGoToTips?: () => void;
 }
 
 export function HabitList({
   habits,
   predictions,
   stats,
+  recommendations,
   getTodayEntry,
   compact = false,
   onCreate,
   onEdit,
   onDelete,
-  onMark
+  onMark,
+  onGoToTips
 }: HabitListProps) {
   if (habits.length === 0) {
     return (
@@ -56,10 +60,12 @@ export function HabitList({
           key={habit.id}
           prediction={predictions[habit.id]}
           stats={stats[habit.id]}
+          recommendation={recommendations?.[habit.id]}
           todayEntry={getTodayEntry(habit.id)}
           onEdit={onEdit}
           onDelete={onDelete}
           onMark={onMark}
+          onGoToTips={onGoToTips}
         />
       ))}
     </div>
