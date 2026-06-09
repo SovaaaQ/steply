@@ -574,12 +574,12 @@ export function TipsScreen() {
     .slice(0, 3);
 
   function handleAdviceAction(item: AdviceItem) {
+    if (item.recommendationId) {
+      void markRecommendationRead(item.recommendationId);
+    }
     if (item.habit && item.markStatus) {
       void markHabit(item.habit.id, item.markStatus);
       return;
-    }
-    if (item.recommendationId) {
-      void markRecommendationRead(item.recommendationId);
     }
     setActiveSection("habits");
   }
