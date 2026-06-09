@@ -27,6 +27,7 @@ export function HabitsPage() {
     habitForm,
     setHabitForm,
     editingHabitId,
+    isSubmitting,
     submitHabit,
     startEditHabit,
     markHabit,
@@ -162,6 +163,7 @@ export function HabitsPage() {
                 form={habitForm}
                 setForm={setHabitForm}
                 editingHabitId={editingHabitId}
+                isSubmitting={isSubmitting}
                 onSubmit={(event) => void submitHabit(event)}
                 onCancel={closeHabitForm}
               />

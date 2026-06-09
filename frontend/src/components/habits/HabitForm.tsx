@@ -9,6 +9,7 @@ interface HabitFormProps {
   form: HabitFormState;
   setForm: React.Dispatch<React.SetStateAction<HabitFormState>>;
   editingHabitId: number | null;
+  isSubmitting?: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onCancel: () => void;
 }
@@ -50,6 +51,7 @@ export function HabitForm({
   form,
   setForm,
   editingHabitId,
+  isSubmitting = false,
   onSubmit,
   onCancel
 }: HabitFormProps) {
@@ -208,7 +210,9 @@ export function HabitForm({
       </section>
 
       <div className="form-actions">
-        <Button variant="cta">{editingHabitId ? "Сохранить изменения" : "Создать привычку"}</Button>
+        <Button variant="cta" disabled={isSubmitting}>
+          {editingHabitId ? "Сохранить изменения" : "Создать привычку"}
+        </Button>
         {editingHabitId && (
           <Button type="button" variant="ghost" onClick={onCancel}>
             Отменить

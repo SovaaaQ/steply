@@ -55,6 +55,7 @@ interface AppDataContextValue {
   isLoading: boolean;
   isOnboardingOpen: boolean;
   isHabitFormOpen: boolean;
+  isSubmitting: boolean;
   habitForm: HabitFormState;
   setHabitForm: React.Dispatch<React.SetStateAction<HabitFormState>>;
   editingHabitId: number | null;
@@ -108,6 +109,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isHabitFormOpen, setIsHabitFormOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingHabitId, setEditingHabitId] = useState<number | null>(null);
   const [habitForm, setHabitForm] = useState<HabitFormState>(defaultHabitForm);
   const [now, setNow] = useState(() => new Date());
@@ -293,6 +295,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   async function submitHabit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     setError("");
     clearNotice();
     const payload = buildHabitPayload(habitForm);
@@ -309,6 +312,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       if (editingHabitId) {
         await habitsApi.update(editingHabitId, payload);
@@ -322,6 +326,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await loadDashboard();
     } catch (habitError) {
       setError(habitError instanceof Error ? habitError.message : "Не удалось сохранить привычку");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -527,6 +533,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isLoading,
     isOnboardingOpen,
     isHabitFormOpen,
+    isSubmitting,
     habitForm,
     setHabitForm,
     editingHabitId,
