@@ -1,5 +1,7 @@
 export function percent(value: number): string {
-  return `${Math.round(value * 100)}%`;
+  const normalized = Math.abs(value) > 1 ? value : value * 100;
+  const clamped = Math.max(0, Math.min(normalized, 100));
+  return `${Math.round(clamped)}%`;
 }
 
 export function formatLocalDate(date: Date): string {

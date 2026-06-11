@@ -95,12 +95,20 @@ export function HabitCard({
     : undefined;
   const isAvailableToday = periodState.state === "available_to_complete";
   const isLateCompletion = todayEntry?.meta?.late_completion === true;
+  const shouldShowUnavailableHint = !isAvailableToday && !todayEntry;
   const unavailableMessage =
     scheduleAvailability.reason === "first-after-preferred-time"
       ? "Первый шаг перенесен"
       : "Не запланировано на сегодня";
   const rewardLabel =
     isCompletedToday || isRecoveredToday ? "Питомец поддержан" : "Связь с питомцем";
+  const rewardText = isLateCompletion
+    ? "Отмечено после рекомендованного времени"
+    : isCompletedToday || isRecoveredToday
+      ? "Сегодня уже учтено"
+    : isMissedToday
+      ? "Можно вернуться мягко"
+    : `За выполнение +${completionXP} XP`;
 
   useEffect(() => {
     if (!isRiskPopoverOpen) {
@@ -168,6 +176,61 @@ export function HabitCard({
             <line x1="699" y1="27" x2="720" y2="31" />
           </g>
         </svg>
+      </div>
+
+      <div className="habit-primary-action-row">
+        {shouldShowUnavailableHint ? (
+          <div className="habit-schedule-hint">
+            <strong>{unavailableMessage}</strong>
+            <span>
+              {firstOccurrence
+                ? formatFirstScheduledOccurrence(firstOccurrence)
+                : formatNextScheduledOccurrence(nextOccurrence)}
+            </span>
+          </div>
+        ) : (
+          <div className="habit-reward-row">
+            <span>{rewardLabel}</span>
+            <strong>{rewardText}</strong>
+          </div>
+        )}
+
+        <div className="habit-actions">
+          <Button
+            className="habit-action-button habit-action-complete"
+            variant="cta"
+            disabled={!periodState.canComplete}
+            onClick={() => onMark(habit.id, "completed")}
+          >
+            <svg
+              className="habit-button-accent habit-button-complete-accent"
+              viewBox="0 0 34 34"
+              aria-hidden="true"
+            >
+              <path d="M17 3 L15 14 L5 9 M15 14 L29 11 M15 14 L26 24 M15 14 L7 27" />
+            </svg>
+            <span className="habit-action-label">
+              {isCompletedToday || isRecoveredToday ? "Готово сегодня" : "Отметить"}
+            </span>
+          </Button>
+          {periodState.state === "missed" && (
+            <Button
+              className="habit-action-button habit-action-miss"
+              variant="danger"
+              disabled
+              title="Этот день уже отмечен как пропуск"
+            >
+              <span className="habit-action-label">День пропущен</span>
+              <svg
+                className="habit-button-accent habit-button-miss-accent"
+                viewBox="0 0 56 24"
+                aria-hidden="true"
+              >
+                <path d="M3 17 C12 11 18 7 23 12 C27 17 34 7 39 10 C43 13 48 12 53 8" />
+              </svg>
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="habit-progress">
@@ -261,66 +324,6 @@ export function HabitCard({
         </div>
       )}
 
-      {!isAvailableToday && !todayEntry ? (
-        <div className="habit-schedule-hint">
-          <strong>{unavailableMessage}</strong>
-          <span>
-            {firstOccurrence
-              ? formatFirstScheduledOccurrence(firstOccurrence)
-              : formatNextScheduledOccurrence(nextOccurrence)}
-          </span>
-        </div>
-      ) : (
-        <div className="habit-reward-row">
-          <span>{rewardLabel}</span>
-          <strong>
-            {isLateCompletion
-              ? "Отмечено после рекомендованного времени"
-              : isCompletedToday || isRecoveredToday
-                ? "Сегодня уже учтено"
-              : isMissedToday
-                ? "Можно вернуться мягко"
-                : `За выполнение +${completionXP} XP`}
-          </strong>
-        </div>
-      )}
-
-      <div className="habit-actions">
-        <Button
-          className="habit-action-button habit-action-complete"
-          variant="cta"
-          disabled={!periodState.canComplete}
-          onClick={() => onMark(habit.id, "completed")}
-        >
-          <svg
-            className="habit-button-accent habit-button-complete-accent"
-            viewBox="0 0 34 34"
-            aria-hidden="true"
-          >
-            <path d="M17 3 L15 14 L5 9 M15 14 L29 11 M15 14 L26 24 M15 14 L7 27" />
-          </svg>
-          <span className="habit-action-label">
-            {isCompletedToday || isRecoveredToday ? "Готово сегодня" : "Отметить"}
-          </span>
-        </Button>
-        {periodState.state === "missed" && (
-          <Button
-            className="habit-action-button habit-action-miss"
-            variant="danger"
-            disabled
-            title="Этот день уже отмечен как пропуск"
-          >
-            <span className="habit-action-label">День пропущен</span>
-            <svg
-              className="habit-button-accent habit-button-miss-accent"
-              viewBox="0 0 56 24"
-              aria-hidden="true"
-            >
-              <path d="M3 17 C12 11 18 7 23 12 C27 17 34 7 39 10 C43 13 48 12 53 8" />
-            </svg>
-          </Button>
-        )}
-      </div>
     </Card>
   );
 }

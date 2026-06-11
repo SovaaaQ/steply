@@ -13,8 +13,8 @@ body {
   margin: 0;
   overflow-x: hidden;
   background:
-    linear-gradient(rgba(11, 15, 13, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(11, 15, 13, 0.026) 1px, transparent 1px),
+    linear-gradient(rgba(11, 15, 13, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(11, 15, 13, 0.018) 1px, transparent 1px),
     var(--color-bg);
   background-size:
     32px 32px,
@@ -132,6 +132,9 @@ li {
 }
 
 .feedback-stack {
+  position: sticky;
+  z-index: 60;
+  top: var(--layout-edge);
   display: grid;
   gap: var(--item-gap-tight);
   margin: var(--item-gap) 0 var(--page-gap);
@@ -545,7 +548,7 @@ li {
 .habit-card-accent {
   display: block;
   width: 100%;
-  height: 28px;
+  height: 20px;
   max-width: 100%;
   overflow: hidden;
   fill: none;
@@ -638,7 +641,7 @@ li {
     28px 28px,
     auto;
   box-shadow: var(--shadow-soft);
-  padding: var(--panel-padding-feature);
+  padding: clamp(18px, 2vw, 24px);
 }
 
 .dashboard-hero h2 {
@@ -979,7 +982,7 @@ li {
 
 .habit-card {
   display: grid;
-  gap: var(--section-gap);
+  gap: var(--item-gap);
 }
 
 .habit-card-intro {
@@ -1116,6 +1119,22 @@ li {
 .habit-reward-row strong {
   color: var(--color-heading);
   font-size: 13px;
+}
+
+.habit-primary-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
+  gap: var(--item-gap);
+  align-items: stretch;
+}
+
+.habit-primary-action-row .habit-actions {
+  align-items: stretch;
+  justify-content: flex-end;
+}
+
+.habit-primary-action-row .habit-actions .button {
+  min-width: 180px;
 }
 
 .habit-schedule-hint {
@@ -2046,6 +2065,8 @@ textarea.field-control {
 .recommendation-reason {
   color: var(--color-muted);
   font-size: var(--type-sm);
+  border-top: 1px dashed rgba(11, 15, 13, 0.12);
+  padding-top: var(--space-2);
 }
 
 .recommendation-reason strong {
@@ -2609,7 +2630,7 @@ textarea.field-control {
 }
 
 .dashboard-hero-calm {
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
   align-items: start;
 }
 
@@ -2620,7 +2641,8 @@ textarea.field-control {
 }
 
 .today-summary h2 {
-  max-width: 760px;
+  max-width: 680px;
+  font-size: clamp(32px, 3.4vw, 46px);
 }
 
 .summary-metrics {
@@ -2654,7 +2676,7 @@ textarea.field-control {
   display: block;
   margin: var(--space-1) 0 0;
   color: var(--color-on-dark);
-  font-size: 25px;
+  font-size: 23px;
   line-height: 1;
 }
 
@@ -2670,7 +2692,7 @@ textarea.field-control {
 .next-habit-card {
   display: grid;
   gap: var(--control-gap);
-  padding: var(--section-gap);
+  padding: var(--item-gap);
 }
 
 .next-habit-top {
@@ -2767,7 +2789,7 @@ textarea.field-control {
 .tips-focus-panel {
   border-color: rgba(94, 122, 0, 0.22);
   background:
-    linear-gradient(135deg, rgba(246, 251, 220, 0.86), rgba(255, 255, 255, 0.95) 48%),
+    linear-gradient(135deg, rgba(246, 251, 220, 0.62), rgba(255, 255, 255, 0.96) 42%),
     var(--color-surface-raised);
 }
 
@@ -3905,7 +3927,7 @@ textarea.field-control {
 
 @media (max-width: 920px) {
   :root {
-    --layout-bottom-padding: 98px;
+    --layout-bottom-padding: 118px;
   }
 
   .app-shell {
@@ -4150,6 +4172,15 @@ textarea.field-control {
     grid-template-columns: 1fr;
   }
 
+  .habit-primary-action-row {
+    grid-template-columns: 1fr;
+  }
+
+  .habit-primary-action-row .habit-actions,
+  .habit-primary-action-row .habit-actions .button {
+    width: 100%;
+  }
+
   .pet-status-card {
     gap: var(--page-gap);
     padding: var(--panel-padding-feature);
@@ -4209,6 +4240,10 @@ textarea.field-control {
   .app-header {
     margin-bottom: 12px;
     padding: 14px 16px;
+  }
+
+  .app-header .page-kicker {
+    display: none;
   }
 
   .onboarding-overlay {
@@ -4276,6 +4311,19 @@ textarea.field-control {
   .dashboard-hero-calm .next-habit-card,
   .dashboard-hero-calm .pet-mini-widget {
     padding: var(--item-gap);
+  }
+
+  .habit-card-accent {
+    display: none;
+  }
+
+  .habit-facts div:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .habit-reward-row {
+    display: grid;
+    gap: var(--space-1);
   }
 
   .dashboard-hero-calm .next-habit-card .button-secondary,
