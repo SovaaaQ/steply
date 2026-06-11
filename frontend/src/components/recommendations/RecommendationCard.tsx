@@ -7,9 +7,9 @@ interface ActionPlanSegment {
 }
 
 const actionPlanUiLabels: Record<ActionPlanSegment["label"], string> = {
-  Сегодня: "Сделать сейчас",
+  Сегодня: "Что сделать сейчас",
   Минимум: "Если тяжело",
-  Готово: "Засчитать"
+  Готово: "Когда засчитать"
 };
 
 interface RecommendationCardProps {

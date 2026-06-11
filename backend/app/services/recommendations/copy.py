@@ -392,9 +392,9 @@ def _build_recommendation_text(
             RISK_IGNORED_RECOVERY_RECOMMENDATION_TYPE,
             "Пересоберите условия",
             _action_plan_message(
-                f"не возвращайтесь к полной версии, сделайте только {recovery_task}",
-                minimum_action,
-                f"засчитан минимальный шаг; {completion_criteria}",
+                f"уберите полную версию на сегодня и оставьте только точку входа: {recovery_task}",
+                f"{minimum_action}; если не получается, уменьшите условие еще вдвое",
+                f"условия облегчены, засчитан минимальный шаг; {completion_criteria}",
             ),
             "high",
         )
@@ -406,9 +406,9 @@ def _build_recommendation_text(
             RESET_PLAN_RECOMMENDATION_TYPE,
             "План перезапуска",
             _action_plan_message(
-                f"перезапустите «{habit.title}» через один короткий шаг: {recovery_task}",
-                f"{minimum_action} без попытки наверстать паузу",
-                f"отмечен минимум; {completion_criteria}",
+                f"начните новый цикл «{habit.title}» без старой нормы: {recovery_task}",
+                f"{minimum_action} без попытки закрыть всю паузу",
+                f"план упрощен, отмечен первый шаг перезапуска; {completion_criteria}",
             ),
             "high",
         )
@@ -416,11 +416,11 @@ def _build_recommendation_text(
     if consecutive_missed >= 2:
         return (
             MISS_STREAK_RECOVERY_RECOMMENDATION_TYPE,
-            "Вернуться мягко",
+            "Разорвать пропуски",
             _action_plan_message(
-                f"сделайте только минимальный шаг для «{habit.title}»: {recovery_task}",
-                f"{minimum_action} без компенсации прошлых пропусков",
-                f"поставлена отметка возвращения; {completion_criteria}",
+                f"разорвите серию пропусков одним минимальным шагом: {recovery_task}",
+                f"{minimum_action} без компенсации прошлых дней",
+                f"серия пропусков остановлена новой отметкой; {completion_criteria}",
             ),
             "high" if consecutive_missed >= 3 else "normal",
         )
@@ -428,11 +428,11 @@ def _build_recommendation_text(
     if total_entries < 3 and (missed_count > 0 or missed_today):
         return (
             EARLY_RECOVERY_RECOMMENDATION_TYPE,
-            "Раннее восстановление",
+            "После первого пропуска",
             _action_plan_message(
-                f"верните «{habit.title}» через минимальный вариант: {recovery_task}",
+                f"сразу закройте первый разрыв коротким вариантом: {recovery_task}",
                 f"{minimum_action} без компенсации первого пропуска",
-                f"появилась новая отметка; {completion_criteria}",
+                f"первый пропуск не стал серией; {completion_criteria}",
             ),
             "normal",
         )
@@ -440,11 +440,11 @@ def _build_recommendation_text(
     if prediction.risk_level == "high":
         return (
             RISK_RECOVERY_RECOMMENDATION_TYPE,
-            "Риск пропуска",
+            "Снизить риск",
             _action_plan_message(
-                f"сделайте самый простой вариант «{habit.title}»: {recovery_task}",
-                minimum_action,
-                f"отмечен минимум до пропуска; {completion_criteria}",
+                f"снизьте риск до пропуска: сделайте только легкий вход для «{habit.title}»: {recovery_task}",
+                f"{minimum_action} до обычного времени или ближайшего свободного окна",
+                f"барьер снижен до пропуска, отмечен минимум; {completion_criteria}",
             ),
             "high",
         )
@@ -453,9 +453,9 @@ def _build_recommendation_text(
         if recent_miss_rate >= 0.25 or missed_last_7 > 0 or consecutive_missed == 1:
             return (
                 SOFT_RECOVERY_RECOMMENDATION_TYPE,
-                "Сделайте проще",
+                "Сделать легче",
                 _action_plan_message(
-                    f"уменьшите объем «{habit.title}» и заранее назовите точку остановки",
+                    f"снизьте объем «{habit.title}» до короткой версии: {recovery_task}",
                     minimum_action,
                     f"минимальная версия завершена; {completion_criteria}",
                 ),

@@ -577,6 +577,14 @@ li {
   padding-inline: 58px;
 }
 
+.habit-action-done:disabled {
+  border: 1px solid rgba(22, 136, 93, 0.24);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  opacity: 1;
+  box-shadow: none;
+}
+
 .habit-action-miss {
   padding-inline: 68px;
 }
@@ -1059,14 +1067,24 @@ li {
   font-weight: var(--font-semibold);
 }
 
+.habit-key-facts,
 .habit-facts,
 .profile-list {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--control-gap);
   margin: 0;
 }
 
+.habit-key-facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.habit-facts,
+.profile-list {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.habit-key-facts div,
 .habit-facts div,
 .profile-list div {
   min-width: 0;
@@ -1076,6 +1094,7 @@ li {
   padding: var(--item-gap);
 }
 
+.habit-key-facts dt,
 .habit-facts dt,
 .profile-list dt {
   color: var(--color-muted);
@@ -1090,12 +1109,63 @@ li {
   gap: var(--space-2);
 }
 
+.habit-key-facts dd,
 .habit-facts dd,
 .profile-list dd {
   margin: var(--space-1) 0 0;
   color: var(--color-heading);
   font-weight: var(--font-bold);
   overflow-wrap: break-word;
+}
+
+.habit-details {
+  border-top: 1px solid rgba(11, 15, 13, 0.08);
+  padding-top: var(--control-gap);
+}
+
+.habit-details summary {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 30px;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid rgba(11, 15, 13, 0.1);
+  border-radius: var(--radius-stamp);
+  background: var(--color-surface);
+  padding: 0 var(--control-gap);
+  cursor: pointer;
+  color: var(--color-muted-strong);
+  font-size: var(--type-sm);
+  font-weight: var(--font-bold);
+  list-style: none;
+}
+
+.habit-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.habit-details summary::after {
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  content: "";
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform var(--duration-fast) ease;
+}
+
+.habit-details[open] summary::after {
+  transform: rotate(225deg) translateY(-2px);
+}
+
+.habit-details summary:hover {
+  color: var(--color-heading);
+}
+
+.habit-details-body {
+  display: grid;
+  gap: var(--item-gap);
+  margin-top: var(--item-gap);
 }
 
 .habit-reward-row {
@@ -1883,7 +1953,7 @@ textarea.field-control {
   gap: var(--control-gap);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.92);
   padding: var(--item-gap);
 }
 
@@ -2083,18 +2153,18 @@ textarea.field-control {
 }
 
 .recommendation-card-urgent {
-  border-color: rgba(210, 59, 45, 0.22);
-  background: linear-gradient(180deg, rgba(255, 229, 223, 0.88), rgba(255, 255, 255, 0.88));
+  border-color: rgba(210, 59, 45, 0.28);
+  background: rgba(255, 255, 255, 0.94);
 }
 
 .recommendation-card-normal {
   border-color: rgba(47, 115, 224, 0.18);
-  background: linear-gradient(180deg, rgba(234, 241, 255, 0.82), rgba(255, 255, 255, 0.9));
+  background: rgba(255, 255, 255, 0.94);
 }
 
 .recommendation-card-data {
-  border-color: rgba(94, 122, 0, 0.2);
-  background: linear-gradient(180deg, rgba(246, 251, 220, 0.92), rgba(255, 255, 255, 0.9));
+  border-color: rgba(94, 122, 0, 0.24);
+  background: rgba(255, 255, 255, 0.94);
 }
 
 .muted-panel {
@@ -2787,10 +2857,8 @@ textarea.field-control {
 }
 
 .tips-focus-panel {
-  border-color: rgba(94, 122, 0, 0.22);
-  background:
-    linear-gradient(135deg, rgba(246, 251, 220, 0.62), rgba(255, 255, 255, 0.96) 42%),
-    var(--color-surface-raised);
+  border-color: rgba(94, 122, 0, 0.2);
+  background: var(--color-surface-raised);
 }
 
 .tips-insight-panel {
@@ -4096,6 +4164,7 @@ textarea.field-control {
     grid-template-columns: 1fr;
   }
 
+  .habit-key-facts,
   .habit-facts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4223,7 +4292,6 @@ textarea.field-control {
 
   .app-header,
   .dashboard-hero,
-  .page-intro,
   .card,
   .side-card,
   .tips-section-panel,
@@ -4235,6 +4303,11 @@ textarea.field-control {
   .empty-state,
   .auth-form {
     padding: 16px;
+  }
+
+  .page-intro {
+    gap: var(--item-gap);
+    padding: 14px;
   }
 
   .app-header {
@@ -4280,6 +4353,15 @@ textarea.field-control {
     font-size: 24px;
   }
 
+  .page-intro h2 {
+    font-size: 28px;
+  }
+
+  .page-intro p {
+    margin-top: 6px;
+    line-height: 1.38;
+  }
+
   .dashboard-hero h2 {
     font-size: 32px;
   }
@@ -4317,6 +4399,7 @@ textarea.field-control {
     display: none;
   }
 
+  .habit-key-facts div:last-child,
   .habit-facts div:last-child {
     grid-column: 1 / -1;
   }

@@ -7,6 +7,7 @@ export function Header() {
   const { openHabitCreator } = useHabitForm();
   const { user, logout } = useAuth();
   const title = navigationItems.find((item) => item.id === activeSection)?.label ?? "Главная";
+  const showQuickAdd = activeSection !== "habits";
 
   return (
     <header className="app-header">
@@ -16,9 +17,11 @@ export function Header() {
       </div>
 
       <div className="header-actions">
-        <button type="button" className="quick-add" onClick={openHabitCreator}>
-          Новая привычка
-        </button>
+        {showQuickAdd && (
+          <button type="button" className="quick-add" onClick={openHabitCreator}>
+            Новая привычка
+          </button>
+        )}
         <span className="header-pill">{user?.full_name ?? "Пользователь"}</span>
         <button type="button" className="ghost-button" onClick={logout}>
           Выйти

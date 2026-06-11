@@ -76,6 +76,7 @@ export function HabitCard({
   const isCompletedToday = todayEntry?.status === "completed";
   const isRecoveredToday = todayEntry?.status === "recovery_completed";
   const isMissedToday = todayEntry?.status === "missed";
+  const isDoneToday = isCompletedToday || isRecoveredToday;
   const completionXP = getXPForCompletion("completed", habit.difficulty);
   const now = new Date();
   const hasEntries = (stats?.total_entries ?? 0) > 0;
@@ -100,15 +101,14 @@ export function HabitCard({
     scheduleAvailability.reason === "first-after-preferred-time"
       ? "Первый шаг перенесен"
       : "Не запланировано на сегодня";
-  const rewardLabel =
-    isCompletedToday || isRecoveredToday ? "Питомец поддержан" : "Связь с питомцем";
+  const rewardLabel = isDoneToday ? "XP за привычку" : "После отметки";
   const rewardText = isLateCompletion
-    ? "Отмечено после рекомендованного времени"
-    : isCompletedToday || isRecoveredToday
-      ? "Сегодня уже учтено"
+    ? "Отмечено позже"
+    : isDoneToday
+      ? "Уже учтено"
     : isMissedToday
-      ? "Можно вернуться мягко"
-    : `За выполнение +${completionXP} XP`;
+      ? "Можно вернуться минимумом"
+    : `+${completionXP} XP`;
 
   useEffect(() => {
     if (!isRiskPopoverOpen) {
@@ -197,20 +197,22 @@ export function HabitCard({
 
         <div className="habit-actions">
           <Button
-            className="habit-action-button habit-action-complete"
-            variant="cta"
+            className={`habit-action-button ${isDoneToday ? "habit-action-done" : "habit-action-complete"}`}
+            variant={isDoneToday ? "secondary" : "cta"}
             disabled={!periodState.canComplete}
             onClick={() => onMark(habit.id, "completed")}
           >
-            <svg
-              className="habit-button-accent habit-button-complete-accent"
-              viewBox="0 0 34 34"
-              aria-hidden="true"
-            >
-              <path d="M17 3 L15 14 L5 9 M15 14 L29 11 M15 14 L26 24 M15 14 L7 27" />
-            </svg>
+            {!isDoneToday && (
+              <svg
+                className="habit-button-accent habit-button-complete-accent"
+                viewBox="0 0 34 34"
+                aria-hidden="true"
+              >
+                <path d="M17 3 L15 14 L5 9 M15 14 L29 11 M15 14 L26 24 M15 14 L7 27" />
+              </svg>
+            )}
             <span className="habit-action-label">
-              {isCompletedToday || isRecoveredToday ? "Готово сегодня" : "Отметить"}
+              {isDoneToday ? "Отмечено" : "Отметить"}
             </span>
           </Button>
           {periodState.state === "missed" && (
@@ -233,19 +235,7 @@ export function HabitCard({
         </div>
       </div>
 
-      <div className="habit-progress">
-        <div className="habit-progress-row">
-          <span>Общий прогресс</span>
-          <strong>{percent(completionRate)}</strong>
-        </div>
-        <ProgressBar value={completionPercent} variant="habit" label={`Прогресс ${habit.title}`} />
-      </div>
-
-      <dl className="habit-facts">
-        <div>
-          <dt>Частота</dt>
-          <dd>{formatSchedule(habit)}</dd>
-        </div>
+      <dl className="habit-key-facts">
         <div>
           <dt>Время</dt>
           <dd>{formatPreferredTime(habit.preferred_time)}</dd>
@@ -255,58 +245,90 @@ export function HabitCard({
           <dd>{stats?.current_streak ?? 0}</dd>
         </div>
         <div>
-          <dt>Выполнение</dt>
-          <dd>{percent(completionRate)}</dd>
-        </div>
-        <div>
-          <dt>
-            <span>
-              {isCompletedToday || isRecoveredToday ? "Что дальше" : "Риск пропуска"}
-            </span>
-            <span className={`risk-info ${isRiskPopoverOpen ? "open" : ""}`} ref={riskInfoRef}>
-              <button
-                className="risk-help-button"
-                type="button"
-                aria-label="Как рассчитывается риск"
-                aria-controls={riskPopoverId}
-                aria-expanded={isRiskPopoverOpen}
-                onClick={() => setIsRiskPopoverOpen((isOpen) => !isOpen)}
-              >
-                ?
-              </button>
-              <span className="risk-popover" id={riskPopoverId} role="note" aria-hidden={!isRiskPopoverOpen}>
-                <strong>Откуда берется риск</strong>
-                <span>Смотрим на:</span>
-                <ul>
-                  <li>регулярности выполнения</li>
-                  <li>количеству пропусков</li>
-                  <li>текущей серии</li>
-                  <li>дням недели</li>
-                  <li>истории активности</li>
-                </ul>
-                <span>Низкий: 0–39%</span>
-                <span>Средний: 40–69%</span>
-                <span>Высокий: 70–100%</span>
-              </span>
-            </span>
-          </dt>
-          <dd>{riskDisplay}</dd>
+          <dt>{isDoneToday ? "Дальше" : "Риск"}</dt>
+          <dd>{isDoneToday ? formatNextScheduledOccurrence(nextOccurrence) : riskDisplay}</dd>
         </div>
       </dl>
 
-      <p className="risk-explanation">
-        {isCompletedToday || isRecoveredToday
-          ? `Сегодня уже готово. ${formatNextScheduledOccurrence(nextOccurrence)}.`
-          : riskLevel
-            ? riskDescriptions[riskLevel]
-            : "Пока рано считать"}
-      </p>
+      <details className="habit-details">
+        <summary>Подробнее</summary>
+        <div className="habit-details-body">
+          <div className="habit-progress">
+            <div className="habit-progress-row">
+              <span>Общий прогресс</span>
+              <strong>{percent(completionRate)}</strong>
+            </div>
+            <ProgressBar value={completionPercent} variant="habit" label={`Прогресс ${habit.title}`} />
+          </div>
 
-      {recommendation && onGoToTips && (
-        <button type="button" className="habit-advice-hint" onClick={onGoToTips}>
-          Есть совет для этой привычки →
-        </button>
-      )}
+          <dl className="habit-facts">
+            <div>
+              <dt>Частота</dt>
+              <dd>{formatSchedule(habit)}</dd>
+            </div>
+            <div>
+              <dt>Время</dt>
+              <dd>{formatPreferredTime(habit.preferred_time)}</dd>
+            </div>
+            <div>
+              <dt>Серия</dt>
+              <dd>{stats?.current_streak ?? 0}</dd>
+            </div>
+            <div>
+              <dt>Выполнение</dt>
+              <dd>{percent(completionRate)}</dd>
+            </div>
+            <div>
+              <dt>
+                <span>
+                  {isCompletedToday || isRecoveredToday ? "Что дальше" : "Риск пропуска"}
+                </span>
+                <span className={`risk-info ${isRiskPopoverOpen ? "open" : ""}`} ref={riskInfoRef}>
+                  <button
+                    className="risk-help-button"
+                    type="button"
+                    aria-label="Как рассчитывается риск"
+                    aria-controls={riskPopoverId}
+                    aria-expanded={isRiskPopoverOpen}
+                    onClick={() => setIsRiskPopoverOpen((isOpen) => !isOpen)}
+                  >
+                    ?
+                  </button>
+                  <span className="risk-popover" id={riskPopoverId} role="note" aria-hidden={!isRiskPopoverOpen}>
+                    <strong>Откуда берется риск</strong>
+                    <span>Смотрим на:</span>
+                    <ul>
+                      <li>регулярности выполнения</li>
+                      <li>количеству пропусков</li>
+                      <li>текущей серии</li>
+                      <li>дням недели</li>
+                      <li>истории активности</li>
+                    </ul>
+                    <span>Низкий: 0–39%</span>
+                    <span>Средний: 40–69%</span>
+                    <span>Высокий: 70–100%</span>
+                  </span>
+                </span>
+              </dt>
+              <dd>{riskDisplay}</dd>
+            </div>
+          </dl>
+
+          <p className="risk-explanation">
+            {isCompletedToday || isRecoveredToday
+              ? `Сегодня уже отмечено. ${formatNextScheduledOccurrence(nextOccurrence)}.`
+              : riskLevel
+                ? riskDescriptions[riskLevel]
+                : "Пока рано считать"}
+          </p>
+
+          {recommendation && onGoToTips && (
+            <button type="button" className="habit-advice-hint" onClick={onGoToTips}>
+              Есть совет для этой привычки →
+            </button>
+          )}
+        </div>
+      </details>
 
       <RecoverySuggestion
         habit={habit}

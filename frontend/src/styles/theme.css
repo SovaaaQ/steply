@@ -63,7 +63,7 @@
   --shadow-card: 0 1px 0 rgba(11, 15, 13, 0.08);
   --shadow-card-hover: 5px 5px 0 rgba(11, 15, 13, 0.1);
   --shadow-focus: 0 0 0 3px rgba(199, 241, 40, 0.38);
-  --shadow-lime: 5px 5px 0 rgba(199, 241, 40, 0.34);
+  --shadow-lime: 3px 3px 0 rgba(94, 122, 0, 0.16);
   --shadow-inset-line: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 
   --radius-card: 8px;

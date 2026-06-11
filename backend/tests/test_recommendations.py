@@ -169,9 +169,9 @@ def test_early_recovery_wins_over_data_collection_when_history_has_miss() -> Non
     )
 
     assert rec_type == EARLY_RECOVERY_RECOMMENDATION_TYPE
-    assert title == "Раннее восстановление"
+    assert title == "После первого пропуска"
     assert_action_plan(message)
-    assert "минимальный вариант" in message
+    assert "первый разрыв" in message
     assert priority == "normal"
 
 
@@ -191,9 +191,9 @@ def test_miss_streak_recovery_is_used_for_three_consecutive_misses() -> None:
     )
 
     assert rec_type == MISS_STREAK_RECOVERY_RECOMMENDATION_TYPE
-    assert title == "Вернуться мягко"
+    assert title == "Разорвать пропуски"
     assert_action_plan(message)
-    assert "минимальный шаг" in message
+    assert "серия пропусков" in message
     assert priority == "high"
 
 
@@ -217,7 +217,7 @@ def test_risk_ignored_recovery_changes_repeated_high_risk_advice() -> None:
     assert rec_type == RISK_IGNORED_RECOVERY_RECOMMENDATION_TYPE
     assert title == "Пересоберите условия"
     assert_action_plan(message)
-    assert "полной версии" in message
+    assert "полную версию" in message
     assert priority == "high"
 
 
@@ -239,7 +239,7 @@ def test_reset_plan_is_used_for_long_pause_without_previous_risk_advice() -> Non
     assert rec_type == RESET_PLAN_RECOMMENDATION_TYPE
     assert title == "План перезапуска"
     assert_action_plan(message)
-    assert "перезапустите" in message
+    assert "новый цикл" in message
     assert priority == "high"
 
 
@@ -258,7 +258,49 @@ def test_high_risk_without_miss_streak_uses_risk_recovery() -> None:
     )
 
     assert rec_type == RISK_RECOVERY_RECOMMENDATION_TYPE
-    assert title == "Риск пропуска"
+    assert title == "Снизить риск"
+
+
+def test_recovery_messages_vary_by_context_for_same_habit() -> None:
+    habit = make_habit("Диплом", "Писать диплом")
+    scenarios = [
+        make_prediction(
+            total_entries=1,
+            missed_count=1,
+            missed_today=True,
+            consecutive_missed=1,
+        ),
+        make_prediction(
+            total_entries=4,
+            risk_level="high",
+            completed_count=2,
+            missed_count=1,
+            consecutive_missed=0,
+        ),
+        make_prediction(
+            total_entries=3,
+            missed_count=3,
+            consecutive_missed=3,
+            missed_last_7_days=3,
+            total_last_7_days=3,
+            recent_miss_rate=1,
+        ),
+    ]
+
+    messages = [
+        _build_recommendation_text(
+            make_user(),
+            habit,
+            prediction,
+            active_habit_count=2,
+        )[2]
+        for prediction in scenarios
+    ]
+
+    assert len(set(messages)) == len(messages)
+    assert "первый разрыв" in messages[0]
+    assert "до пропуска" in messages[1]
+    assert "серия пропусков" in messages[2]
 
 
 def test_default_recovery_minutes_do_not_make_same_five_minute_advice() -> None:

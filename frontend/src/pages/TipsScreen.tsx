@@ -239,12 +239,63 @@ function getPersonalDoneCriteria(habit?: Habit) {
   }
 }
 
-function getPersonalActionPlan(habit?: Habit) {
-  return [
-    `Сегодня: ${getPersonalPrimaryAction(habit)}`,
-    `Минимум: ${getPersonalMinimumAction(habit)}`,
-    `Готово: ${getPersonalDoneCriteria(habit)}`
-  ].join(" ");
+function getPersonalActionPlan(habit?: Habit, recommendationType = "default") {
+  const primary = getPersonalPrimaryAction(habit);
+  const minimum = getPersonalMinimumAction(habit);
+  const done = getPersonalDoneCriteria(habit);
+
+  switch (recommendationType) {
+    case "risk_ignored_recovery":
+      return [
+        `Сегодня: уберите полную версию и оставьте только точку входа: ${minimum}`,
+        `Минимум: уменьшите условие еще вдвое, если даже этот шаг кажется тяжелым`,
+        `Готово: условия облегчены и отмечен минимальный шаг`
+      ].join(" ");
+    case "reset_plan":
+      return [
+        `Сегодня: начните новый цикл без старой нормы: ${minimum}`,
+        `Минимум: только первый видимый шаг без попытки закрыть всю паузу`,
+        `Готово: план упрощен и отмечен первый шаг перезапуска`
+      ].join(" ");
+    case "miss_streak_recovery":
+      return [
+        `Сегодня: разорвите серию пропусков одним минимальным шагом: ${minimum}`,
+        `Минимум: ${minimum} без компенсации прошлых дней`,
+        `Готово: серия пропусков остановлена новой отметкой`
+      ].join(" ");
+    case "early_recovery":
+      return [
+        `Сегодня: закройте первый разрыв коротким вариантом: ${minimum}`,
+        `Минимум: ${minimum} без компенсации первого пропуска`,
+        `Готово: первый пропуск не стал серией`
+      ].join(" ");
+    case "risk_recovery":
+      return [
+        `Сегодня: снизьте риск до пропуска: ${minimum}`,
+        `Минимум: сделайте это до обычного времени или ближайшего свободного окна`,
+        `Готово: барьер снижен до пропуска, минимум отмечен`
+      ].join(" ");
+    case "soft_recovery":
+    case "reduce_difficulty":
+    case "restore_regular_activity":
+      return [
+        `Сегодня: снизьте объем до короткой версии: ${minimum}`,
+        `Минимум: ${minimum}`,
+        `Готово: минимальная версия завершена`
+      ].join(" ");
+    case "plan_ahead":
+      return [
+        `Сегодня: подготовьте первый шаг заранее: ${primary}`,
+        `Минимум: ${minimum}`,
+        `Готово: время и место старта понятны до выполнения`
+      ].join(" ");
+    default:
+      return [
+        `Сегодня: ${primary}`,
+        `Минимум: ${minimum}`,
+        `Готово: ${done}`
+      ].join(" ");
+  }
 }
 
 function getAdviceLabel(tone: AdviceItem["tone"]) {
@@ -360,7 +411,7 @@ function getRecommendationReason(
 
 function getRecommendationAdvice(recommendation: Recommendation, habit?: Habit) {
   if (habit) {
-    return getPersonalActionPlan(habit);
+    return getPersonalActionPlan(habit, recommendation.type);
   }
 
   switch (recommendation.type) {
@@ -466,7 +517,7 @@ export function TipsScreen() {
         tone: "urgent" as const,
         habit,
         habitTitle: habit.title,
-        advice: getPersonalActionPlan(habit),
+        advice: getPersonalActionPlan(habit, "risk_recovery"),
         reason: getPredictionRiskReason(stats, prediction),
         ctaLabel: "Отметить" as const,
         markStatus: "recovery_completed" as const
