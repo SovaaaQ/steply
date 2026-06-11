@@ -1,10 +1,11 @@
 import { navigationItems } from "../../app/navigation";
-import { useAppData } from "../../app/providers";
+import { useDashboardData, useNavigation } from "../../app/providers";
 import { NavIcon } from "./NavIcon";
 import type { MouseEvent } from "react";
 
 export function Sidebar() {
-  const { activeSection, setActiveSection, completedToday, habitsForToday } = useAppData();
+  const { activeSection, setActiveSection } = useNavigation();
+  const { completedToday, habitsForToday } = useDashboardData();
 
   return (
     <aside className="sidebar">

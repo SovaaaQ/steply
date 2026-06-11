@@ -6,21 +6,15 @@ import { PetSetup } from "../components/gamification/PetSetup";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { ErrorState } from "../components/ui/ErrorState";
-import { useAppData } from "../app/providers";
+import { useDashboardData, useHabitForm, useNavigation, useUIFeedback } from "../app/providers";
 import { useHabits } from "../hooks/useHabits";
 import type { Habit } from "../types/habit";
 
 export function HabitsPage() {
-  const {
-    closeHabitForm,
-    error,
-    gamification,
-    isHabitFormOpen,
-    openHabitCreator,
-    recommendations,
-    setActiveSection,
-    updatePet
-  } = useAppData();
+  const { closeHabitForm, isHabitFormOpen, openHabitCreator } = useHabitForm();
+  const { error } = useUIFeedback();
+  const { gamification, recommendations, updatePet } = useDashboardData();
+  const { setActiveSection } = useNavigation();
 
   const recommendationByHabitId = useMemo(() => {
     const map: Record<number, (typeof recommendations)[number]> = {};

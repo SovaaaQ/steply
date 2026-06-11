@@ -1,6 +1,6 @@
 import { RecommendationCard } from "../components/recommendations/RecommendationCard";
 import { Button } from "../components/ui/Button";
-import { useAppData } from "../app/providers";
+import { useDashboardData, useNavigation } from "../app/providers";
 import { useRecommendations } from "../hooks/useRecommendations";
 import type { EntryStatus, Habit } from "../types/habit";
 import type { Prediction, Recommendation } from "../types/recommendation";
@@ -434,14 +434,8 @@ function getRecommendationAction(
 }
 
 export function TipsScreen() {
-  const {
-    habitStats,
-    habitEntries,
-    predictions,
-    getTodayEntry,
-    markHabit,
-    setActiveSection
-  } = useAppData();
+  const { habitStats, habitEntries, predictions, getTodayEntry, markHabit } = useDashboardData();
+  const { setActiveSection } = useNavigation();
   const {
     recommendations,
     activeHabits,

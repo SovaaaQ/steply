@@ -1,11 +1,11 @@
-import { useAppData } from "../app/providers";
+import { useDashboardData } from "../app/providers";
 
 export function useStatistics() {
   const {
     summary,
     completedToday,
     todayProgress
-  } = useAppData();
+  } = useDashboardData();
 
   return {
     summary,

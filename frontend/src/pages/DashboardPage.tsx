@@ -5,14 +5,15 @@ import { TodaySummary } from "../components/dashboard/TodaySummary";
 import { DailyRecommendationCard } from "../components/dashboard/DailyRecommendationCard";
 import { PetMiniWidget } from "../components/gamification/PetMiniWidget";
 import { Button } from "../components/ui/Button";
-import { useAppData } from "../app/providers";
+import { useDashboardData, useNavigation } from "../app/providers";
 import { useAuth } from "../hooks/useAuth";
 import { useHabits } from "../hooks/useHabits";
 import { useRecommendations } from "../hooks/useRecommendations";
 import { useStatistics } from "../hooks/useStatistics";
 
 export function DashboardPage() {
-  const { setActiveSection, gamification } = useAppData();
+  const { setActiveSection } = useNavigation();
+  const { gamification } = useDashboardData();
   const { user } = useAuth();
   const {
     habitsForToday,

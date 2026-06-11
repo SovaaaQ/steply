@@ -30,11 +30,52 @@ import { getHabitScheduleAvailability } from "../utils/habitSchedule";
 import { emptyGamificationSummary } from "../utils/gamification";
 import { emptySummary } from "../utils/risk";
 
-interface AppDataContextValue {
+interface AuthDataContextValue {
   token: string | null;
+  user: User | null;
+  handleAuth: (response: AuthResponse, options?: { isNewRegistration?: boolean }) => void;
+  login: (payload: { email: string; password: string }) => Promise<AuthResponse>;
+  register: (payload: { email: string; full_name: string; password: string }) => Promise<AuthResponse>;
+  logout: () => void;
+}
+
+const AuthDataContext = createContext<AuthDataContextValue | null>(null);
+
+interface NavigationContextValue {
   activeSection: AppSection;
   setActiveSection: (section: AppSection) => void;
-  user: User | null;
+  isOnboardingOpen: boolean;
+  completeOnboarding: () => void;
+}
+
+const NavigationContext = createContext<NavigationContextValue | null>(null);
+
+interface UIFeedbackContextValue {
+  error: string;
+  notice: string;
+  noticeDetail: string;
+  noticeReward?: RewardPreview;
+  isLoading: boolean;
+}
+
+const UIFeedbackContext = createContext<UIFeedbackContextValue | null>(null);
+
+interface HabitFormContextValue {
+  habitForm: HabitFormState;
+  setHabitForm: React.Dispatch<React.SetStateAction<HabitFormState>>;
+  editingHabitId: number | null;
+  isHabitFormOpen: boolean;
+  isSubmitting: boolean;
+  openHabitCreator: () => void;
+  closeHabitForm: () => void;
+  resetHabitForm: () => void;
+  submitHabit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  startEditHabit: (habit: Habit) => void;
+}
+
+const HabitFormContext = createContext<HabitFormContextValue | null>(null);
+
+interface DashboardDataContextValue {
   habits: Habit[];
   activeHabits: Habit[];
   habitsForToday: Habit[];
@@ -48,48 +89,16 @@ interface AppDataContextValue {
   completedToday: number;
   todayProgress: number;
   recommendationOfDay?: Recommendation;
-  error: string;
-  notice: string;
-  noticeDetail: string;
-  noticeReward?: RewardPreview;
-  isLoading: boolean;
-  isOnboardingOpen: boolean;
-  isHabitFormOpen: boolean;
-  isSubmitting: boolean;
-  habitForm: HabitFormState;
-  setHabitForm: React.Dispatch<React.SetStateAction<HabitFormState>>;
-  editingHabitId: number | null;
-  handleAuth: (response: AuthResponse, options?: { isNewRegistration?: boolean }) => void;
-  login: (payload: { email: string; password: string }) => Promise<AuthResponse>;
-  register: (payload: { email: string; full_name: string; password: string }) => Promise<AuthResponse>;
-  logout: () => void;
-  loadDashboard: () => Promise<void>;
-  openHabitCreator: () => void;
-  closeHabitForm: () => void;
-  resetHabitForm: () => void;
-  submitHabit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
-  startEditHabit: (habit: Habit) => void;
+  loadDashboard: (options?: { silent?: boolean }) => Promise<void>;
   markHabit: (habitId: number, status: EntryStatus) => Promise<void>;
-  updatePet: (payload: { pet_type: PetType; pet_name: string }) => Promise<void>;
-  completeOnboarding: () => void;
   deleteHabit: (habitId: number) => Promise<void>;
+  updatePet: (payload: { pet_type: PetType; pet_name: string }) => Promise<void>;
   refreshRecommendations: () => Promise<void>;
   markRecommendationRead: (recommendationId: number) => Promise<void>;
   getTodayEntry: (habitId: number) => HabitEntry | undefined;
 }
 
-const AppDataContext = createContext<AppDataContextValue | null>(null);
-
-interface AuthDataContextValue {
-  token: string | null;
-  user: User | null;
-  handleAuth: (response: AuthResponse, options?: { isNewRegistration?: boolean }) => void;
-  login: (payload: { email: string; password: string }) => Promise<AuthResponse>;
-  register: (payload: { email: string; full_name: string; password: string }) => Promise<AuthResponse>;
-  logout: () => void;
-}
-
-const AuthDataContext = createContext<AuthDataContextValue | null>(null);
+const DashboardDataContext = createContext<DashboardDataContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(getStoredToken());
@@ -177,11 +186,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.clearInterval(timer);
   }, []);
 
-  const loadDashboard = useCallback(async () => {
+  const loadDashboard = useCallback(async (options?: { silent?: boolean }) => {
     if (!getStoredToken()) {
       return;
     }
-    setIsLoading(true);
+    const silent = options?.silent ?? false;
+    if (!silent) {
+      setIsLoading(true);
+    }
     setError("");
     try {
       await dayApi.sync();
@@ -206,7 +218,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setToken(null);
       }
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -255,7 +269,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     );
     showNotice("Вы в Steply", "Сегодня можно начать с ближайшей привычки");
     setActiveSection("dashboard");
-  }, [showNotice]);
+  }, [setActiveSection, showNotice]);
 
   const logout = useCallback(() => {
     clearToken();
@@ -271,170 +285,196 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setIsOnboardingOpen(false);
     clearNotice();
     setActiveSection("dashboard");
-  }, [clearNotice]);
+  }, [clearNotice, setActiveSection]);
 
-  function resetHabitForm() {
+  const getTodayEntry = useCallback(
+    (habitId: number) =>
+      habitEntries[habitId]
+        ?.filter((entry) => entry.entry_date === todayISO)
+        .sort((left, right) => {
+          const dateOrder = right.created_at.localeCompare(left.created_at);
+          return dateOrder || right.id - left.id;
+        })[0],
+    [habitEntries, todayISO]
+  );
+
+  const resetHabitForm = useCallback(() => {
     setHabitForm(defaultHabitForm);
     setEditingHabitId(null);
-  }
+  }, []);
 
-  function openHabitCreator() {
+  const openHabitCreator = useCallback(() => {
     setActiveSection("habits");
     setError("");
     clearNotice();
     setEditingHabitId(null);
     setHabitForm(defaultHabitForm);
     setIsHabitFormOpen(true);
-  }
+  }, [clearNotice, setActiveSection]);
 
-  function closeHabitForm() {
+  const closeHabitForm = useCallback(() => {
     setIsHabitFormOpen(false);
     setError("");
     resetHabitForm();
-  }
+  }, [resetHabitForm]);
 
-  async function submitHabit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (isSubmitting) return;
-    setError("");
-    clearNotice();
-    const payload = buildHabitPayload(habitForm);
-    if (!payload.title) {
-      setError("Введите название привычки");
-      return;
-    }
-    if (payload.frequency_type === "custom" && payload.schedule_days.length === 0) {
-      setError("Выберите хотя бы один день недели");
-      return;
-    }
-    if (!editingHabitId && !gamification.pet.is_configured) {
-      setError("Сначала выберите питомца");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      if (editingHabitId) {
-        await habitsApi.update(editingHabitId, payload);
-        showNotice("Привычку обновили");
-      } else {
-        await habitsApi.create(payload);
-        showNotice("Привычка добавлена");
+  const submitHabit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (isSubmitting) return;
+      setError("");
+      clearNotice();
+      const payload = buildHabitPayload(habitForm);
+      if (!payload.title) {
+        setError("Введите название привычки");
+        return;
       }
-      setIsHabitFormOpen(false);
-      resetHabitForm();
-      await loadDashboard();
-    } catch (habitError) {
-      setError(habitError instanceof Error ? habitError.message : "Не удалось сохранить привычку");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+      if (payload.frequency_type === "custom" && payload.schedule_days.length === 0) {
+        setError("Выберите хотя бы один день недели");
+        return;
+      }
+      if (!editingHabitId && !gamification.pet.is_configured) {
+        setError("Сначала выберите питомца");
+        return;
+      }
 
-  function startEditHabit(habit: Habit) {
-    setActiveSection("habits");
-    setIsHabitFormOpen(true);
-    setEditingHabitId(habit.id);
-    setHabitForm({
-      title: habit.title,
-      description: habit.description ?? "",
-      frequency_type: habit.frequency_type === "daily" ? "daily" : "custom",
-      target_per_week: habit.target_per_week,
-      difficulty: habit.difficulty,
-      preferred_time: habit.preferred_time?.slice(0, 5) ?? "",
-      scheduledDays:
-        habit.frequency_type === "daily"
-          ? weekdayKeys
-          : habit.schedule_days.length > 0
-            ? habit.schedule_days
-            : weekdayKeys
-    });
-  }
+      setIsSubmitting(true);
+      try {
+        if (editingHabitId) {
+          await habitsApi.update(editingHabitId, payload);
+          showNotice("Привычку обновили");
+        } else {
+          await habitsApi.create(payload);
+          showNotice("Привычка добавлена");
+        }
+        setIsHabitFormOpen(false);
+        resetHabitForm();
+        await loadDashboard({ silent: true });
+      } catch (habitError) {
+        setError(habitError instanceof Error ? habitError.message : "Не удалось сохранить привычку");
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [clearNotice, editingHabitId, gamification.pet.is_configured, habitForm, isSubmitting, loadDashboard, resetHabitForm, showNotice]
+  );
 
-  async function markHabit(habitId: number, status: EntryStatus) {
-    setError("");
-    clearNotice();
-    const habit = activeHabits.find((item) => item.id === habitId);
-    const existingTodayEntry = getTodayEntry(habitId);
-    if (status === "missed") {
-      setError("Пропуск появится сам после конца дня");
-      return;
-    }
-    if (
-      existingTodayEntry?.status === "completed" ||
-      existingTodayEntry?.status === "recovery_completed"
-    ) {
-      setError("Сегодня уже учтено");
-      return;
-    }
-    if (existingTodayEntry?.status === "missed") {
-      setError("Этот день уже отмечен как пропуск");
-      return;
-    }
-    if (
-      habit &&
-      !getHabitScheduleAvailability(
-        habit,
-        new Date(),
-        (habitEntries[habit.id]?.length ?? 0) > 0
-      ).isAvailableToday
-    ) {
-      setError("Эта привычка сегодня не запланирована");
-      return;
-    }
+  const startEditHabit = useCallback(
+    (habit: Habit) => {
+      setActiveSection("habits");
+      setIsHabitFormOpen(true);
+      setEditingHabitId(habit.id);
+      setHabitForm({
+        title: habit.title,
+        description: habit.description ?? "",
+        frequency_type: habit.frequency_type === "daily" ? "daily" : "custom",
+        target_per_week: habit.target_per_week,
+        difficulty: habit.difficulty,
+        preferred_time: habit.preferred_time?.slice(0, 5) ?? "",
+        scheduledDays:
+          habit.frequency_type === "daily"
+            ? weekdayKeys
+            : habit.schedule_days.length > 0
+              ? habit.schedule_days
+              : weekdayKeys
+      });
+    },
+    [setActiveSection]
+  );
 
-    try {
-      const entry = await habitsApi.mark(habitId, status, todayISO);
-      const reward =
-        entry.xp_awarded > 0
-          ? {
-              title: "XP за привычку",
-              detail: `${entry.xp_awarded} XP добавлены к уровню`,
-              xp: entry.xp_awarded
-            }
-          : undefined;
-      showNotice(
-        status === "completed"
-          ? entry.xp_awarded > 0
-            ? "Готово, засчитали"
-            : "Готово, сегодня уже учтено"
-          : entry.xp_awarded > 0
-            ? "Мягкий шаг засчитан"
-            : "Мягкий шаг уже засчитан",
-        "",
-        reward
-      );
-      await loadDashboard();
-    } catch (markError) {
-      setError(markError instanceof Error ? markError.message : "Не удалось отметить привычку");
-    }
-  }
+  const markHabit = useCallback(
+    async (habitId: number, status: EntryStatus) => {
+      setError("");
+      clearNotice();
+      const habit = activeHabits.find((item) => item.id === habitId);
+      const existingTodayEntry = getTodayEntry(habitId);
+      if (status === "missed") {
+        setError("Пропуск появится сам после конца дня");
+        return;
+      }
+      if (
+        existingTodayEntry?.status === "completed" ||
+        existingTodayEntry?.status === "recovery_completed"
+      ) {
+        setError("Сегодня уже учтено");
+        return;
+      }
+      if (existingTodayEntry?.status === "missed") {
+        setError("Этот день уже отмечен как пропуск");
+        return;
+      }
+      if (
+        habit &&
+        !getHabitScheduleAvailability(
+          habit,
+          new Date(),
+          (habitEntries[habit.id]?.length ?? 0) > 0
+        ).isAvailableToday
+      ) {
+        setError("Эта привычка сегодня не запланирована");
+        return;
+      }
 
-  async function deleteHabit(habitId: number) {
-    setError("");
-    clearNotice();
-    try {
-      await habitsApi.delete(habitId);
-      showNotice("Привычка удалена");
-      await loadDashboard();
-    } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "Не удалось удалить привычку");
-    }
-  }
+      try {
+        const entry = await habitsApi.mark(habitId, status, todayISO);
+        const reward =
+          entry.xp_awarded > 0
+            ? {
+                title: "XP за привычку",
+                detail: `${entry.xp_awarded} XP добавлены к уровню`,
+                xp: entry.xp_awarded
+              }
+            : undefined;
+        showNotice(
+          status === "completed"
+            ? entry.xp_awarded > 0
+              ? "Готово, засчитали"
+              : "Готово, сегодня уже учтено"
+            : entry.xp_awarded > 0
+              ? "Мягкий шаг засчитан"
+              : "Мягкий шаг уже засчитан",
+          "",
+          reward
+        );
+        await loadDashboard({ silent: true });
+      } catch (markError) {
+        setError(markError instanceof Error ? markError.message : "Не удалось отметить привычку");
+      }
+    },
+    [activeHabits, clearNotice, getTodayEntry, habitEntries, loadDashboard, showNotice, todayISO]
+  );
 
-  async function updatePet(payload: { pet_type: PetType; pet_name: string }) {
-    setError("");
-    clearNotice();
-    try {
-      await gamificationApi.updatePet(payload);
-      showNotice("Питомец сохранён");
-      await loadDashboard();
-    } catch (petError) {
-      setError(petError instanceof Error ? petError.message : "Не удалось сохранить питомца");
-    }
-  }
+  const deleteHabit = useCallback(
+    async (habitId: number) => {
+      setError("");
+      clearNotice();
+      try {
+        await habitsApi.delete(habitId);
+        showNotice("Привычка удалена");
+        await loadDashboard({ silent: true });
+      } catch (deleteError) {
+        setError(deleteError instanceof Error ? deleteError.message : "Не удалось удалить привычку");
+      }
+    },
+    [clearNotice, loadDashboard, showNotice]
+  );
 
-  function completeOnboarding() {
+  const updatePet = useCallback(
+    async (payload: { pet_type: PetType; pet_name: string }) => {
+      setError("");
+      clearNotice();
+      try {
+        await gamificationApi.updatePet(payload);
+        showNotice("Питомец сохранён");
+        await loadDashboard({ silent: true });
+      } catch (petError) {
+        setError(petError instanceof Error ? petError.message : "Не удалось сохранить питомца");
+      }
+    },
+    [clearNotice, loadDashboard, showNotice]
+  );
+
+  const completeOnboarding = useCallback(() => {
     if (user) {
       setOnboardingStatus(user.id, "completed");
     }
@@ -449,9 +489,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
     setActiveSection("dashboard");
-  }
+  }, [activeHabits.length, gamification.pet.is_configured, openHabitCreator, setActiveSection, user]);
 
-  async function refreshRecommendations() {
+  const refreshRecommendations = useCallback(async () => {
     setError("");
     clearNotice();
     setIsLoading(true);
@@ -459,7 +499,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const generated = await recommendationsApi.generate();
       setRecommendations(generated);
       showNotice("Советы обновлены", "ИИ пересчитал подсказки по последним отметкам");
-      await loadDashboard();
+      await loadDashboard({ silent: true });
     } catch (recommendationError) {
       setError(
         recommendationError instanceof Error
@@ -469,32 +509,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [clearNotice, loadDashboard, showNotice]);
 
-  async function markRecommendationRead(recommendationId: number) {
-    setError("");
-    clearNotice();
-    try {
-      await recommendationsApi.markRead(recommendationId);
-      showNotice("Совет отмечен", "Задания обновились");
-      await loadDashboard();
-    } catch (recommendationError) {
-      setError(
-        recommendationError instanceof Error
-          ? recommendationError.message
-          : "Не удалось отметить совет"
-      );
-    }
-  }
-
-  function getTodayEntry(habitId: number) {
-    return habitEntries[habitId]
-      ?.filter((entry) => entry.entry_date === todayISO)
-      .sort((left, right) => {
-        const dateOrder = right.created_at.localeCompare(left.created_at);
-        return dateOrder || right.id - left.id;
-      })[0];
-  }
+  const markRecommendationRead = useCallback(
+    async (recommendationId: number) => {
+      setError("");
+      clearNotice();
+      try {
+        await recommendationsApi.markRead(recommendationId);
+        showNotice("Совет отмечен", "Задания обновились");
+        await loadDashboard({ silent: true });
+      } catch (recommendationError) {
+        setError(
+          recommendationError instanceof Error
+            ? recommendationError.message
+            : "Не удалось отметить совет"
+        );
+      }
+    },
+    [clearNotice, loadDashboard, showNotice]
+  );
 
   const authValue = useMemo<AuthDataContextValue>(
     () => ({
@@ -508,73 +542,151 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [handleAuth, logout, token, user]
   );
 
-  const value: AppDataContextValue = {
-    token,
-    activeSection,
-    setActiveSection,
-    user,
-    habits,
-    activeHabits,
-    habitsForToday,
-    summary,
-    predictions,
-    habitStats,
-    habitEntries,
-    recommendations,
-    gamification,
-    todayISO,
-    completedToday,
-    todayProgress,
-    recommendationOfDay,
-    error,
-    notice,
-    noticeDetail,
-    noticeReward,
-    isLoading,
-    isOnboardingOpen,
-    isHabitFormOpen,
-    isSubmitting,
-    habitForm,
-    setHabitForm,
-    editingHabitId,
-    handleAuth,
-    login: authApi.login,
-    register: authApi.register,
-    logout,
-    loadDashboard,
-    openHabitCreator,
-    closeHabitForm,
-    resetHabitForm,
-    submitHabit,
-    startEditHabit,
-    markHabit,
-    updatePet,
-    completeOnboarding,
-    deleteHabit,
-    refreshRecommendations,
-    markRecommendationRead,
-    getTodayEntry
-  };
+  const navigationValue = useMemo<NavigationContextValue>(
+    () => ({
+      activeSection,
+      setActiveSection,
+      isOnboardingOpen,
+      completeOnboarding
+    }),
+    [activeSection, completeOnboarding, isOnboardingOpen, setActiveSection]
+  );
+
+  const uiFeedbackValue = useMemo<UIFeedbackContextValue>(
+    () => ({
+      error,
+      notice,
+      noticeDetail,
+      noticeReward,
+      isLoading
+    }),
+    [error, isLoading, notice, noticeDetail, noticeReward]
+  );
+
+  const habitFormValue = useMemo<HabitFormContextValue>(
+    () => ({
+      habitForm,
+      setHabitForm,
+      editingHabitId,
+      isHabitFormOpen,
+      isSubmitting,
+      openHabitCreator,
+      closeHabitForm,
+      resetHabitForm,
+      submitHabit,
+      startEditHabit
+    }),
+    [
+      closeHabitForm,
+      editingHabitId,
+      habitForm,
+      isHabitFormOpen,
+      isSubmitting,
+      openHabitCreator,
+      resetHabitForm,
+      startEditHabit,
+      submitHabit
+    ]
+  );
+
+  const dashboardDataValue = useMemo<DashboardDataContextValue>(
+    () => ({
+      habits,
+      activeHabits,
+      habitsForToday,
+      summary,
+      predictions,
+      habitStats,
+      habitEntries,
+      recommendations,
+      gamification,
+      todayISO,
+      completedToday,
+      todayProgress,
+      recommendationOfDay,
+      loadDashboard,
+      markHabit,
+      deleteHabit,
+      updatePet,
+      refreshRecommendations,
+      markRecommendationRead,
+      getTodayEntry
+    }),
+    [
+      activeHabits,
+      completedToday,
+      deleteHabit,
+      gamification,
+      getTodayEntry,
+      habitEntries,
+      habitStats,
+      habits,
+      habitsForToday,
+      loadDashboard,
+      markHabit,
+      markRecommendationRead,
+      predictions,
+      recommendationOfDay,
+      recommendations,
+      refreshRecommendations,
+      summary,
+      todayISO,
+      todayProgress,
+      updatePet
+    ]
+  );
 
   return (
     <AuthDataContext.Provider value={authValue}>
-      <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>
+      <NavigationContext.Provider value={navigationValue}>
+        <UIFeedbackContext.Provider value={uiFeedbackValue}>
+          <HabitFormContext.Provider value={habitFormValue}>
+            <DashboardDataContext.Provider value={dashboardDataValue}>
+              {children}
+            </DashboardDataContext.Provider>
+          </HabitFormContext.Provider>
+        </UIFeedbackContext.Provider>
+      </NavigationContext.Provider>
     </AuthDataContext.Provider>
   );
-}
-
-export function useAppData() {
-  const context = useContext(AppDataContext);
-  if (!context) {
-    throw new Error("useAppData must be used inside AppProvider");
-  }
-  return context;
 }
 
 export function useAuthData() {
   const context = useContext(AuthDataContext);
   if (!context) {
     throw new Error("useAuthData must be used inside AppProvider");
+  }
+  return context;
+}
+
+export function useNavigation() {
+  const context = useContext(NavigationContext);
+  if (!context) {
+    throw new Error("useNavigation must be used inside AppProvider");
+  }
+  return context;
+}
+
+export function useUIFeedback() {
+  const context = useContext(UIFeedbackContext);
+  if (!context) {
+    throw new Error("useUIFeedback must be used inside AppProvider");
+  }
+  return context;
+}
+
+export function useHabitForm() {
+  const context = useContext(HabitFormContext);
+  if (!context) {
+    throw new Error("useHabitForm must be used inside AppProvider");
+  }
+  return context;
+}
+
+export function useDashboardData() {
+  const context = useContext(DashboardDataContext);
+  if (!context) {
+    throw new Error("useDashboardData must be used inside AppProvider");
   }
   return context;
 }

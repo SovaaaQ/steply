@@ -1,9 +1,10 @@
 import { navigationItems } from "../../app/navigation";
-import { useAppData } from "../../app/providers";
+import { useHabitForm, useNavigation } from "../../app/providers";
 import { useAuth } from "../../hooks/useAuth";
 
 export function Header() {
-  const { activeSection, openHabitCreator } = useAppData();
+  const { activeSection } = useNavigation();
+  const { openHabitCreator } = useHabitForm();
   const { user, logout } = useAuth();
   const title = navigationItems.find((item) => item.id === activeSection)?.label ?? "Главная";
 

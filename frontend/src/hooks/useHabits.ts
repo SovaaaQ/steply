@@ -1,4 +1,4 @@
-import { useAppData } from "../app/providers";
+import { useDashboardData, useHabitForm } from "../app/providers";
 
 export function useHabits() {
   const {
@@ -8,17 +8,19 @@ export function useHabits() {
     habitEntries,
     habitStats,
     predictions,
+    markHabit,
+    deleteHabit,
+    getTodayEntry
+  } = useDashboardData();
+  const {
     habitForm,
     setHabitForm,
     editingHabitId,
     isSubmitting,
     submitHabit,
     resetHabitForm,
-    startEditHabit,
-    markHabit,
-    deleteHabit,
-    getTodayEntry
-  } = useAppData();
+    startEditHabit
+  } = useHabitForm();
 
   return {
     habits,

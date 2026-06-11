@@ -1,13 +1,13 @@
 import { useLayoutEffect } from "react";
 import type { ReactNode } from "react";
 
-import { useAppData } from "../../app/providers";
+import { useNavigation } from "../../app/providers";
 import { Header } from "./Header";
 import { MobileNav } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 
 export function AppLayout({ children }: { children: ReactNode }) {
-  const { activeSection } = useAppData();
+  const { activeSection } = useNavigation();
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);

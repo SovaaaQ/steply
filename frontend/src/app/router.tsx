@@ -4,12 +4,12 @@ import { PetScreen } from "../pages/PetScreen";
 import { ProfilePage } from "../pages/ProfilePage";
 import { TipsScreen } from "../pages/TipsScreen";
 import { navigationItems } from "./navigation";
-import { useAppData } from "./providers";
+import { useNavigation } from "./providers";
 
 export { navigationItems };
 
 export function AppRouter() {
-  const { activeSection } = useAppData();
+  const { activeSection } = useNavigation();
 
   switch (activeSection) {
     case "habits":

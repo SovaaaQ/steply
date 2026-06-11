@@ -1,78 +1,38 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
-from datetime import date, datetime
 import re
-from typing import Optional
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
-from app.core.config import get_settings
 from app.core.gamification_rules import getRecoveryTask
-from app.core.time import utc_now, utc_start_of_day
 from app.models import Habit, Prediction, Recommendation, User
-from app.services.ai_recommendations import generate_ai_recommendation
-from app.services.predictive import create_prediction
+
+from .constants import (
+    AFTER_COMPLETION_RECOMMENDATION_TYPE,
+    DATA_COLLECTION_RECOMMENDATION_TYPE,
+    EARLY_RECOVERY_RECOMMENDATION_TYPE,
+    FIRST_STEP_RECOMMENDATION_TYPE,
+    KEEP_REGULAR_RECOMMENDATION_TYPE,
+    MAX_RECOMMENDATION_MESSAGE_WORDS,
+    MISS_STREAK_RECOVERY_RECOMMENDATION_TYPE,
+    ON_TRACK_SUPPORT_RECOMMENDATION_TYPE,
+    PLAN_AHEAD_RECOMMENDATION_TYPE,
+    RESET_PLAN_RECOMMENDATION_TYPE,
+    RISK_IGNORED_RECOVERY_RECOMMENDATION_TYPE,
+    RISK_RECOVERY_RECOMMENDATION_TYPE,
+    SOFT_RECOVERY_RECOMMENDATION_TYPE,
+    STREAK_MAINTENANCE_RECOMMENDATION_TYPE,
+    STREAK_SUPPORT_RECOMMENDATION_TYPE,
+    _RECOVERY_SCENARIO_TYPES,
+)
 
 
-MAX_RECOMMENDATION_MESSAGE_WORDS = 56
-_PRIORITY_WEIGHT = {"high": 3, "normal": 2, "low": 1}
 _LIST_TAIL_PATTERN = re.compile(r"\b(?:Шаги|Действия)\s*:", re.IGNORECASE)
 _NUMBERED_TAIL_PATTERN = re.compile(r"(?:^|\s)\d+[.)]\s+.*$", re.DOTALL)
 _LONG_DASH_PATTERN = re.compile(r"[—–−]+")
 _WHITESPACE_PATTERN = re.compile(r"\s+")
-FIRST_STEP_RECOMMENDATION_TYPE = "first_step"
-AFTER_COMPLETION_RECOMMENDATION_TYPE = "after_completion"
-ON_TRACK_SUPPORT_RECOMMENDATION_TYPE = "on_track_support"
-STREAK_MAINTENANCE_RECOMMENDATION_TYPE = "streak_maintenance"
-STREAK_SUPPORT_RECOMMENDATION_TYPE = "streak_support"
-RISK_IGNORED_RECOVERY_RECOMMENDATION_TYPE = "risk_ignored_recovery"
-RESET_PLAN_RECOMMENDATION_TYPE = "reset_plan"
-MISS_STREAK_RECOVERY_RECOMMENDATION_TYPE = "miss_streak_recovery"
-EARLY_RECOVERY_RECOMMENDATION_TYPE = "early_recovery"
-RISK_RECOVERY_RECOMMENDATION_TYPE = "risk_recovery"
-SOFT_RECOVERY_RECOMMENDATION_TYPE = "soft_recovery"
-PLAN_AHEAD_RECOMMENDATION_TYPE = "plan_ahead"
-DATA_COLLECTION_RECOMMENDATION_TYPE = "data_collection"
-KEEP_REGULAR_RECOMMENDATION_TYPE = "keep_regular"
-
-_AI_SCENARIO_TYPES = {
-    FIRST_STEP_RECOMMENDATION_TYPE,
-    AFTER_COMPLETION_RECOMMENDATION_TYPE,
-    ON_TRACK_SUPPORT_RECOMMENDATION_TYPE,
-    STREAK_MAINTENANCE_RECOMMENDATION_TYPE,
-    STREAK_SUPPORT_RECOMMENDATION_TYPE,
-    RISK_IGNORED_RECOVERY_RECOMMENDATION_TYPE,
-    RESET_PLAN_RECOMMENDATION_TYPE,
-    MISS_STREAK_RECOVERY_RECOMMENDATION_TYPE,
-    EARLY_RECOVERY_RECOMMENDATION_TYPE,
-    RISK_RECOVERY_RECOMMENDATION_TYPE,
-    SOFT_RECOVERY_RECOMMENDATION_TYPE,
-    PLAN_AHEAD_RECOMMENDATION_TYPE,
-}
-
-_RECOVERY_SCENARIO_TYPES = {
-    RISK_IGNORED_RECOVERY_RECOMMENDATION_TYPE,
-    RESET_PLAN_RECOMMENDATION_TYPE,
-    MISS_STREAK_RECOVERY_RECOMMENDATION_TYPE,
-    EARLY_RECOVERY_RECOMMENDATION_TYPE,
-    RISK_RECOVERY_RECOMMENDATION_TYPE,
-    SOFT_RECOVERY_RECOMMENDATION_TYPE,
-    # Legacy recommendation types can still be present in existing rows.
-    "recovery_mode",
-    "reduce_difficulty",
-    "soft_reminder",
-    "restore_regular_activity",
-}
-
-
-def _day_start(today: date) -> datetime:
-    return utc_start_of_day(today)
 
 
 def _clean_text(value: str) -> str:
-    without_dashes = _LONG_DASH_PATTERN.sub(" ", value.replace("\u00a0", " "))
+    without_dashes = _LONG_DASH_PATTERN.sub(" ", value.replace(" ", " "))
     return _WHITESPACE_PATTERN.sub(" ", without_dashes).strip()
 
 
@@ -297,110 +257,6 @@ def _normalize_recommendation_message(value: str) -> str:
 def _normalize_recommendation(recommendation: Recommendation) -> None:
     recommendation.title = _clean_text(recommendation.title)
     recommendation.message = _normalize_recommendation_message(recommendation.message)
-
-
-def _created_timestamp(recommendation: Recommendation) -> float:
-    return recommendation.created_at.timestamp() if recommendation.created_at else 0
-
-
-def _recommendation_display_key(recommendation: Recommendation) -> tuple[bool, int, float, int]:
-    return (
-        bool(recommendation.is_read),
-        -_PRIORITY_WEIGHT.get(recommendation.priority, 0),
-        -_created_timestamp(recommendation),
-        -(recommendation.id or 0),
-    )
-
-
-def _select_current_recommendations(
-    candidates: Sequence[Recommendation],
-    active_habit_ids: Iterable[int],
-) -> list[Recommendation]:
-    active_ids = set(active_habit_ids)
-    latest_by_key: dict[tuple[str, int | str], Recommendation] = {}
-
-    for recommendation in sorted(
-        candidates,
-        key=lambda item: (_created_timestamp(item), item.id or 0),
-        reverse=True,
-    ):
-        if recommendation.habit_id is not None and recommendation.habit_id not in active_ids:
-            continue
-
-        key: tuple[str, int | str]
-        if recommendation.habit_id is None:
-            key = ("general", recommendation.type)
-        else:
-            key = ("habit", recommendation.habit_id)
-
-        if key not in latest_by_key:
-            latest_by_key[key] = recommendation
-
-    selected = sorted(latest_by_key.values(), key=_recommendation_display_key)
-    for recommendation in selected:
-        _normalize_recommendation(recommendation)
-    return selected
-
-
-def list_current_recommendations(
-    db: Session,
-    user: User,
-    active_habit_ids: Iterable[int] | None = None,
-) -> list[Recommendation]:
-    if active_habit_ids is None:
-        active_habit_ids = db.scalars(
-            select(Habit.id).where(Habit.user_id == user.id, Habit.is_active.is_(True))
-        )
-
-    candidates = list(
-        db.scalars(
-            select(Recommendation)
-            .where(Recommendation.user_id == user.id)
-            .order_by(Recommendation.created_at.desc())
-        )
-    )
-    return _select_current_recommendations(candidates, active_habit_ids)
-
-
-def _is_ai_worthwhile(rec_type: str, prediction: Prediction) -> bool:
-    if rec_type in _AI_SCENARIO_TYPES:
-        return True
-
-    features = prediction.features or {}
-    total_entries = _feature_int(features, "total_entries")
-    if total_entries < 3:
-        return False
-
-    consecutive_missed = _feature_int(features, "consecutive_missed")
-    recent_miss_rate = _feature_float(features, "recent_miss_rate")
-    return (
-        prediction.risk_level in {"medium", "high"}
-        or rec_type
-        in {
-            "recovery_mode",
-            "reduce_difficulty",
-            "soft_reminder",
-            "restore_regular_activity",
-        }
-        or consecutive_missed > 0
-        or recent_miss_rate >= 0.2
-    )
-
-
-def _daily_ai_budget_available(db: Session, user: User, today: date) -> bool:
-    limit = max(0, get_settings().ai_daily_recommendation_limit)
-    if limit == 0:
-        return False
-
-    created_today = list(
-        db.scalars(
-            select(Recommendation).where(
-                Recommendation.user_id == user.id,
-                Recommendation.created_at >= _day_start(today),
-            )
-        )
-    )
-    return len(created_today) < limit
 
 
 def _has_configured_pet(user: User) -> bool:
@@ -674,101 +530,3 @@ def _build_recommendation_text(
         ),
         "low",
     )
-
-
-def _upsert_recommendation(
-    db: Session,
-    user: User,
-    habit: Habit,
-    prediction: Prediction,
-    today: date,
-    active_habit_count: int,
-) -> Recommendation:
-    existing = db.scalar(
-        select(Recommendation).where(
-            Recommendation.user_id == user.id,
-            Recommendation.habit_id == habit.id,
-        ).order_by(Recommendation.created_at.desc())
-    )
-    rec_type, title, message, priority = _build_recommendation_text(
-        user,
-        habit,
-        prediction,
-        active_habit_count,
-        previous_type=existing.type if existing else None,
-    )
-    message = _normalize_recommendation_message(message)
-
-    should_use_ai = _is_ai_worthwhile(rec_type, prediction) and _daily_ai_budget_available(
-        db,
-        user,
-        today,
-    )
-    if should_use_ai:
-        ai_draft = generate_ai_recommendation(
-            habit=habit,
-            prediction=prediction,
-            today=today,
-            base_type=rec_type,
-            base_title=title,
-            base_message=message,
-            user=user,
-        )
-        if ai_draft:
-            title = ai_draft.title
-            message = _normalize_recommendation_message(ai_draft.message)
-
-    if existing:
-        existing.prediction_id = prediction.id
-        existing.type = rec_type
-        existing.title = title
-        existing.message = message
-        existing.priority = priority
-        existing.is_read = False
-        existing.created_at = utc_now()
-        db.flush()
-        db.refresh(existing)
-        return existing
-
-    recommendation = Recommendation(
-        user_id=user.id,
-        habit_id=habit.id,
-        prediction_id=prediction.id,
-        type=rec_type,
-        title=title,
-        message=message,
-        priority=priority,
-    )
-    db.add(recommendation)
-    db.flush()
-    db.refresh(recommendation)
-    return recommendation
-
-
-def generate_recommendations(
-    db: Session,
-    user: User,
-    today: Optional[date] = None,
-) -> list[Recommendation]:
-    today = today or date.today()
-    habits = list(
-        db.scalars(
-            select(Habit)
-            .where(Habit.user_id == user.id, Habit.is_active.is_(True))
-            .order_by(Habit.created_at.desc())
-        )
-    )
-    recommendations: list[Recommendation] = []
-    for habit in habits:
-        prediction = create_prediction(db, user, habit, today)
-        recommendations.append(
-            _upsert_recommendation(
-                db,
-                user,
-                habit,
-                prediction,
-                today,
-                len(habits),
-            )
-        )
-    return recommendations

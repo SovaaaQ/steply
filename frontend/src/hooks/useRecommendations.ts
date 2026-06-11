@@ -1,4 +1,4 @@
-import { useAppData } from "../app/providers";
+import { useDashboardData, useUIFeedback } from "../app/providers";
 
 export function useRecommendations() {
   const {
@@ -6,9 +6,9 @@ export function useRecommendations() {
     recommendationOfDay,
     refreshRecommendations,
     markRecommendationRead,
-    activeHabits,
-    isLoading
-  } = useAppData();
+    activeHabits
+  } = useDashboardData();
+  const { isLoading } = useUIFeedback();
 
   return {
     recommendations,

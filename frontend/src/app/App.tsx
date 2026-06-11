@@ -16,7 +16,7 @@ import { LoadingState } from "../components/ui/LoadingState";
 import { SuccessState } from "../components/ui/SuccessState";
 import { useAuth } from "../hooks/useAuth";
 import { useRussianTypography } from "../hooks/useRussianTypography";
-import { useAppData } from "./providers";
+import { useNavigation, useUIFeedback } from "./providers";
 import type { AuthMode } from "../types/navigation";
 
 function AuthGate() {
@@ -60,15 +60,8 @@ function AppContent() {
   useRussianTypography();
 
   const { token } = useAuth();
-  const {
-    completeOnboarding,
-    error,
-    notice,
-    noticeDetail,
-    noticeReward,
-    isLoading,
-    isOnboardingOpen
-  } = useAppData();
+  const { completeOnboarding, isOnboardingOpen } = useNavigation();
+  const { error, notice, noticeDetail, noticeReward, isLoading } = useUIFeedback();
 
   if (!token) {
     return <AuthGate />;

@@ -1,10 +1,10 @@
 import { navigationItems } from "../../app/navigation";
-import { useAppData } from "../../app/providers";
+import { useNavigation } from "../../app/providers";
 import { NavIcon } from "./NavIcon";
 import type { MouseEvent } from "react";
 
 export function MobileNav() {
-  const { activeSection, setActiveSection } = useAppData();
+  const { activeSection, setActiveSection } = useNavigation();
 
   return (
     <nav className="mobile-nav" aria-label="Мобильная навигация">

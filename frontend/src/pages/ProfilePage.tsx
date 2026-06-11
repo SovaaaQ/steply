@@ -1,6 +1,6 @@
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
-import { useAppData } from "../app/providers";
+import { useDashboardData, useNavigation } from "../app/providers";
 import { useAuth } from "../hooks/useAuth";
 import { useHabits } from "../hooks/useHabits";
 import { useRecommendations } from "../hooks/useRecommendations";
@@ -12,7 +12,8 @@ export function ProfilePage() {
   const { user, logout } = useAuth();
   const { activeHabits } = useHabits();
   const { recommendations } = useRecommendations();
-  const { gamification, setActiveSection } = useAppData();
+  const { gamification } = useDashboardData();
+  const { setActiveSection } = useNavigation();
   const { summary } = useStatistics();
   const petType = gamification.pet.pet_type;
   const petCaption = petType
