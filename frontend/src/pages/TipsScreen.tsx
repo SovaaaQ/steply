@@ -184,7 +184,7 @@ function getPersonalPrimaryAction(habit?: Habit) {
     case "study":
       return `откройте файл «${title}»${timeHint} и поправьте один конкретный абзац`;
     case "code":
-      return `откройте редактор для «${title}» и решите одну маленькую задачу`;
+      return "откройте редактор и запустите один короткий пример кода";
     case "reading":
       return "откройте книгу на закладке и прочитайте один короткий фрагмент";
     case "sport":
@@ -208,7 +208,7 @@ function getPersonalMinimumAction(habit?: Habit) {
     case "study":
       return "только откройте документ и выделите место следующей правки";
     case "code":
-      return "только запустите среду и прочитайте один короткий пример";
+      return "только откройте редактор и добавьте одну строку";
     case "reading":
       return "одна страница с закладки без нормы по времени";
     case "sport":
@@ -227,7 +227,7 @@ function getPersonalDoneCriteria(habit?: Habit) {
     case "study":
       return "файл сохранен с одной правкой или двумя пунктами плана";
     case "code":
-      return "пример запущен или одна строка кода изменена";
+      return "редактор открыт, пример запущен или одна строка изменена";
     case "reading":
       return "фрагмент дочитан и чтение отмечено";
     case "sport":
@@ -372,7 +372,7 @@ function getPredictionRiskReason(
 function getPositiveReason(stats: HabitStats | undefined, isDone: boolean) {
   const parts: string[] = [];
   if (isDone) {
-    parts.push("сегодня выполнено");
+    parts.push("выполнено сегодня");
   }
   if (stats?.current_streak && stats.current_streak > 1) {
     parts.push(`серия ${stats.current_streak} подряд`);

@@ -32,6 +32,21 @@ function cleanDisplayText(value: string) {
     .replace(/[ ,;:.!?]+$/g, "");
 }
 
+function capitalizeFirstLetter(value: string) {
+  const text = value.trim();
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (char.toLocaleLowerCase("ru-RU") !== char.toLocaleUpperCase("ru-RU")) {
+      return `${text.slice(0, index)}${char.toLocaleUpperCase("ru-RU")}${text.slice(index + 1)}`;
+    }
+  }
+  return text;
+}
+
+function formatDisplayText(value: string) {
+  return capitalizeFirstLetter(cleanDisplayText(value));
+}
+
 function normalizeActionPlanLabel(value: string): ActionPlanSegment["label"] | null {
   const normalized = value.toLowerCase();
   if (normalized === "сегодня") {
@@ -60,7 +75,7 @@ function parseActionPlan(value: string): ActionPlanSegment[] | null {
     const textEnd = matches[index + 1]?.index ?? value.length;
     return {
       label,
-      text: cleanDisplayText(value.slice(textStart, textEnd))
+      text: formatDisplayText(value.slice(textStart, textEnd))
     };
   });
 
@@ -85,8 +100,8 @@ export function RecommendationCard({
 }: RecommendationCardProps) {
   const isDirectAction = ctaLabel === "Отметить" || ctaLabel === "Отметить минимум";
   const actionPlan = parseActionPlan(advice);
-  const displayAdvice = cleanDisplayText(advice);
-  const displayReason = cleanDisplayText(reason);
+  const displayAdvice = formatDisplayText(advice);
+  const displayReason = formatDisplayText(reason);
   const primaryStep = actionPlan?.[0];
   const supportSteps = actionPlan?.slice(1) ?? [];
 
@@ -125,8 +140,7 @@ export function RecommendationCard({
         )}
         <p className="recommendation-reason">
           <strong>Почему сейчас</strong>
-          {" "}
-          {displayReason}
+          <span>{displayReason}</span>
         </p>
       </div>
       <Button

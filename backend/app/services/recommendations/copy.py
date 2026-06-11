@@ -61,6 +61,14 @@ def _lower_first(value: str) -> str:
     return f"{text[0].lower()}{text[1:]}"
 
 
+def _capitalize_first_letter(value: str) -> str:
+    text = value.strip()
+    for index, char in enumerate(text):
+        if char.isalpha():
+            return f"{text[:index]}{char.upper()}{text[index + 1:]}"
+    return text
+
+
 def _habit_text_field(habit: Habit, field: str) -> str:
     value = getattr(habit, field, "")
     return value if isinstance(value, str) else ""
@@ -137,7 +145,7 @@ def _primary_action_fragment(habit: Habit) -> str:
     if topic == "study":
         return f"откройте файл {title}{time_hint} и поправьте один конкретный абзац"
     if topic == "code":
-        return f"откройте редактор для {title} и решите одну маленькую задачу"
+        return "откройте редактор и запустите один короткий пример кода"
     if topic == "reading":
         return "откройте книгу на закладке и прочитайте один короткий фрагмент"
     if topic == "sport":
@@ -157,7 +165,7 @@ def _minimum_action_fragment(habit: Habit) -> str:
     if topic == "study":
         return "только откройте документ и выделите место следующей правки"
     if topic == "code":
-        return "только запустите среду и прочитайте один короткий пример"
+        return "только откройте редактор и добавьте одну строку"
     if topic == "reading":
         return "одна страница с закладки без нормы по времени"
     if topic == "sport":
@@ -175,7 +183,7 @@ def _completion_criteria_fragment(habit: Habit) -> str:
     if topic == "study":
         return "файл сохранен с одной правкой или двумя пунктами плана"
     if topic == "code":
-        return "пример запущен или одна строка кода изменена"
+        return "редактор открыт, пример запущен или одна строка изменена"
     if topic == "reading":
         return "фрагмент дочитан и чтение отмечено"
     if topic == "sport":
@@ -193,7 +201,7 @@ def _strip_terminal_punctuation(value: str) -> str:
 
 
 def _sentence_fragment(value: str) -> str:
-    return _clean_text(value).rstrip(" ,;:.!?")
+    return _capitalize_first_letter(_clean_text(value).rstrip(" ,;:.!?"))
 
 
 def _format_minutes(value: int | None) -> str:

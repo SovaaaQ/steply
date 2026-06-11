@@ -1950,11 +1950,11 @@ textarea.field-control {
   display: grid;
   align-content: start;
   align-items: start;
-  gap: var(--control-gap);
+  gap: var(--item-gap);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: rgba(255, 255, 255, 0.92);
-  padding: var(--item-gap);
+  padding: var(--space-4);
 }
 
 .recommendation-card-featured {
@@ -1965,7 +1965,7 @@ textarea.field-control {
 
 .recommendation-card-main {
   display: grid;
-  gap: var(--item-gap-tight);
+  gap: var(--control-gap);
   min-width: 0;
 }
 
@@ -1988,8 +1988,8 @@ textarea.field-control {
 }
 
 .recommendation-card-featured .recommendation-habit {
-  font-size: clamp(19px, 1.45vw, 22px);
-  line-height: 1.14;
+  font-size: 21px;
+  line-height: 1.18;
 }
 
 .recommendation-meta {
@@ -2020,7 +2020,7 @@ textarea.field-control {
 
 .recommendation-action-plan {
   display: grid;
-  gap: var(--control-gap);
+  gap: var(--item-gap);
 }
 
 .recommendation-primary-step,
@@ -2046,9 +2046,9 @@ textarea.field-control {
 .recommendation-primary-step p {
   margin: 0;
   color: var(--color-heading);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: var(--font-semibold);
-  line-height: 1.35;
+  line-height: 1.46;
 }
 
 .recommendation-support-steps {
@@ -2059,11 +2059,13 @@ textarea.field-control {
 .recommendation-support-steps p {
   display: grid;
   grid-template-columns: minmax(96px, auto) 1fr;
-  gap: var(--control-gap);
+  gap: var(--space-2);
   align-items: baseline;
   margin: 0;
+  border-left: 2px solid rgba(47, 115, 224, 0.18);
   color: var(--color-muted-strong);
-  line-height: 1.42;
+  padding-left: var(--control-gap);
+  line-height: 1.5;
 }
 
 .recommendation-support-steps strong {
@@ -2076,12 +2078,17 @@ textarea.field-control {
 
 @media (max-width: 520px) {
   .recommendation-card {
-    gap: 12px;
-    padding: 12px;
+    gap: var(--item-gap);
+    padding: 15px;
   }
 
   .recommendation-card-featured {
-    padding: 14px;
+    padding: 16px;
+  }
+
+  .recommendation-card-featured .recommendation-card-main,
+  .recommendation-card-featured .recommendation-action-plan {
+    gap: var(--control-gap);
   }
 
   .recommendation-card-heading {
@@ -2091,8 +2098,8 @@ textarea.field-control {
   }
 
   .recommendation-card-featured .recommendation-habit {
-    font-size: 24px;
-    line-height: 1.08;
+    font-size: 21px;
+    line-height: 1.18;
   }
 
   .recommendation-meta {
@@ -2104,28 +2111,38 @@ textarea.field-control {
     grid-template-columns: 1fr;
     gap: 3px;
   }
+
+  .recommendation-card-featured .recommendation-action-plan p,
+  .recommendation-card-featured .recommendation-primary-step p {
+    line-height: 1.38;
+  }
+
+  .recommendation-card-featured .recommendation-primary-step p {
+    font-size: 16px;
+  }
 }
 
 .recommendation-card-featured .recommendation-advice {
   max-width: 680px;
   color: var(--color-heading);
-  font-size: clamp(15px, 1.1vw, 17px);
+  font-size: 16px;
   font-weight: var(--font-semibold);
-  line-height: 1.38;
+  line-height: 1.48;
 }
 
 .recommendation-card-featured .recommendation-action-plan p {
   max-width: 720px;
   color: var(--color-heading);
-  font-size: clamp(14px, 1vw, 16px);
+  font-size: 15px;
   font-weight: var(--font-medium);
-  line-height: 1.36;
+  line-height: 1.5;
 }
 
 .recommendation-card-featured .recommendation-primary-step p {
   max-width: 720px;
-  font-size: clamp(17px, 1.25vw, 20px);
-  line-height: 1.32;
+  font-size: 17px;
+  font-weight: var(--font-semibold);
+  line-height: 1.44;
 }
 
 .recommendation-card-featured .recommendation-support-steps p {
@@ -2133,14 +2150,22 @@ textarea.field-control {
 }
 
 .recommendation-reason {
+  display: grid;
+  gap: var(--space-1);
   color: var(--color-muted);
-  font-size: var(--type-sm);
+  font-size: var(--type-ui);
   border-top: 1px dashed rgba(11, 15, 13, 0.12);
-  padding-top: var(--space-2);
+  padding-top: var(--control-gap);
+  line-height: 1.48;
 }
 
 .recommendation-reason strong {
   color: var(--color-heading);
+  font-size: var(--type-sm);
+}
+
+.recommendation-reason span {
+  color: var(--color-muted-strong);
 }
 
 .recommendation-cta {
@@ -4142,6 +4167,10 @@ textarea.field-control {
 }
 
 @media (max-width: 760px) {
+  .recommendations-page {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+
   .page-intro {
     align-items: stretch;
     flex-direction: column;
@@ -4308,6 +4337,35 @@ textarea.field-control {
   .page-intro {
     gap: var(--item-gap);
     padding: 14px;
+  }
+
+  .recommendations-page .page-intro,
+  .recommendations-page .tips-focus-panel,
+  .recommendations-page .tips-section-panel {
+    padding: 13px;
+  }
+
+  .recommendations-page .page-intro p,
+  .recommendations-page .tips-section-heading p {
+    display: none;
+  }
+
+  .recommendations-page .page-intro .page-kicker {
+    margin-bottom: var(--space-1);
+  }
+
+  .recommendations-page .page-intro h2 {
+    font-size: 24px;
+    line-height: 1.12;
+  }
+
+  .recommendations-page .tips-section-heading h2 {
+    font-size: 18px;
+  }
+
+  .recommendations-page .tips-focus-panel,
+  .recommendations-page .tips-section-panel {
+    gap: var(--control-gap);
   }
 
   .app-header {

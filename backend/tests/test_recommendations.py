@@ -91,6 +91,11 @@ def assert_action_plan(message: str) -> None:
     assert " Минимум: " in message
     assert " Готово: " in message
     assert not message.endswith(".")
+    today_text, tail = message.removeprefix("Сегодня: ").split(" Минимум: ", 1)
+    minimum_text, done_text = tail.split(" Готово: ", 1)
+    assert today_text[0].isupper()
+    assert minimum_text[0].isupper()
+    assert done_text[0].isupper()
 
 
 def test_select_current_recommendations_keeps_latest_per_active_habit() -> None:
@@ -193,7 +198,7 @@ def test_miss_streak_recovery_is_used_for_three_consecutive_misses() -> None:
     assert rec_type == MISS_STREAK_RECOVERY_RECOMMENDATION_TYPE
     assert title == "Разорвать пропуски"
     assert_action_plan(message)
-    assert "серия пропусков" in message
+    assert "серия пропусков" in message.lower()
     assert priority == "high"
 
 
@@ -300,7 +305,7 @@ def test_recovery_messages_vary_by_context_for_same_habit() -> None:
     assert len(set(messages)) == len(messages)
     assert "первый разрыв" in messages[0]
     assert "до пропуска" in messages[1]
-    assert "серия пропусков" in messages[2]
+    assert "серия пропусков" in messages[2].lower()
 
 
 def test_default_recovery_minutes_do_not_make_same_five_minute_advice() -> None:
