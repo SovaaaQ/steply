@@ -61,6 +61,85 @@ function getBrowserApiUrl() {
 
 const API_URL = getConfiguredApiUrl() ?? getBrowserApiUrl();
 
+const validationFieldLabels: Record<string, string> = {
+  description: "Описание",
+  email: "Email",
+  full_name: "Имя в Steply",
+  password: "Пароль",
+  pet_name: "Имя питомца",
+  recovery_minutes: "Время восстановления",
+  recovery_task: "Короткий шаг",
+  schedule_days: "Дни недели",
+  target_per_week: "Дней в неделю",
+  title: "Название"
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function formatCharacterCount(value: number) {
+  if (value % 10 === 1 && value % 100 !== 11) {
+    return `${value} символ`;
+  }
+  if ([2, 3, 4].includes(value % 10) && ![12, 13, 14].includes(value % 100)) {
+    return `${value} символа`;
+  }
+  return `${value} символов`;
+}
+
+function getValidationField(issue: Record<string, unknown>) {
+  const loc = issue.loc;
+  if (!Array.isArray(loc)) {
+    return "Поле";
+  }
+
+  const field = [...loc].reverse().find((item) => item !== "body");
+  return typeof field === "string" ? validationFieldLabels[field] ?? field : "Поле";
+}
+
+function getValidationNumber(issue: Record<string, unknown>, key: string) {
+  const ctx = issue.ctx;
+  if (!isRecord(ctx)) {
+    return null;
+  }
+
+  return typeof ctx[key] === "number" ? ctx[key] : null;
+}
+
+function normalizeValidationIssue(issue: unknown): string | null {
+  if (!isRecord(issue)) {
+    return null;
+  }
+
+  const field = getValidationField(issue);
+  if (field === "Email") {
+    return "Введите корректный email";
+  }
+
+  if (issue.type === "string_too_short") {
+    const minLength = getValidationNumber(issue, "min_length");
+    return minLength ? `${field}: минимум ${formatCharacterCount(minLength)}` : `${field}: слишком коротко`;
+  }
+
+  if (issue.type === "string_too_long") {
+    const maxLength = getValidationNumber(issue, "max_length");
+    return maxLength ? `${field}: максимум ${formatCharacterCount(maxLength)}` : `${field}: слишком длинно`;
+  }
+
+  if (issue.type === "greater_than_equal") {
+    const minValue = getValidationNumber(issue, "ge");
+    return minValue !== null ? `${field}: минимум ${minValue}` : `${field}: значение слишком маленькое`;
+  }
+
+  if (issue.type === "less_than_equal") {
+    const maxValue = getValidationNumber(issue, "le");
+    return maxValue !== null ? `${field}: максимум ${maxValue}` : `${field}: значение слишком большое`;
+  }
+
+  return typeof issue.msg === "string" && issue.msg.length > 0 ? `${field}: ${issue.msg}` : null;
+}
+
 function normalizeApiError(detail: unknown): string {
   if (detail === "User with this email already exists") {
     return "Пользователь с таким email уже зарегистрирован";
@@ -76,6 +155,9 @@ function normalizeApiError(detail: unknown): string {
   }
   if (detail === "Invalid authentication token" || detail === "User not found") {
     return "Сессия истекла. Войдите в Steply снова";
+  }
+  if (Array.isArray(detail)) {
+    return normalizeValidationIssue(detail[0]) ?? "Проверьте заполнение полей";
   }
   if (typeof detail === "string" && detail.length > 0) {
     return detail;
@@ -106,10 +188,15 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers
+    });
+  } catch {
+    throw new Error("Не удалось подключиться к серверу. Проверьте, что backend запущен");
+  }
 
   if (!response.ok) {
     const body = await response.json().catch(() => null);

@@ -16,7 +16,6 @@ export interface Summary {
   average_current_streak: number;
   experience_points: number;
   level: number;
-  lives: number;
   recovery_mode: boolean;
 }
 

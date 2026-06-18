@@ -4,7 +4,6 @@ export interface User {
   full_name: string;
   experience_points: number;
   level: number;
-  lives: number;
   pet_type: PetType | null;
   pet_name: string | null;
   pet_state: PetState;

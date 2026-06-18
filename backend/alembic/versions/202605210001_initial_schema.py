@@ -26,7 +26,6 @@ def upgrade() -> None:
         sa.Column("hashed_password", sa.String(length=255), nullable=False),
         sa.Column("experience_points", sa.Integer(), server_default=sa.text("0"), nullable=False),
         sa.Column("level", sa.Integer(), server_default=sa.text("1"), nullable=False),
-        sa.Column("lives", sa.Integer(), server_default=sa.text("5"), nullable=False),
         sa.Column("pet_type", sa.String(length=24), nullable=True),
         sa.Column("pet_name", sa.String(length=80), nullable=True),
         sa.Column("pet_state", sa.String(length=24), server_default=sa.text("'neutral'"), nullable=False),
@@ -41,7 +40,6 @@ def upgrade() -> None:
             name="ck_users_experience_points_non_negative",
         ),
         sa.CheckConstraint("level >= 1", name="ck_users_level_positive"),
-        sa.CheckConstraint("lives >= 0", name="ck_users_lives_non_negative"),
         sa.CheckConstraint(
             "pet_type IS NULL OR pet_type IN ('dog', 'cat', 'parrot', 'hamster')",
             name="ck_users_pet_type",
@@ -74,7 +72,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.CheckConstraint(
-            "frequency_type IN ('daily', 'weekly', 'custom')",
+            "frequency_type IN ('daily', 'custom')",
             name="ck_habits_frequency_type",
         ),
         sa.CheckConstraint("target_per_week BETWEEN 1 AND 7", name="ck_habits_target_per_week"),

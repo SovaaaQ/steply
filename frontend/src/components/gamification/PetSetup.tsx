@@ -8,6 +8,7 @@ import {
   petTypeDescriptions,
   petTypeLabels
 } from "../../utils/gamification";
+import { petLimits } from "../../utils/formLimits";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 
@@ -89,7 +90,8 @@ export function PetSetup({
           value={petName}
           onChange={(event) => setPetName(event.target.value)}
           placeholder="Например, Бади"
-          maxLength={80}
+          minLength={petLimits.nameMinLength}
+          maxLength={petLimits.nameMaxLength}
           required
         />
       </label>

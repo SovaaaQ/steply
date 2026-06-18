@@ -7,6 +7,7 @@ import { AuthQrCard } from "../components/auth/AuthQrCard";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { ErrorState } from "../components/ui/ErrorState";
+import { authLimits } from "../utils/formLimits";
 
 export function RegisterPage({
   onAuth,
@@ -65,11 +66,13 @@ export function RegisterPage({
           </div>
 
           <label>
-            Имя
+            Имя в Steply
             <Input
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
-              placeholder="Мария Козлова"
+              minLength={authLimits.fullNameMinLength}
+              maxLength={authLimits.fullNameMaxLength}
+              placeholder="Мария"
               required
             />
           </label>
@@ -91,8 +94,9 @@ export function RegisterPage({
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              minLength={10}
-              placeholder="Минимум 10 символов"
+              minLength={authLimits.passwordMinLength}
+              maxLength={authLimits.passwordMaxLength}
+              placeholder={`Минимум ${authLimits.passwordMinLength} символов`}
               required
             />
           </label>

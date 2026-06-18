@@ -41,7 +41,7 @@ export function ProfilePage() {
           <h3>Ваши данные</h3>
           <dl className="profile-list">
             <div>
-              <dt>Имя</dt>
+              <dt>Имя в Steply</dt>
               <dd>{user?.full_name ?? "Нет данных"}</dd>
             </div>
             <div>

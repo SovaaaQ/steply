@@ -24,12 +24,18 @@ def list_recommendations(
 
 @router.post("/generate", response_model=list[RecommendationRead])
 def generate_user_recommendations(
+    force_ai: bool = False,
     db: Session = Depends(get_db),
     client_today: date = Depends(get_client_today),
     current_user: User = Depends(get_current_user),
 ) -> list[Recommendation]:
     ensure_auto_missed_entries(db, current_user, client_today)
-    recommendations = generate_recommendations(db, current_user, client_today)
+    recommendations = generate_recommendations(
+        db,
+        current_user,
+        client_today,
+        force_ai=force_ai,
+    )
     db.commit()
     return recommendations
 

@@ -29,7 +29,7 @@ class Habit(Base):
     __tablename__ = "habits"
     __table_args__ = (
         CheckConstraint(
-            "frequency_type IN ('daily', 'weekly', 'custom')",
+            "frequency_type IN ('daily', 'custom')",
             name="ck_habits_frequency_type",
         ),
         CheckConstraint("target_per_week BETWEEN 1 AND 7", name="ck_habits_target_per_week"),

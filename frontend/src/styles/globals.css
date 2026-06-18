@@ -1730,6 +1730,11 @@ textarea.field-control {
   color: var(--color-primary-strong);
 }
 
+.field-hint-error {
+  color: var(--color-danger);
+  font-weight: var(--font-semibold);
+}
+
 .weekday-options {
   display: grid;
   grid-template-columns: repeat(7, minmax(28px, 1fr));

@@ -3,12 +3,12 @@ from __future__ import annotations
 from datetime import date, datetime, time
 from typing import Any, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 
 EntryStatus = Literal["completed", "missed", "recovery_completed"]
 Difficulty = Literal["easy", "medium", "hard"]
-FrequencyType = Literal["daily", "weekly", "custom"]
+FrequencyType = Literal["daily", "custom"]
 WeekdayKey = Literal["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 ScheduleDay = Union[WeekdayKey, int]
 RiskLevel = Literal["low", "medium", "high"]
@@ -18,12 +18,42 @@ StreakStatus = Literal["empty", "active", "at_risk", "restored"]
 PetType = Literal["dog", "cat", "parrot", "hamster"]
 PetState = Literal["happy", "neutral", "sad"]
 XPReason = Literal["completed_on_time", "recovery_completed"]
+RecommendationAISource = Literal["bothub", "heuristic", "not_requested"]
+
+
+WEEKDAY_KEYS = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
+
+
+def _strip_string(value: Any) -> Any:
+    return value.strip() if isinstance(value, str) else value
+
+
+def _is_valid_schedule_day(day: ScheduleDay) -> bool:
+    if isinstance(day, int):
+        return 0 <= day <= 6
+    value = day.strip().lower()
+    if value.isdigit():
+        return 0 <= int(value) <= 6
+    return value in WEEKDAY_KEYS
+
+
+def _validate_schedule_days(days: Optional[list[ScheduleDay]]) -> Optional[list[ScheduleDay]]:
+    if days is None:
+        return None
+    if any(not _is_valid_schedule_day(day) for day in days):
+        raise ValueError("schedule_days must use weekday keys or integers from 0 to 6")
+    return days
 
 
 class UserCreate(BaseModel):
     email: EmailStr
     full_name: str = Field(min_length=2, max_length=255)
     password: str = Field(min_length=10, max_length=128)
+
+    @field_validator("full_name", mode="before")
+    @classmethod
+    def strip_full_name(cls, value: Any) -> Any:
+        return _strip_string(value)
 
 
 class UserLogin(BaseModel):
@@ -37,7 +67,6 @@ class UserRead(BaseModel):
     full_name: str
     experience_points: int
     level: int
-    lives: int
     pet_type: Optional[PetType] = None
     pet_name: Optional[str] = None
     pet_state: PetState = "neutral"
@@ -65,6 +94,22 @@ class HabitBase(BaseModel):
     recovery_task: Optional[str] = Field(default=None, max_length=500)
     schedule_days: list[ScheduleDay] = Field(default_factory=list)
 
+    @field_validator("title", "description", "recovery_task", mode="before")
+    @classmethod
+    def strip_text_fields(cls, value: Any) -> Any:
+        return _strip_string(value)
+
+    @field_validator("schedule_days")
+    @classmethod
+    def validate_schedule_days(cls, days: list[ScheduleDay]) -> list[ScheduleDay]:
+        return _validate_schedule_days(days) or []
+
+    @model_validator(mode="after")
+    def validate_custom_schedule(self) -> "HabitBase":
+        if self.frequency_type == "custom" and not self.schedule_days:
+            raise ValueError("schedule_days must contain at least one day for custom frequency")
+        return self
+
 
 class HabitCreate(HabitBase):
     pass
@@ -81,6 +126,22 @@ class HabitUpdate(BaseModel):
     recovery_task: Optional[str] = Field(default=None, max_length=500)
     schedule_days: Optional[list[ScheduleDay]] = None
     is_active: Optional[bool] = None
+
+    @field_validator("title", "description", "recovery_task", mode="before")
+    @classmethod
+    def strip_text_fields(cls, value: Any) -> Any:
+        return _strip_string(value)
+
+    @field_validator("schedule_days")
+    @classmethod
+    def validate_schedule_days(cls, days: Optional[list[ScheduleDay]]) -> Optional[list[ScheduleDay]]:
+        return _validate_schedule_days(days)
+
+    @model_validator(mode="after")
+    def validate_custom_schedule(self) -> "HabitUpdate":
+        if self.frequency_type == "custom" and self.schedule_days == []:
+            raise ValueError("schedule_days must contain at least one day for custom frequency")
+        return self
 
 
 class HabitRead(HabitBase):
@@ -152,7 +213,6 @@ class UserActivitySummary(BaseModel):
     average_current_streak: float
     experience_points: int
     level: int
-    lives: int
     recovery_mode: bool
 
 
@@ -181,6 +241,7 @@ class RecommendationRead(BaseModel):
     priority: str
     is_read: bool
     created_at: datetime
+    ai_source: Optional[RecommendationAISource] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -205,6 +266,11 @@ class GamificationProfileRead(BaseModel):
 class PetUpdate(BaseModel):
     pet_type: PetType
     pet_name: str = Field(min_length=1, max_length=80)
+
+    @field_validator("pet_name", mode="before")
+    @classmethod
+    def strip_pet_name(cls, value: Any) -> Any:
+        return _strip_string(value)
 
 
 class PetRead(BaseModel):

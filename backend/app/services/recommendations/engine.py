@@ -138,6 +138,7 @@ def _upsert_recommendation(
     prediction: Prediction,
     today: date,
     active_habit_count: int,
+    force_ai: bool,
 ) -> Recommendation:
     existing = db.scalar(
         select(Recommendation).where(
@@ -153,13 +154,18 @@ def _upsert_recommendation(
         previous_type=existing.type if existing else None,
     )
     message = _normalize_recommendation_message(message)
+    ai_source = "not_requested"
 
-    should_use_ai = _is_ai_worthwhile(rec_type, prediction) and _daily_ai_budget_available(
-        db,
-        user,
-        today,
+    should_use_ai = force_ai or (
+        _is_ai_worthwhile(rec_type, prediction)
+        and _daily_ai_budget_available(
+            db,
+            user,
+            today,
+        )
     )
     if should_use_ai:
+        ai_source = "heuristic"
         ai_draft = generate_ai_recommendation(
             habit=habit,
             prediction=prediction,
@@ -168,10 +174,17 @@ def _upsert_recommendation(
             base_title=title,
             base_message=message,
             user=user,
+            refresh_mode="manual_refresh" if force_ai else "auto",
+            variation_seed=(
+                f"{today.isoformat()}:{habit.id}:{utc_now().isoformat()}"
+                if force_ai
+                else None
+            ),
         )
         if ai_draft:
             title = ai_draft.title
             message = _normalize_recommendation_message(ai_draft.message)
+            ai_source = "bothub"
 
     if existing:
         existing.prediction_id = prediction.id
@@ -183,6 +196,7 @@ def _upsert_recommendation(
         existing.created_at = utc_now()
         db.flush()
         db.refresh(existing)
+        existing.ai_source = ai_source
         return existing
 
     recommendation = Recommendation(
@@ -197,6 +211,7 @@ def _upsert_recommendation(
     db.add(recommendation)
     db.flush()
     db.refresh(recommendation)
+    recommendation.ai_source = ai_source
     return recommendation
 
 
@@ -204,6 +219,8 @@ def generate_recommendations(
     db: Session,
     user: User,
     today: Optional[date] = None,
+    *,
+    force_ai: bool = False,
 ) -> list[Recommendation]:
     today = today or date.today()
     habits = list(
@@ -224,6 +241,7 @@ def generate_recommendations(
                 prediction,
                 today,
                 len(habits),
+                force_ai,
             )
         )
     return recommendations

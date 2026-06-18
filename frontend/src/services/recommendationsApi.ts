@@ -4,10 +4,11 @@ import type { Recommendation } from "../types/recommendation";
 export const recommendationsApi = {
   list: () => request<Recommendation[]>("/recommendations"),
 
-  generate: () =>
-    request<Recommendation[]>("/recommendations/generate", {
-      method: "POST"
-    }),
+  generate: (options?: { forceAi?: boolean }) =>
+    request<Recommendation[]>(
+      `/recommendations/generate${options?.forceAi ? "?force_ai=true" : ""}`,
+      { method: "POST" }
+    ),
 
   markRead: (recommendationId: number) =>
     request<Recommendation>(`/recommendations/${recommendationId}/read`, {

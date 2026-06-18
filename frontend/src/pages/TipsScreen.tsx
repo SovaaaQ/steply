@@ -618,12 +618,13 @@ export function TipsScreen() {
     )
     .slice(0, 3);
 
-  function handleAdviceAction(item: AdviceItem) {
+  async function handleAdviceAction(item: AdviceItem) {
+    const hasDirectHabitAction = Boolean(item.habit && item.markStatus);
     if (item.recommendationId) {
-      void markRecommendationRead(item.recommendationId);
+      await markRecommendationRead(item.recommendationId, { silent: hasDirectHabitAction });
     }
     if (item.habit && item.markStatus) {
-      void markHabit(item.habit.id, item.markStatus);
+      await markHabit(item.habit.id, item.markStatus);
       return;
     }
     setActiveSection("habits");
@@ -671,7 +672,7 @@ export function TipsScreen() {
                   tone={primaryAdvice.tone}
                   metaLabel="Следующий шаг"
                   featured
-                  onAction={() => handleAdviceAction(primaryAdvice)}
+                  onAction={() => void handleAdviceAction(primaryAdvice)}
                 />
               ) : (
                 <TipsEmptyState>
@@ -706,7 +707,7 @@ export function TipsScreen() {
                       className={`tips-insight-row tips-insight-row-${item.tone}`}
                       key={item.id}
                       type="button"
-                      onClick={() => handleAdviceAction(item)}
+                      onClick={() => void handleAdviceAction(item)}
                     >
                       <span>{getAdviceLabel(item.tone)}</span>
                       <strong>{item.habitTitle}</strong>
@@ -738,7 +739,7 @@ export function TipsScreen() {
                     advice={item.advice}
                     tone={item.tone}
                     metaLabel={getAdviceLabel(item.tone)}
-                    onAction={() => handleAdviceAction(item)}
+                    onAction={() => void handleAdviceAction(item)}
                   />
                 ))
               ) : (

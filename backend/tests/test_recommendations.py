@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
+from app.schemas import RecommendationRead
+from app.services.ai_recommendations import _build_bothub_request
 from app.services.recommendations import (
     AFTER_COMPLETION_RECOMMENDATION_TYPE,
     EARLY_RECOVERY_RECOMMENDATION_TYPE,
@@ -438,3 +440,29 @@ def test_normalize_recommendation_message_removes_outer_quotes() -> None:
     assert _normalize_recommendation_message(message) == (
         "Сегодня откройте файл диплома и напишите один короткий абзац"
     )
+
+
+def test_manual_refresh_bothub_request_uses_more_variation() -> None:
+    auto_request = _build_bothub_request({"request": {"mode": "auto"}})
+    manual_request = _build_bothub_request(
+        {"request": {"mode": "manual_refresh", "variation_seed": "demo-seed"}}
+    )
+
+    assert manual_request["temperature"] > auto_request["temperature"]
+    assert "demo-seed" in manual_request["messages"][1]["content"]
+    assert "manual_refresh" in manual_request["messages"][1]["content"]
+
+
+def test_recommendation_read_exposes_ai_source_for_demo_status() -> None:
+    recommendation = make_recommendation(
+        1,
+        10,
+        datetime(2026, 6, 18, 12, 0, tzinfo=timezone.utc),
+    )
+    recommendation.user_id = 1
+    recommendation.prediction_id = None
+    recommendation.ai_source = "bothub"
+
+    payload = RecommendationRead.model_validate(recommendation)
+
+    assert payload.ai_source == "bothub"

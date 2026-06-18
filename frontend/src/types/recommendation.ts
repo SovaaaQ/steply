@@ -23,4 +23,5 @@ export interface Recommendation {
   priority: string;
   is_read: boolean;
   created_at: string;
+  ai_source?: "bothub" | "heuristic" | "not_requested" | null;
 }

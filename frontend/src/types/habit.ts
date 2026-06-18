@@ -1,6 +1,6 @@
 export type EntryStatus = "completed" | "missed" | "recovery_completed";
 export type Difficulty = "easy" | "medium" | "hard";
-export type FrequencyType = "daily" | "weekly" | "custom";
+export type FrequencyType = "daily" | "custom";
 export type WeekdayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 export type RiskLevel = "low" | "medium" | "high";
 

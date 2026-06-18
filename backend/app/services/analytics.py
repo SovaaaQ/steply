@@ -228,7 +228,6 @@ def calculate_user_activity_summary_from_entries(
         average_current_streak=round(average_current_streak, 2),
         experience_points=user.experience_points,
         level=user.level,
-        lives=user.lives,
         recovery_mode=missed_last_7_days >= 3
         or any(stats.recovery_mode for stats in habit_stats),
     )

@@ -82,7 +82,6 @@ docs/
 - `hashed_password`
 - `experience_points`
 - `level`
-- `lives`
 - `pet_type`
 - `pet_name`
 - `pet_state`

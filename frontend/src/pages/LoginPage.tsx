@@ -7,6 +7,7 @@ import { AuthQrCard } from "../components/auth/AuthQrCard";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { ErrorState } from "../components/ui/ErrorState";
+import { authLimits } from "../utils/formLimits";
 
 export function LoginPage({
   onAuth,
@@ -79,8 +80,9 @@ export function LoginPage({
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              minLength={6}
-              placeholder="Минимум 6 символов"
+              minLength={authLimits.passwordMinLength}
+              maxLength={authLimits.passwordMaxLength}
+              placeholder={`Минимум ${authLimits.passwordMinLength} символов`}
               required
             />
           </label>

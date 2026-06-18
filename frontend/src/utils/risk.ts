@@ -41,7 +41,6 @@ export const emptySummary: Summary = {
   average_current_streak: 0,
   experience_points: 0,
   level: 1,
-  lives: 5,
   recovery_mode: false
 };
 

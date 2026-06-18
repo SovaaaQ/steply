@@ -26,7 +26,7 @@ def make_entry(habit_id: int, entry_date: date, status: str) -> SimpleNamespace:
 
 
 def test_user_summary_uses_preloaded_entries_for_habit_stats() -> None:
-    user = SimpleNamespace(id=1, experience_points=20, level=2, lives=5)
+    user = SimpleNamespace(id=1, experience_points=20, level=2)
     habits = [make_habit(1), make_habit(2), make_habit(3, is_active=False)]
     entries = [
         make_entry(1, date(2026, 5, 20), "completed"),

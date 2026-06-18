@@ -118,6 +118,8 @@ def _build_context(
     base_title: str,
     base_message: str,
     user: Optional[User] = None,
+    refresh_mode: str = "auto",
+    variation_seed: Optional[str] = None,
 ) -> dict[str, Any]:
     context: dict[str, Any] = {
         "today": today.isoformat(),
@@ -140,6 +142,10 @@ def _build_context(
             "miss_risk": prediction.miss_risk,
             "completion_probability": prediction.completion_probability,
             "features": _compact_features(prediction.features or {}),
+        },
+        "request": {
+            "mode": refresh_mode,
+            "variation_seed": variation_seed,
         },
     }
 
@@ -183,6 +189,8 @@ def _system_instructions() -> str:
         "Не ставь точки в конце предложений и не используй длинные тире. "
         "Не используй нумерацию, '1)', '2)', маркированные списки, слово 'Шаги' и абстрактные "
         "формулировки вроде 'уберите барьер' без конкретизации. "
+        "Если request.mode равен manual_refresh, дай альтернативный микрошаг и новую формулировку, "
+        "даже если контекст похож на прошлый запрос. "
         "Не обещай медицинский эффект, не ставь "
         "диагнозы и не назначай лечение. Если привычка связана со здоровьем, зависимостью, "
         "курением, алкоголем, питанием или лекарствами, добавь мягкую фразу о том, что при "
@@ -205,13 +213,17 @@ def _user_prompt(context: dict[str, Any]) -> str:
 
 def _build_bothub_request(context: dict[str, Any]) -> dict[str, Any]:
     settings = get_settings()
+    request_meta = (
+        context.get("request") if isinstance(context.get("request"), dict) else {}
+    )
+    is_manual_refresh = request_meta.get("mode") == "manual_refresh"
     return {
         "model": settings.bothub_model,
         "messages": [
             {"role": "system", "content": _system_instructions()},
             {"role": "user", "content": _user_prompt(context)},
         ],
-        "temperature": 0.4,
+        "temperature": 0.7 if is_manual_refresh else 0.45,
         "max_tokens": 180,
     }
 
@@ -249,6 +261,8 @@ def generate_ai_recommendation(
     base_title: str,
     base_message: str,
     user: Optional[User] = None,
+    refresh_mode: str = "auto",
+    variation_seed: Optional[str] = None,
 ) -> Optional[AIRecommendationDraft]:
     settings = get_settings()
     provider = settings.ai_provider.lower()
@@ -263,6 +277,8 @@ def generate_ai_recommendation(
         base_title=base_title,
         base_message=base_message,
         user=user,
+        refresh_mode=refresh_mode,
+        variation_seed=variation_seed,
     )
 
     if provider != "bothub":

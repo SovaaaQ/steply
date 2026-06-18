@@ -94,11 +94,24 @@ interface DashboardDataContextValue {
   deleteHabit: (habitId: number) => Promise<void>;
   updatePet: (payload: { pet_type: PetType; pet_name: string }) => Promise<void>;
   refreshRecommendations: () => Promise<void>;
-  markRecommendationRead: (recommendationId: number) => Promise<void>;
+  markRecommendationRead: (
+    recommendationId: number,
+    options?: { silent?: boolean }
+  ) => Promise<void>;
   getTodayEntry: (habitId: number) => HabitEntry | undefined;
 }
 
 const DashboardDataContext = createContext<DashboardDataContextValue | null>(null);
+
+function getRecommendationRefreshDetail(recommendations: Recommendation[]) {
+  if (recommendations.some((recommendation) => recommendation.ai_source === "bothub")) {
+    return "BotHub обновил советы по последним отметкам";
+  }
+  if (recommendations.some((recommendation) => recommendation.ai_source === "heuristic")) {
+    return "BotHub недоступен, использованы базовые правила";
+  }
+  return "Подсказки пересчитаны по последним отметкам";
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(getStoredToken());
@@ -496,9 +509,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     clearNotice();
     setIsLoading(true);
     try {
-      const generated = await recommendationsApi.generate();
+      const generated = await recommendationsApi.generate({ forceAi: true });
       setRecommendations(generated);
-      showNotice("Советы обновлены", "ИИ пересчитал подсказки по последним отметкам");
+      showNotice("Советы обновлены", getRecommendationRefreshDetail(generated));
       await loadDashboard({ silent: true });
     } catch (recommendationError) {
       setError(
@@ -512,13 +525,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [clearNotice, loadDashboard, showNotice]);
 
   const markRecommendationRead = useCallback(
-    async (recommendationId: number) => {
+    async (recommendationId: number, options?: { silent?: boolean }) => {
+      const silent = options?.silent ?? false;
       setError("");
-      clearNotice();
+      if (!silent) {
+        clearNotice();
+      }
       try {
         await recommendationsApi.markRead(recommendationId);
-        showNotice("Совет отмечен", "Задания обновились");
-        await loadDashboard({ silent: true });
+        if (!silent) {
+          showNotice("Совет отмечен", "Задания обновились");
+          await loadDashboard({ silent: true });
+        }
       } catch (recommendationError) {
         setError(
           recommendationError instanceof Error

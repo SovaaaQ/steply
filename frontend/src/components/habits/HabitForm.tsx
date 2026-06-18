@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 
 import type { Difficulty, FrequencyType, HabitFormState, WeekdayKey } from "../../types/habit";
 import { weekdayKeys } from "../../utils/habitForm";
+import { habitLimits } from "../../utils/formLimits";
 import { Button } from "../ui/Button";
 import { Input, Textarea } from "../ui/Input";
 
@@ -62,6 +63,8 @@ export function HabitForm({
     selectedDayLabels.length === 0
       ? "Выберите дни"
       : formatSelectedDayCount(selectedDayLabels.length);
+  const isCustomScheduleEmpty =
+    form.frequency_type === "custom" && selectedDayLabels.length === 0;
 
   function toggleScheduledDay(day: WeekdayKey) {
     setForm((current) => {
@@ -88,6 +91,8 @@ export function HabitForm({
           <Input
             value={form.title}
             onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+            minLength={habitLimits.titleMinLength}
+            maxLength={habitLimits.titleMaxLength}
             placeholder="Читать 20 минут"
             required
           />
@@ -103,6 +108,7 @@ export function HabitForm({
                 description: event.target.value
               }))
             }
+            maxLength={habitLimits.descriptionMaxLength}
             placeholder="Коротко опишите действие"
             rows={3}
           />
@@ -154,7 +160,7 @@ export function HabitForm({
 
         {form.frequency_type === "custom" && (
           <fieldset
-            className={`weekday-selector ${selectedDayLabels.length === 0 ? "weekday-selector-empty" : ""}`}
+            className={`weekday-selector ${isCustomScheduleEmpty ? "weekday-selector-empty" : ""}`}
           >
             <legend>
               <span>Дни недели</span>
@@ -179,6 +185,9 @@ export function HabitForm({
                 );
               })}
             </div>
+            {isCustomScheduleEmpty && (
+              <span className="field-hint field-hint-error">Выберите хотя бы один день</span>
+            )}
           </fieldset>
         )}
       </section>
@@ -210,7 +219,7 @@ export function HabitForm({
       </section>
 
       <div className="form-actions">
-        <Button variant="cta" disabled={isSubmitting}>
+        <Button variant="cta" disabled={isSubmitting || isCustomScheduleEmpty}>
           {editingHabitId ? "Сохранить изменения" : "Создать привычку"}
         </Button>
         {editingHabitId && (

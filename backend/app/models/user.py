@@ -14,7 +14,6 @@ class User(Base):
     __table_args__ = (
         CheckConstraint("experience_points >= 0", name="ck_users_experience_points_non_negative"),
         CheckConstraint("level >= 1", name="ck_users_level_positive"),
-        CheckConstraint("lives >= 0", name="ck_users_lives_non_negative"),
         CheckConstraint(
             "pet_type IS NULL OR pet_type IN ('dog', 'cat', 'parrot', 'hamster')",
             name="ck_users_pet_type",
@@ -33,7 +32,6 @@ class User(Base):
         nullable=False,
     )
     level: Mapped[int] = mapped_column(Integer, default=1, server_default=text("1"), nullable=False)
-    lives: Mapped[int] = mapped_column(Integer, default=5, server_default=text("5"), nullable=False)
     pet_type: Mapped[Optional[str]] = mapped_column(String(24), nullable=True)
     pet_name: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
     pet_state: Mapped[str] = mapped_column(
