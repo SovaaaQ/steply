@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 import { NextHabitCard } from "../components/dashboard/NextHabitCard";
 import { TodaySummary } from "../components/dashboard/TodaySummary";
@@ -45,6 +45,30 @@ export function DashboardPage() {
     () => new Set(pendingHabitActionIds),
     [pendingHabitActionIds]
   );
+  const firstCompletableHabit = useMemo(
+    () =>
+      [...habitsForToday]
+        .filter((habit) => {
+          const entry = getTodayEntry(habit.id);
+          return (
+            entry?.status !== "completed" &&
+            entry?.status !== "recovery_completed" &&
+            entry?.status !== "missed"
+          );
+        })
+        .sort((left, right) =>
+          (left.preferred_time || "23:59").localeCompare(right.preferred_time || "23:59")
+        )[0],
+    [getTodayEntry, habitsForToday]
+  );
+  const handleMarkFirstStep = useCallback(() => {
+    if (!firstCompletableHabit) {
+      setActiveSection("habits");
+      return;
+    }
+
+    void markHabit(firstCompletableHabit.id, "completed");
+  }, [firstCompletableHabit, markHabit, setActiveSection]);
 
   return (
     <div className="page-stack dashboard-simple">
@@ -72,10 +96,15 @@ export function DashboardPage() {
 
       <OnboardingChecklist
         activeHabitCount={activeHabits.length}
+        canMarkFirstStep={Boolean(firstCompletableHabit)}
         goals={gamification.goals}
+        isFirstStepMarking={
+          firstCompletableHabit ? pendingHabitIds.has(firstCompletableHabit.id) : false
+        }
         pet={gamification.pet}
         onCreateHabit={openHabitCreator}
-        onOpenDashboard={() => setActiveSection("dashboard")}
+        onMarkFirstStep={handleMarkFirstStep}
+        onOpenHabits={() => setActiveSection("habits")}
         onOpenPet={() => setActiveSection("pet")}
       />
 

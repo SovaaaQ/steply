@@ -5,8 +5,11 @@ interface OnboardingChecklistProps {
   activeHabitCount: number;
   goals: Goal[];
   pet: Pet;
+  canMarkFirstStep: boolean;
+  isFirstStepMarking: boolean;
   onCreateHabit: () => void;
-  onOpenDashboard: () => void;
+  onMarkFirstStep: () => void;
+  onOpenHabits: () => void;
   onOpenPet: () => void;
 }
 
@@ -18,8 +21,11 @@ export function OnboardingChecklist({
   activeHabitCount,
   goals,
   pet,
+  canMarkFirstStep,
+  isFirstStepMarking,
   onCreateHabit,
-  onOpenDashboard,
+  onMarkFirstStep,
+  onOpenHabits,
   onOpenPet
 }: OnboardingChecklistProps) {
   const items = [
@@ -44,8 +50,10 @@ export function OnboardingChecklist({
       title: "Отметить первый шаг",
       description: "После отметки появятся XP, серия и следующий лучший шаг",
       isDone: isGoalCompleted(goals, "onboarding_complete_first_step"),
-      actionLabel: "Отметить",
-      onAction: onOpenDashboard
+      actionLabel: canMarkFirstStep ? "Отметить" : "Открыть план",
+      pendingLabel: "Отмечаем",
+      isPending: isFirstStepMarking,
+      onAction: canMarkFirstStep ? onMarkFirstStep : onOpenHabits
     }
   ];
 
@@ -95,8 +103,14 @@ export function OnboardingChecklist({
           <span>Следующий шаг</span>
           <strong>{nextItem.title}</strong>
         </div>
-        <Button type="button" variant="cta" onClick={nextItem.onAction}>
-          {nextItem.actionLabel}
+        <Button
+          type="button"
+          variant="cta"
+          disabled={nextItem.isPending}
+          aria-busy={nextItem.isPending || undefined}
+          onClick={nextItem.onAction}
+        >
+          {nextItem.isPending ? nextItem.pendingLabel : nextItem.actionLabel}
         </Button>
       </div>
     </section>

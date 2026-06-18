@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 
 import { Button } from "../ui/Button";
 import { SketchArrow } from "../ui/SketchArrow";
@@ -12,19 +12,19 @@ interface OnboardingStep {
 
 const onboardingSteps: OnboardingStep[] = [
   {
-    label: "Спутник",
+    label: "Питомец",
     title: <span className="sketch-circle">Выберите питомца</span>,
     description: "Он будет поддерживать вас по пути",
     detail: "Первое действие короткое: выбрать тип и имя. После этого откроется первый маршрут."
   },
   {
-    label: "Маршрут",
+    label: "Привычка",
     title: <span className="marker-highlight">Создайте первую привычку</span>,
     description: "Выберите дни, время и нагрузку",
     detail: "Можно начать с шаблона на 5-10 минут, а потом настроить расписание точнее."
   },
   {
-    label: "Первый шаг",
+    label: "Отметка",
     title: <span className="hand-underline">Отмечайте выполнение</span>,
     description: "Steply покажет прогресс, риск пропуска и подсказки",
     detail: "После первой отметки появятся XP, серия и следующий лучший шаг."
@@ -39,6 +39,8 @@ export function FirstLoginOnboarding({
   onStartSetup: () => void;
 }) {
   const [stepIndex, setStepIndex] = useState(0);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLElement>(null);
   const step = onboardingSteps[stepIndex];
   const isLastStep = stepIndex === onboardingSteps.length - 1;
 
@@ -51,10 +53,16 @@ export function FirstLoginOnboarding({
     };
   }, []);
 
+  useEffect(() => {
+    overlayRef.current?.scrollTo({ top: 0 });
+    modalRef.current?.scrollTo({ top: 0 });
+  }, [stepIndex]);
+
   return (
-    <div className="onboarding-overlay" role="presentation">
+    <div className="onboarding-overlay" role="presentation" ref={overlayRef}>
       <section
         className="onboarding-modal onboarding-modal-guided"
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="first-login-onboarding-title"

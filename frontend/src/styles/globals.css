@@ -4835,32 +4835,116 @@ textarea.field-control {
 
   .onboarding-overlay {
     align-items: end;
-    padding: 10px;
+    overflow: hidden;
+    padding: 0;
   }
 
   .onboarding-modal {
-    gap: 13px;
-    border-radius: 18px 18px var(--radius-card) var(--radius-card);
-    padding: 16px;
+    width: 100%;
+    max-height: 100dvh;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    gap: 10px;
+    overflow-y: auto;
+    border-radius: 20px 20px 0 0;
+    padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
   }
 
   .onboarding-head {
     align-items: flex-start;
+    gap: 10px;
+  }
+
+  .onboarding-head h2 {
+    font-size: 21px;
+    line-height: 1.12;
+  }
+
+  .onboarding-skip {
+    min-height: 34px;
+    white-space: nowrap;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .onboarding-guided-grid {
+    min-height: 0;
+    gap: 10px;
   }
 
   .onboarding-step {
-    min-height: 212px;
-    padding: 18px;
+    min-height: 156px;
+    gap: 8px;
+    padding: 16px;
   }
 
   .onboarding-step h3 {
-    font-size: 26px;
+    max-width: 270px;
+    font-size: 25px;
+  }
+
+  .onboarding-step p {
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  .onboarding-step small {
+    max-width: 280px;
+    font-size: 12px;
+    line-height: 1.35;
   }
 
   .onboarding-sketch-arrow {
-    top: 18px;
-    right: 16px;
-    width: 68px;
+    top: 14px;
+    right: 12px;
+    width: 54px;
+  }
+
+  .onboarding-route-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .onboarding-route-list li + li::before,
+  .onboarding-route-list small {
+    display: none;
+  }
+
+  .onboarding-route-list button {
+    min-height: 54px;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 5px;
+    border-radius: var(--radius-small);
+    padding: 8px;
+    text-align: center;
+  }
+
+  .onboarding-route-list span {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+  }
+
+  .onboarding-route-list strong {
+    grid-column: 1;
+    font-size: 12px;
+    line-height: 1.1;
+  }
+
+  .onboarding-preview {
+    display: none;
+  }
+
+  .onboarding-actions {
+    position: sticky;
+    bottom: 0;
+    padding-top: 4px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0), var(--color-surface-raised) 34%);
+  }
+
+  .onboarding-actions .button {
+    min-height: 46px;
+    flex: 1;
   }
 
   .app-header h1 {
