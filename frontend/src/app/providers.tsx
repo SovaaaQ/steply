@@ -46,7 +46,7 @@ interface NavigationContextValue {
   activeSection: AppSection;
   setActiveSection: (section: AppSection) => void;
   isOnboardingOpen: boolean;
-  completeOnboarding: () => void;
+  completeOnboarding: (options?: { startSetup?: boolean }) => void;
 }
 
 const NavigationContext = createContext<NavigationContextValue | null>(null);
@@ -386,16 +386,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
       isSubmittingRef.current = true;
       setIsSubmitting(true);
       try {
+        const isFirstHabit = !editingHabitId && activeHabits.length === 0;
+
         if (editingHabitId) {
           await habitsApi.update(editingHabitId, payload);
           showNotice("Привычку обновили");
         } else {
           await habitsApi.create(payload);
-          showNotice("Привычка добавлена");
+          showNotice(
+            isFirstHabit ? "Первый маршрут собран" : "Привычка добавлена",
+            isFirstHabit ? "Откройте главный экран и отметьте короткий шаг" : "",
+            isFirstHabit
+              ? {
+                  title: "Цель онбординга",
+                  detail: "20 XP за первую привычку",
+                  xp: 20
+                }
+              : undefined
+          );
         }
         setIsHabitFormOpen(false);
         resetHabitForm();
         await loadDashboard({ silent: true });
+        if (isFirstHabit) {
+          setActiveSection("dashboard");
+        }
       } catch (habitError) {
         setError(habitError instanceof Error ? habitError.message : "Не удалось сохранить привычку");
       } finally {
@@ -403,7 +418,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setIsSubmitting(false);
       }
     },
-    [clearNotice, editingHabitId, gamification.pet.is_configured, habitForm, loadDashboard, resetHabitForm, showNotice]
+    [
+      activeHabits.length,
+      clearNotice,
+      editingHabitId,
+      gamification.pet.is_configured,
+      habitForm,
+      loadDashboard,
+      resetHabitForm,
+      setActiveSection,
+      showNotice
+    ]
   );
 
   const startEditHabit = useCallback(
@@ -465,26 +490,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
+      const isFirstCompletion = gamification.goals.some(
+        (goal) => goal.id === "onboarding_complete_first_step" && goal.status !== "completed"
+      );
+
       setHabitActionPending(habitId, true);
       try {
         const entry = await habitsApi.mark(habitId, status, todayISO);
         const reward =
           entry.xp_awarded > 0
             ? {
-                title: "XP за привычку",
+                title: isFirstCompletion ? "Первый шаг" : "XP за привычку",
                 detail: `${entry.xp_awarded} XP добавлены к уровню`,
                 xp: entry.xp_awarded
               }
             : undefined;
         showNotice(
           status === "completed"
-            ? entry.xp_awarded > 0
-              ? "Готово, засчитали"
-              : "Готово, сегодня уже учтено"
+            ? isFirstCompletion
+              ? "Первый шаг отмечен"
+              : entry.xp_awarded > 0
+                ? "Готово, засчитали"
+                : "Готово, сегодня уже учтено"
             : entry.xp_awarded > 0
               ? "Мягкий шаг засчитан"
               : "Мягкий шаг уже засчитан",
-          "",
+          isFirstCompletion ? "Маршрут запущен, дальше Steply подскажет следующий шаг" : "",
           reward
         );
         await loadDashboard({ silent: true });
@@ -499,6 +530,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [
       activeHabits,
       clearNotice,
+      gamification.goals,
       getTodayEntry,
       habitEntries,
       loadDashboard,
@@ -550,11 +582,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [clearNotice, loadDashboard, showNotice]
   );
 
-  const completeOnboarding = useCallback(() => {
+  const completeOnboarding = useCallback((options?: { startSetup?: boolean }) => {
     if (user) {
       setOnboardingStatus(user.id, "completed");
     }
     setIsOnboardingOpen(false);
+
+    if (options?.startSetup === false) {
+      setActiveSection("dashboard");
+      return;
+    }
 
     if (!gamification.pet.is_configured) {
       setActiveSection("pet");

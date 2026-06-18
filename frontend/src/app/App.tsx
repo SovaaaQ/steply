@@ -75,7 +75,12 @@ function AppContent() {
         {notice && <SuccessState message={notice} detail={noticeDetail} reward={noticeReward} />}
       </div>
       <AppRouter />
-      {isOnboardingOpen && <FirstLoginOnboarding onComplete={completeOnboarding} />}
+      {isOnboardingOpen && (
+        <FirstLoginOnboarding
+          onDeferSetup={() => completeOnboarding({ startSetup: false })}
+          onStartSetup={() => completeOnboarding({ startSetup: true })}
+        />
+      )}
     </AppLayout>
   );
 }

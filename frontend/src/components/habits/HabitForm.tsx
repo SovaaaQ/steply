@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 
 import type { Difficulty, FrequencyType, HabitFormState, WeekdayKey } from "../../types/habit";
-import { weekdayKeys } from "../../utils/habitForm";
+import { habitStarterTemplates, weekdayKeys } from "../../utils/habitForm";
 import { habitLimits } from "../../utils/formLimits";
 import { Button } from "../ui/Button";
 import { Input, Textarea } from "../ui/Input";
@@ -85,8 +85,50 @@ export function HabitForm({
     });
   }
 
+  function applyTemplate(templateId: string) {
+    const template = habitStarterTemplates.find((item) => item.id === templateId);
+    if (!template) {
+      return;
+    }
+
+    setForm({
+      ...template.form,
+      scheduledDays: [...template.form.scheduledDays]
+    });
+  }
+
   return (
     <form className="habit-form" onSubmit={onSubmit}>
+      {!editingHabitId && (
+        <section className="habit-template-section" aria-labelledby="habit-template-title">
+          <div className="habit-form-section-head">
+            <span className="habit-form-step">00</span>
+            <h3 id="habit-template-title">Быстрый старт</h3>
+            <span className="form-hint">можно изменить после выбора</span>
+          </div>
+
+          <div className="habit-template-grid">
+            {habitStarterTemplates.map((template) => {
+              const isActive = form.title === template.form.title;
+
+              return (
+                <button
+                  aria-pressed={isActive}
+                  className={isActive ? "habit-template-card active" : "habit-template-card"}
+                  disabled={isSubmitting}
+                  key={template.id}
+                  onClick={() => applyTemplate(template.id)}
+                  type="button"
+                >
+                  <span>{template.title}</span>
+                  <small>{template.description}</small>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       <section className="habit-form-section">
         <div className="habit-form-section-head">
           <span className="habit-form-step">01</span>

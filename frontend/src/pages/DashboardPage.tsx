@@ -4,8 +4,9 @@ import { NextHabitCard } from "../components/dashboard/NextHabitCard";
 import { TodaySummary } from "../components/dashboard/TodaySummary";
 import { DailyRecommendationCard } from "../components/dashboard/DailyRecommendationCard";
 import { PetMiniWidget } from "../components/gamification/PetMiniWidget";
+import { OnboardingChecklist } from "../components/onboarding/OnboardingChecklist";
 import { Button } from "../components/ui/Button";
-import { useDashboardData, useNavigation } from "../app/providers";
+import { useDashboardData, useHabitForm, useNavigation } from "../app/providers";
 import { useAuth } from "../hooks/useAuth";
 import { useHabits } from "../hooks/useHabits";
 import { useRecommendations } from "../hooks/useRecommendations";
@@ -13,10 +14,12 @@ import { useStatistics } from "../hooks/useStatistics";
 
 export function DashboardPage() {
   const { setActiveSection } = useNavigation();
+  const { openHabitCreator } = useHabitForm();
   const { gamification } = useDashboardData();
   const { user } = useAuth();
   const {
     habitsForToday,
+    activeHabits,
     predictions,
     habitStats,
     getTodayEntry,
@@ -66,6 +69,15 @@ export function DashboardPage() {
           <PetMiniWidget pet={gamification.pet} onOpen={() => setActiveSection("pet")} />
         </div>
       </section>
+
+      <OnboardingChecklist
+        activeHabitCount={activeHabits.length}
+        goals={gamification.goals}
+        pet={gamification.pet}
+        onCreateHabit={openHabitCreator}
+        onOpenDashboard={() => setActiveSection("dashboard")}
+        onOpenPet={() => setActiveSection("pet")}
+      />
 
       <section className="dashboard-main-grid">
         <section className="today-route-list">

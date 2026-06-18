@@ -4,7 +4,7 @@ import { PetSetup } from "../components/gamification/PetSetup";
 import { PetStatusCard } from "../components/gamification/PetStatusCard";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
-import { useDashboardData, useNavigation } from "../app/providers";
+import { useDashboardData, useHabitForm, useNavigation } from "../app/providers";
 import { formatPetCaption } from "../utils/gamification";
 import type { PetType } from "../types/auth";
 import type { Goal, RewardEvent } from "../types/gamification";
@@ -40,7 +40,8 @@ function formatRewardDate(value: string) {
 }
 
 export function PetScreen() {
-  const { gamification, updatePet } = useDashboardData();
+  const { activeHabits, gamification, updatePet } = useDashboardData();
+  const { openHabitCreator } = useHabitForm();
   const { setActiveSection } = useNavigation();
   const [isEditing, setIsEditing] = useState(false);
   const editFormRef = useRef<HTMLDivElement | null>(null);
@@ -67,6 +68,9 @@ export function PetScreen() {
   async function handlePetSubmit(payload: { pet_type: PetType; pet_name: string }) {
     await updatePet(payload);
     setIsEditing(false);
+    if (activeHabits.length === 0) {
+      openHabitCreator();
+    }
   }
 
   function handleNextAction() {
