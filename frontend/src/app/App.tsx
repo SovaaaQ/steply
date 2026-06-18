@@ -61,7 +61,7 @@ function AppContent() {
 
   const { token } = useAuth();
   const { completeOnboarding, isOnboardingOpen } = useNavigation();
-  const { error, notice, noticeDetail, noticeReward, isLoading } = useUIFeedback();
+  const { error, notice, noticeDetail, noticeReward, isLoading, clearError } = useUIFeedback();
 
   if (!token) {
     return <AuthGate />;
@@ -71,7 +71,7 @@ function AppContent() {
     <AppLayout>
       <div className="feedback-stack">
         {isLoading && <LoadingState />}
-        {error && <ErrorState message={error} />}
+        {error && <ErrorState message={error} onDismiss={clearError} />}
         {notice && <SuccessState message={notice} detail={noticeDetail} reward={noticeReward} />}
       </div>
       <AppRouter />

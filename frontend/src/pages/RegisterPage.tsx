@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 
 import type { AuthResponse } from "../types/auth";
 import { authApi } from "../services/authApi";
@@ -21,9 +21,12 @@ export function RegisterPage({
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const isLoadingRef = useRef(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
     setError("");
     setIsLoading(true);
     try {
@@ -33,6 +36,7 @@ export function RegisterPage({
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Ошибка регистрации");
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
   }
@@ -57,7 +61,7 @@ export function RegisterPage({
       <div className="auth-panel">
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="mode-switch">
-            <button type="button" onClick={onSwitchMode}>
+            <button type="button" disabled={isLoading} onClick={onSwitchMode}>
               Вход
             </button>
             <button type="button" className="active">
@@ -103,7 +107,7 @@ export function RegisterPage({
 
           {error && <ErrorState message={error} />}
 
-          <Button variant="cta" disabled={isLoading}>
+          <Button variant="cta" disabled={isLoading} aria-busy={isLoading || undefined}>
             {isLoading ? "Создаём" : "Создать аккаунт"}
           </Button>
         </form>

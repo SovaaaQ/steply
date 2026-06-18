@@ -11,6 +11,7 @@ interface HabitListProps {
   predictions: Record<number, Prediction>;
   stats: Record<number, HabitStats>;
   recommendations?: Record<number, Recommendation>;
+  pendingHabitActionIds?: number[];
   getTodayEntry: (habitId: number) => HabitEntry | undefined;
   compact?: boolean;
   onCreate?: () => void;
@@ -25,6 +26,7 @@ export function HabitList({
   predictions,
   stats,
   recommendations,
+  pendingHabitActionIds = [],
   getTodayEntry,
   compact = false,
   onCreate,
@@ -62,6 +64,7 @@ export function HabitList({
           stats={stats[habit.id]}
           recommendation={recommendations?.[habit.id]}
           todayEntry={getTodayEntry(habit.id)}
+          isMarking={pendingHabitActionIds.includes(habit.id)}
           onEdit={onEdit}
           onDelete={onDelete}
           onMark={onMark}

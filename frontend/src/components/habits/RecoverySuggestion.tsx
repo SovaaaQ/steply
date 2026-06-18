@@ -10,6 +10,7 @@ interface RecoverySuggestionProps {
   predictedRisk?: number;
   todayEntry?: HabitEntry;
   isAvailableToday: boolean;
+  isPending?: boolean;
   onRecover: () => void;
 }
 
@@ -19,6 +20,7 @@ export function RecoverySuggestion({
   predictedRisk = 0,
   todayEntry,
   isAvailableToday,
+  isPending = false,
   onRecover
 }: RecoverySuggestionProps) {
   const isActive = shouldActivateRecoveryMode(stats, predictedRisk);
@@ -45,8 +47,14 @@ export function RecoverySuggestion({
         </p>
       </div>
       {!isRecoveredToday && (
-        <Button type="button" variant="secondary" onClick={onRecover}>
-          Выполнить минимум
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={isPending}
+          aria-busy={isPending || undefined}
+          onClick={onRecover}
+        >
+          {isPending ? "Отмечаем" : "Выполнить минимум"}
         </Button>
       )}
     </div>

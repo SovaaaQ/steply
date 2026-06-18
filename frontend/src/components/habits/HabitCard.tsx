@@ -47,6 +47,7 @@ interface HabitCardProps {
   todayEntry?: HabitEntry;
   recommendation?: Recommendation;
   compact?: boolean;
+  isMarking?: boolean;
   onEdit?: (habit: Habit) => void;
   onDelete?: (habitId: number) => void;
   onMark: (habitId: number, status: EntryStatus) => void;
@@ -60,6 +61,7 @@ export function HabitCard({
   todayEntry,
   recommendation,
   compact = false,
+  isMarking = false,
   onEdit,
   onDelete,
   onMark,
@@ -199,7 +201,8 @@ export function HabitCard({
           <Button
             className={`habit-action-button ${isDoneToday ? "habit-action-done" : "habit-action-complete"}`}
             variant={isDoneToday ? "secondary" : "cta"}
-            disabled={!periodState.canComplete}
+            disabled={!periodState.canComplete || isMarking}
+            aria-busy={isMarking || undefined}
             onClick={() => onMark(habit.id, "completed")}
           >
             {!isDoneToday && (
@@ -212,7 +215,7 @@ export function HabitCard({
               </svg>
             )}
             <span className="habit-action-label">
-              {isDoneToday ? "Отмечено" : "Отметить"}
+              {isMarking ? "Отмечаем" : isDoneToday ? "Отмечено" : "Отметить"}
             </span>
           </Button>
           {periodState.state === "missed" && (
@@ -336,6 +339,7 @@ export function HabitCard({
         stats={stats}
         todayEntry={todayEntry}
         isAvailableToday={isAvailableToday}
+        isPending={isMarking}
         onRecover={() => onMark(habit.id, "recovery_completed")}
       />
 

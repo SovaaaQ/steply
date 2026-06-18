@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 import type { PetType } from "../../types/auth";
 import type { Pet } from "../../types/gamification";
@@ -32,6 +32,7 @@ export function PetSetup({
   const [petType, setPetType] = useState<PetType>(pet?.pet_type ?? "dog");
   const [petName, setPetName] = useState(pet?.pet_name ?? "");
   const [isSaving, setIsSaving] = useState(false);
+  const isSavingRef = useRef(false);
 
   useEffect(() => {
     setPetType(pet?.pet_type ?? "dog");
@@ -40,14 +41,17 @@ export function PetSetup({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSavingRef.current) return;
     const normalizedName = petName.trim();
     if (!normalizedName) {
       return;
     }
+    isSavingRef.current = true;
     setIsSaving(true);
     try {
       await onSubmit({ pet_type: petType, pet_name: normalizedName });
     } finally {
+      isSavingRef.current = false;
       setIsSaving(false);
     }
   }
@@ -71,6 +75,7 @@ export function PetSetup({
               <input
                 checked={petType === type}
                 className="pet-option-input"
+                disabled={isSaving}
                 name="pet-type"
                 onChange={() => setPetType(type)}
                 type="radio"
@@ -89,6 +94,7 @@ export function PetSetup({
         <Input
           value={petName}
           onChange={(event) => setPetName(event.target.value)}
+          disabled={isSaving}
           placeholder="Например, Бади"
           minLength={petLimits.nameMinLength}
           maxLength={petLimits.nameMaxLength}
@@ -96,7 +102,11 @@ export function PetSetup({
         />
       </label>
 
-      <Button variant="cta" disabled={isSaving || !petName.trim()}>
+      <Button
+        variant="cta"
+        disabled={isSaving || !petName.trim()}
+        aria-busy={isSaving || undefined}
+      >
         {isSaving ? "Сохраняем" : submitLabel}
       </Button>
     </form>

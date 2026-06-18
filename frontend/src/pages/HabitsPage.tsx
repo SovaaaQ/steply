@@ -33,6 +33,7 @@ export function HabitsPage() {
     activeHabits,
     predictions,
     habitStats,
+    pendingHabitActionIds,
     habitForm,
     setHabitForm,
     editingHabitId,
@@ -107,6 +108,7 @@ export function HabitsPage() {
         predictions={predictions}
         stats={habitStats}
         recommendations={recommendationByHabitId}
+        pendingHabitActionIds={pendingHabitActionIds}
         getTodayEntry={getTodayEntry}
         onCreate={openHabitCreator}
         onEdit={startEditHabit}

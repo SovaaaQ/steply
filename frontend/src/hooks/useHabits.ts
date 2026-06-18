@@ -8,6 +8,7 @@ export function useHabits() {
     habitEntries,
     habitStats,
     predictions,
+    pendingHabitActionIds,
     markHabit,
     deleteHabit,
     getTodayEntry
@@ -29,6 +30,7 @@ export function useHabits() {
     habitEntries,
     habitStats,
     predictions,
+    pendingHabitActionIds,
     habitForm,
     setHabitForm,
     editingHabitId,

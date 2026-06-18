@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 
 import type { AuthResponse } from "../types/auth";
 import { authApi } from "../services/authApi";
@@ -20,9 +20,12 @@ export function LoginPage({
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const isLoadingRef = useRef(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
     setError("");
     setIsLoading(true);
     try {
@@ -30,6 +33,7 @@ export function LoginPage({
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Ошибка авторизации");
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
   }
@@ -58,7 +62,7 @@ export function LoginPage({
             <button type="button" className="active">
               Вход
             </button>
-            <button type="button" onClick={onSwitchMode}>
+            <button type="button" disabled={isLoading} onClick={onSwitchMode}>
               Регистрация
             </button>
           </div>
@@ -89,7 +93,9 @@ export function LoginPage({
 
           {error && <ErrorState message={error} />}
 
-          <Button variant="cta" disabled={isLoading}>{isLoading ? "Проверяем" : "Войти"}</Button>
+          <Button variant="cta" disabled={isLoading} aria-busy={isLoading || undefined}>
+            {isLoading ? "Проверяем" : "Войти"}
+          </Button>
         </form>
         <AuthQrCard />
       </div>

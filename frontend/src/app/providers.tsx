@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState
 } from "react";
 
@@ -56,6 +57,7 @@ interface UIFeedbackContextValue {
   noticeDetail: string;
   noticeReward?: RewardPreview;
   isLoading: boolean;
+  clearError: () => void;
 }
 
 const UIFeedbackContext = createContext<UIFeedbackContextValue | null>(null);
@@ -85,12 +87,13 @@ interface DashboardDataContextValue {
   habitEntries: Record<number, HabitEntry[]>;
   recommendations: Recommendation[];
   gamification: GamificationSummary;
+  pendingHabitActionIds: number[];
   todayISO: string;
   completedToday: number;
   todayProgress: number;
   recommendationOfDay?: Recommendation;
   loadDashboard: (options?: { silent?: boolean }) => Promise<void>;
-  markHabit: (habitId: number, status: EntryStatus) => Promise<void>;
+  markHabit: (habitId: number, status: EntryStatus) => Promise<boolean>;
   deleteHabit: (habitId: number) => Promise<void>;
   updatePet: (payload: { pet_type: PetType; pet_name: string }) => Promise<void>;
   refreshRecommendations: () => Promise<void>;
@@ -124,6 +127,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [habitEntries, setHabitEntries] = useState<Record<number, HabitEntry[]>>({});
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [gamification, setGamification] = useState<GamificationSummary>(emptyGamificationSummary);
+  const [pendingHabitActionIds, setPendingHabitActionIds] = useState<number[]>([]);
+  const pendingHabitActionsRef = useRef(new Set<number>());
+  const pendingHabitDeletesRef = useRef(new Set<number>());
+  const pendingRecommendationReadsRef = useRef(new Set<number>());
+  const isPetUpdatingRef = useRef(false);
+  const isRefreshingRecommendationsRef = useRef(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [noticeDetail, setNoticeDetail] = useState("");
@@ -132,6 +141,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [isHabitFormOpen, setIsHabitFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [editingHabitId, setEditingHabitId] = useState<number | null>(null);
   const [habitForm, setHabitForm] = useState<HabitFormState>(defaultHabitForm);
   const [now, setNow] = useState(() => new Date());
@@ -257,6 +267,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setError(""), 8000);
+    return () => window.clearTimeout(timer);
+  }, [error]);
+
+  const clearError = useCallback(() => {
+    setError("");
+  }, []);
+
   const clearNotice = useCallback(() => {
     setNotice("");
     setNoticeDetail("");
@@ -311,6 +334,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [habitEntries, todayISO]
   );
 
+  const setHabitActionPending = useCallback((habitId: number, isPending: boolean) => {
+    if (isPending) {
+      pendingHabitActionsRef.current.add(habitId);
+    } else {
+      pendingHabitActionsRef.current.delete(habitId);
+    }
+    setPendingHabitActionIds(Array.from(pendingHabitActionsRef.current));
+  }, []);
+
   const resetHabitForm = useCallback(() => {
     setHabitForm(defaultHabitForm);
     setEditingHabitId(null);
@@ -334,7 +366,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const submitHabit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      if (isSubmitting) return;
+      if (isSubmittingRef.current) return;
       setError("");
       clearNotice();
       const payload = buildHabitPayload(habitForm);
@@ -351,6 +383,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      isSubmittingRef.current = true;
       setIsSubmitting(true);
       try {
         if (editingHabitId) {
@@ -366,10 +399,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } catch (habitError) {
         setError(habitError instanceof Error ? habitError.message : "Не удалось сохранить привычку");
       } finally {
+        isSubmittingRef.current = false;
         setIsSubmitting(false);
       }
     },
-    [clearNotice, editingHabitId, gamification.pet.is_configured, habitForm, isSubmitting, loadDashboard, resetHabitForm, showNotice]
+    [clearNotice, editingHabitId, gamification.pet.is_configured, habitForm, loadDashboard, resetHabitForm, showNotice]
   );
 
   const startEditHabit = useCallback(
@@ -397,24 +431,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const markHabit = useCallback(
     async (habitId: number, status: EntryStatus) => {
+      if (pendingHabitActionsRef.current.has(habitId)) {
+        return false;
+      }
       setError("");
       clearNotice();
       const habit = activeHabits.find((item) => item.id === habitId);
       const existingTodayEntry = getTodayEntry(habitId);
       if (status === "missed") {
         setError("Пропуск появится сам после конца дня");
-        return;
+        return false;
       }
       if (
         existingTodayEntry?.status === "completed" ||
         existingTodayEntry?.status === "recovery_completed"
       ) {
         setError("Сегодня уже учтено");
-        return;
+        return false;
       }
       if (existingTodayEntry?.status === "missed") {
         setError("Этот день уже отмечен как пропуск");
-        return;
+        return false;
       }
       if (
         habit &&
@@ -425,9 +462,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ).isAvailableToday
       ) {
         setError("Эта привычка сегодня не запланирована");
-        return;
+        return false;
       }
 
+      setHabitActionPending(habitId, true);
       try {
         const entry = await habitsApi.mark(habitId, status, todayISO);
         const reward =
@@ -450,15 +488,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
           reward
         );
         await loadDashboard({ silent: true });
+        return true;
       } catch (markError) {
         setError(markError instanceof Error ? markError.message : "Не удалось отметить привычку");
+        return false;
+      } finally {
+        setHabitActionPending(habitId, false);
       }
     },
-    [activeHabits, clearNotice, getTodayEntry, habitEntries, loadDashboard, showNotice, todayISO]
+    [
+      activeHabits,
+      clearNotice,
+      getTodayEntry,
+      habitEntries,
+      loadDashboard,
+      setHabitActionPending,
+      showNotice,
+      todayISO
+    ]
   );
 
   const deleteHabit = useCallback(
     async (habitId: number) => {
+      if (pendingHabitDeletesRef.current.has(habitId)) {
+        return;
+      }
+      pendingHabitDeletesRef.current.add(habitId);
       setError("");
       clearNotice();
       try {
@@ -467,6 +522,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await loadDashboard({ silent: true });
       } catch (deleteError) {
         setError(deleteError instanceof Error ? deleteError.message : "Не удалось удалить привычку");
+      } finally {
+        pendingHabitDeletesRef.current.delete(habitId);
       }
     },
     [clearNotice, loadDashboard, showNotice]
@@ -474,6 +531,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updatePet = useCallback(
     async (payload: { pet_type: PetType; pet_name: string }) => {
+      if (isPetUpdatingRef.current) {
+        return;
+      }
+      isPetUpdatingRef.current = true;
       setError("");
       clearNotice();
       try {
@@ -482,6 +543,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await loadDashboard({ silent: true });
       } catch (petError) {
         setError(petError instanceof Error ? petError.message : "Не удалось сохранить питомца");
+      } finally {
+        isPetUpdatingRef.current = false;
       }
     },
     [clearNotice, loadDashboard, showNotice]
@@ -505,6 +568,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [activeHabits.length, gamification.pet.is_configured, openHabitCreator, setActiveSection, user]);
 
   const refreshRecommendations = useCallback(async () => {
+    if (isRefreshingRecommendationsRef.current) {
+      return;
+    }
+    isRefreshingRecommendationsRef.current = true;
     setError("");
     clearNotice();
     setIsLoading(true);
@@ -520,12 +587,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           : "Не удалось обновить советы"
       );
     } finally {
+      isRefreshingRecommendationsRef.current = false;
       setIsLoading(false);
     }
   }, [clearNotice, loadDashboard, showNotice]);
 
   const markRecommendationRead = useCallback(
     async (recommendationId: number, options?: { silent?: boolean }) => {
+      if (pendingRecommendationReadsRef.current.has(recommendationId)) {
+        return;
+      }
+      pendingRecommendationReadsRef.current.add(recommendationId);
       const silent = options?.silent ?? false;
       setError("");
       if (!silent) {
@@ -543,6 +615,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ? recommendationError.message
             : "Не удалось отметить совет"
         );
+      } finally {
+        pendingRecommendationReadsRef.current.delete(recommendationId);
       }
     },
     [clearNotice, loadDashboard, showNotice]
@@ -576,9 +650,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       notice,
       noticeDetail,
       noticeReward,
-      isLoading
+      isLoading,
+      clearError
     }),
-    [error, isLoading, notice, noticeDetail, noticeReward]
+    [clearError, error, isLoading, notice, noticeDetail, noticeReward]
   );
 
   const habitFormValue = useMemo<HabitFormContextValue>(
@@ -618,6 +693,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       habitEntries,
       recommendations,
       gamification,
+      pendingHabitActionIds,
       todayISO,
       completedToday,
       todayProgress,
@@ -643,6 +719,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       loadDashboard,
       markHabit,
       markRecommendationRead,
+      pendingHabitActionIds,
       predictions,
       recommendationOfDay,
       recommendations,

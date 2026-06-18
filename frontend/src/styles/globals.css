@@ -132,9 +132,6 @@ li {
 }
 
 .feedback-stack {
-  position: sticky;
-  z-index: 60;
-  top: var(--layout-edge);
   display: grid;
   gap: var(--item-gap-tight);
   margin: var(--item-gap) 0 var(--page-gap);
@@ -2436,6 +2433,33 @@ textarea.field-control {
   padding: var(--item-gap) var(--section-gap);
   font-weight: var(--font-semibold);
   line-height: 1.45;
+}
+
+.system-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--item-gap);
+}
+
+.system-message span {
+  min-width: 0;
+}
+
+.system-message-close {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: rgba(255, 255, 255, 0.64);
+  color: inherit;
+  cursor: pointer;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: var(--type-xs);
+}
+
+.system-message-close:hover {
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .reward-toast {

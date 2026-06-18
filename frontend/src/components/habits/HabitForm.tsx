@@ -65,6 +65,13 @@ export function HabitForm({
       : formatSelectedDayCount(selectedDayLabels.length);
   const isCustomScheduleEmpty =
     form.frequency_type === "custom" && selectedDayLabels.length === 0;
+  const submitLabel = isSubmitting
+    ? editingHabitId
+      ? "Сохраняем"
+      : "Создаём"
+    : editingHabitId
+      ? "Сохранить изменения"
+      : "Создать привычку";
 
   function toggleScheduledDay(day: WeekdayKey) {
     setForm((current) => {
@@ -220,7 +227,7 @@ export function HabitForm({
 
       <div className="form-actions">
         <Button variant="cta" disabled={isSubmitting || isCustomScheduleEmpty}>
-          {editingHabitId ? "Сохранить изменения" : "Создать привычку"}
+          {submitLabel}
         </Button>
         {editingHabitId && (
           <Button type="button" variant="ghost" onClick={onCancel}>

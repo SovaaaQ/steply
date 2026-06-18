@@ -485,7 +485,14 @@ function getRecommendationAction(
 }
 
 export function TipsScreen() {
-  const { habitStats, habitEntries, predictions, getTodayEntry, markHabit } = useDashboardData();
+  const {
+    habitStats,
+    habitEntries,
+    predictions,
+    pendingHabitActionIds,
+    getTodayEntry,
+    markHabit
+  } = useDashboardData();
   const { setActiveSection } = useNavigation();
   const {
     recommendations,
@@ -496,6 +503,7 @@ export function TipsScreen() {
   } = useRecommendations();
 
   const activeHabitById = new Map(activeHabits.map((habit) => [habit.id, habit]));
+  const pendingHabitIds = new Set(pendingHabitActionIds);
   const now = new Date();
 
   const urgentItems: AdviceItem[] = activeHabits
@@ -620,12 +628,15 @@ export function TipsScreen() {
 
   async function handleAdviceAction(item: AdviceItem) {
     const hasDirectHabitAction = Boolean(item.habit && item.markStatus);
+    if (item.habit && item.markStatus) {
+      const isMarked = await markHabit(item.habit.id, item.markStatus);
+      if (isMarked && item.recommendationId) {
+        await markRecommendationRead(item.recommendationId, { silent: hasDirectHabitAction });
+      }
+      return;
+    }
     if (item.recommendationId) {
       await markRecommendationRead(item.recommendationId, { silent: hasDirectHabitAction });
-    }
-    if (item.habit && item.markStatus) {
-      await markHabit(item.habit.id, item.markStatus);
-      return;
     }
     setActiveSection("habits");
   }
@@ -643,6 +654,7 @@ export function TipsScreen() {
           type="button"
           variant="secondary"
           disabled={isLoading || activeHabits.length === 0}
+          aria-busy={isLoading || undefined}
           onClick={() => void refreshRecommendations()}
         >
           {isLoading ? "Обновляем" : "Обновить советы"}
@@ -672,6 +684,9 @@ export function TipsScreen() {
                   tone={primaryAdvice.tone}
                   metaLabel="Следующий шаг"
                   featured
+                  isActionPending={
+                    primaryAdvice.habit ? pendingHabitIds.has(primaryAdvice.habit.id) : false
+                  }
                   onAction={() => void handleAdviceAction(primaryAdvice)}
                 />
               ) : (
@@ -707,6 +722,10 @@ export function TipsScreen() {
                       className={`tips-insight-row tips-insight-row-${item.tone}`}
                       key={item.id}
                       type="button"
+                      disabled={item.habit ? pendingHabitIds.has(item.habit.id) : false}
+                      aria-busy={
+                        item.habit && pendingHabitIds.has(item.habit.id) ? true : undefined
+                      }
                       onClick={() => void handleAdviceAction(item)}
                     >
                       <span>{getAdviceLabel(item.tone)}</span>
@@ -739,6 +758,7 @@ export function TipsScreen() {
                     advice={item.advice}
                     tone={item.tone}
                     metaLabel={getAdviceLabel(item.tone)}
+                    isActionPending={item.habit ? pendingHabitIds.has(item.habit.id) : false}
                     onAction={() => void handleAdviceAction(item)}
                   />
                 ))

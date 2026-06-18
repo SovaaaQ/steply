@@ -16,6 +16,7 @@ interface NextHabitCardProps {
   prediction?: Prediction;
   stats?: HabitStats;
   todayEntry?: HabitEntry;
+  isMarking?: boolean;
   onOpenHabits: () => void;
   onMark: (habitId: number, status: EntryStatus) => void;
 }
@@ -25,6 +26,7 @@ export function NextHabitCard({
   prediction,
   stats,
   todayEntry,
+  isMarking = false,
   onOpenHabits,
   onMark
 }: NextHabitCardProps) {
@@ -82,10 +84,17 @@ export function NextHabitCard({
         <Button
           type="button"
           variant="cta"
-          disabled={isAlreadyCounted}
+          disabled={isAlreadyCounted || isMarking}
+          aria-busy={isMarking || undefined}
           onClick={() => onMark(habit.id, "completed")}
         >
-          {isDone ? "Уже отмечено" : isMissed ? "День пропущен" : "Отметить"}
+          {isMarking
+            ? "Отмечаем"
+            : isDone
+              ? "Уже отмечено"
+              : isMissed
+                ? "День пропущен"
+                : "Отметить"}
         </Button>
         <Button type="button" variant="secondary" onClick={onOpenHabits}>
           Перейти к привычкам

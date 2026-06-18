@@ -20,6 +20,7 @@ interface RecommendationCardProps {
   ctaLabel: "Перейти к привычке" | "Отметить" | "Отметить минимум";
   metaLabel?: string;
   featured?: boolean;
+  isActionPending?: boolean;
   onAction: () => void;
 }
 
@@ -96,9 +97,11 @@ export function RecommendationCard({
   ctaLabel,
   metaLabel,
   featured = false,
+  isActionPending = false,
   onAction
 }: RecommendationCardProps) {
   const isDirectAction = ctaLabel === "Отметить" || ctaLabel === "Отметить минимум";
+  const ctaText = isActionPending && isDirectAction ? "Отмечаем" : ctaLabel;
   const actionPlan = parseActionPlan(advice);
   const displayAdvice = formatDisplayText(advice);
   const displayReason = formatDisplayText(reason);
@@ -147,9 +150,11 @@ export function RecommendationCard({
         className="recommendation-cta"
         type="button"
         variant={isDirectAction ? "cta" : "secondary"}
+        disabled={isActionPending}
+        aria-busy={isActionPending || undefined}
         onClick={onAction}
       >
-        {ctaLabel}
+        {ctaText}
       </Button>
     </article>
   );

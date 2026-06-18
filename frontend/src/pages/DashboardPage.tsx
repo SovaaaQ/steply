@@ -20,6 +20,7 @@ export function DashboardPage() {
     predictions,
     habitStats,
     getTodayEntry,
+    pendingHabitActionIds,
     markHabit
   } = useHabits();
   const { completedToday, todayProgress } = useStatistics();
@@ -36,6 +37,10 @@ export function DashboardPage() {
           (left.preferred_time || "23:59").localeCompare(right.preferred_time || "23:59")
         )[0] ?? habitsForToday[0],
     [getTodayEntry, habitsForToday]
+  );
+  const pendingHabitIds = useMemo(
+    () => new Set(pendingHabitActionIds),
+    [pendingHabitActionIds]
   );
 
   return (
@@ -54,6 +59,7 @@ export function DashboardPage() {
             prediction={nextHabit ? predictions[nextHabit.id] : undefined}
             stats={nextHabit ? habitStats[nextHabit.id] : undefined}
             todayEntry={nextHabit ? getTodayEntry(nextHabit.id) : undefined}
+            isMarking={nextHabit ? pendingHabitIds.has(nextHabit.id) : false}
             onOpenHabits={() => setActiveSection("habits")}
             onMark={(habitId, status) => void markHabit(habitId, status)}
           />
@@ -81,6 +87,7 @@ export function DashboardPage() {
                   entry?.status === "completed" || entry?.status === "recovery_completed";
                 const isMissed = entry?.status === "missed";
                 const isAlreadyCounted = isDone || isMissed;
+                const isMarking = pendingHabitIds.has(habit.id);
 
                 return (
                   <div className={`today-row ${isDone ? "done" : ""}`} key={habit.id}>
@@ -97,10 +104,17 @@ export function DashboardPage() {
                     <Button
                       type="button"
                       variant={isAlreadyCounted ? "secondary" : "cta"}
-                      disabled={isAlreadyCounted}
+                      disabled={isAlreadyCounted || isMarking}
+                      aria-busy={isMarking || undefined}
                       onClick={() => void markHabit(habit.id, "completed")}
                     >
-                      {isDone ? "Готово" : isMissed ? "Пропущено" : "Отметить"}
+                      {isMarking
+                        ? "Отмечаем"
+                        : isDone
+                          ? "Готово"
+                          : isMissed
+                            ? "Пропущено"
+                            : "Отметить"}
                     </Button>
                   </div>
                 );
