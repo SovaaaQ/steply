@@ -23,7 +23,7 @@ export const habitStarterTemplates: HabitStarterTemplate[] = [
   {
     id: "thesis",
     title: "Диплом 10 минут",
-    description: "Мягкий учебный старт без перегруза",
+    description: "Учёба на короткий заход",
     form: {
       title: "Диплом 10 минут",
       description: "Открыть документ и написать один небольшой фрагмент",
@@ -51,7 +51,7 @@ export const habitStarterTemplates: HabitStarterTemplate[] = [
   {
     id: "walk",
     title: "Прогулка 15 минут",
-    description: "Простое восстановление энергии",
+    description: "Короткий круг после дел",
     form: {
       title: "Прогулка 15 минут",
       description: "Выйти на короткий круг без цели пройти много",

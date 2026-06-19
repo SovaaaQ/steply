@@ -59,7 +59,7 @@ export function NextHabitCard({
       <h3>{habit.title}</h3>
       <p>
         {isDone
-          ? `Сегодня уже готово. ${formatNextScheduledOccurrence(nextOccurrence)}.`
+          ? `Сегодня уже готово, ${formatNextScheduledOccurrence(nextOccurrence)}`
           : habit.description || "Короткий шаг на сегодня"}
       </p>
 

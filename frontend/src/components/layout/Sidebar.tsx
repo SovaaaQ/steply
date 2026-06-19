@@ -50,7 +50,7 @@ export function Sidebar() {
         <div className="mini-progress">
           <span style={{ width: `${habitsForToday.length ? (completedToday / habitsForToday.length) * 100 : 0}%` }} />
         </div>
-          <small>Отметьте привычку, чтобы поддержать питомца</small>
+          <small>Отметьте привычку, чтобы питомец рос</small>
       </div>
     </aside>
   );

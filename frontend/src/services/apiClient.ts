@@ -148,13 +148,13 @@ function normalizeApiError(detail: unknown): string {
     return "Неверный email или пароль";
   }
   if (detail === "Too many authentication attempts. Try again later") {
-    return "Слишком много попыток входа. Попробуйте позже";
+    return "Слишком много попыток входа, попробуйте позже";
   }
   if (detail === "Habit not found") {
     return "Привычка не найдена";
   }
   if (detail === "Invalid authentication token" || detail === "User not found") {
-    return "Сессия истекла. Войдите в Steply снова";
+    return "Сессия истекла, войдите в Steply снова";
   }
   if (Array.isArray(detail)) {
     return normalizeValidationIssue(detail[0]) ?? "Проверьте заполнение полей";
@@ -195,7 +195,7 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
       headers
     });
   } catch {
-    throw new Error("Не удалось подключиться к серверу. Проверьте, что backend запущен");
+    throw new Error("Не удалось подключиться к серверу, проверьте, что backend запущен");
   }
 
   if (!response.ok) {

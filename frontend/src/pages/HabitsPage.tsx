@@ -82,7 +82,7 @@ export function HabitsPage() {
         <div>
           <span className="page-kicker">Привычки</span>
           <h2>Ваши привычки</h2>
-          <p>Отметьте привычку, чтобы поддержать питомца и сохранить темп дня</p>
+          <p>Отметьте привычку, чтобы питомец рос и темп дня сохранялся</p>
         </div>
         <Button
           className="habit-page-create"
@@ -125,7 +125,7 @@ export function HabitsPage() {
       {habitToDelete && (
         <ConfirmDialog
           title="Удалить привычку?"
-          description={`«${habitToDelete.title}» будет удалена вместе с историей выполнения.`}
+          description={`«${habitToDelete.title}» будет удалена вместе с историей выполнения`}
           confirmLabel="Удалить"
           tone="danger"
           onCancel={() => setHabitToDelete(null)}
@@ -183,7 +183,7 @@ export function HabitsPage() {
             ) : (
               <div className="pet-required-panel">
                 <PetSetup
-                  description="Сохраним питомца и сразу продолжим создание привычки в этой же форме"
+                  description="Сохраним питомца и вернёмся к созданию привычки в этой форме"
                   onSubmit={updatePet}
                   pet={gamification.pet}
                   submitLabel="Продолжить к привычке"

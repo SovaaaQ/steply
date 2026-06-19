@@ -31,7 +31,7 @@ export function PetMiniWidget({ pet, onOpen }: PetMiniWidgetProps) {
             : "Питомец не выбран"}
         </small>
       </span>
-      <em>{pet.is_configured ? petMiniPhrases[pet.pet_state] : "Выберите питомца для поддержки"}</em>
+      <em>{pet.is_configured ? petMiniPhrases[pet.pet_state] : "Выберите питомца для маршрута"}</em>
     </button>
   );
 }

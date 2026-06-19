@@ -48,7 +48,7 @@ export function OnboardingChecklist({
     {
       id: "completion",
       title: "Отметить первый шаг",
-      description: "После отметки появятся XP, серия и следующий лучший шаг",
+      description: "После отметки появятся XP, серия и следующий шаг",
       isDone: isGoalCompleted(goals, "onboarding_complete_first_step"),
       actionLabel: canMarkFirstStep ? "Отметить" : "Открыть план",
       pendingLabel: "Отмечаем",

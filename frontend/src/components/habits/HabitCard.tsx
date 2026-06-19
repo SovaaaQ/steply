@@ -319,7 +319,7 @@ export function HabitCard({
 
           <p className="risk-explanation">
             {isCompletedToday || isRecoveredToday
-              ? `Сегодня уже отмечено. ${formatNextScheduledOccurrence(nextOccurrence)}.`
+              ? `Сегодня уже отмечено, ${formatNextScheduledOccurrence(nextOccurrence)}`
               : riskLevel
                 ? riskDescriptions[riskLevel]
                 : "Пока рано считать"}

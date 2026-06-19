@@ -136,7 +136,7 @@ export function DashboardPage() {
                       <strong>{habit.title}</strong>
                       <span>
                         {entry?.status === "missed"
-                          ? "Этот день пропущен, можно вернуться мягко"
+                          ? "Этот день пропущен, вернитесь коротким шагом"
                           : isDone
                             ? "Отмечено сегодня"
                             : "Ждёт отметки"}

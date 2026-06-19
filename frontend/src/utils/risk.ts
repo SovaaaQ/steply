@@ -13,7 +13,7 @@ export const riskLabels: Record<RiskLevel, string> = {
 
 export const riskDescriptions: Record<RiskLevel, string> = {
   low: "Темп стабильный",
-  medium: "Нужна мягкая поддержка",
+  medium: "Есть риск сбиться",
   high: "Лучше выбрать минимальный шаг"
 };
 

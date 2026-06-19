@@ -17,7 +17,7 @@ def _set_recovery_metadata(entry: HabitEntry, habit: Habit) -> None:
     entry.meta = {
         **(entry.meta or {}),
         "recovery_task": getRecoveryTask(habit),
-        "support_message": "Минимальная версия засчитана. Ритм можно продолжать.",
+        "support_message": "Минимальная версия засчитана, ритм можно продолжать",
     }
 
 

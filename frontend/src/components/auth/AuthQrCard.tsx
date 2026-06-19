@@ -382,7 +382,7 @@ export function AuthQrCard({
   const resolvedDescription =
     description ??
     (isDemo
-      ? "Сканируйте, чтобы открыть Steply на телефоне и протестировать приложение самостоятельно."
+      ? "Сканируйте, чтобы открыть Steply на телефоне и проверить приложение"
       : "Сканируйте QR-код");
 
   useEffect(() => {
@@ -408,8 +408,8 @@ export function AuthQrCard({
           {resolvedEyebrow && <span className="auth-qr-eyebrow">{resolvedEyebrow}</span>}
           <strong>QR появится на публичном адресе</strong>
           <span>
-            На хостинге он возьмёт текущий домен сайта. Для локального показа задайте
-            <code>VITE_PUBLIC_APP_URL=http://IP:5173</code> в root <code>.env</code>.
+            На хостинге QR возьмёт текущий домен сайта, для локального показа задайте
+            <code>VITE_PUBLIC_APP_URL=http://IP:5173</code> в root <code>.env</code>
           </span>
         </div>
       </aside>

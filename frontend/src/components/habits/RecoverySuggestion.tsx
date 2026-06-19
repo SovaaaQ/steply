@@ -42,8 +42,8 @@ export function RecoverySuggestion({
         <strong>{isRecoveredToday ? "Минимальная версия готова" : getRecoveryTask(habit)}</strong>
         <p>
           {isRecoveredToday
-            ? "Мягкий шаг засчитан, можно продолжать без давления"
-            : `Риск пропуска ${percent(predictedRisk)}. Сделайте короткий вариант и получите +${recoveryXP} XP.`}
+            ? "Минимум засчитан, можно продолжать без перегруза"
+            : `Риск пропуска ${percent(predictedRisk)}, короткий вариант даст +${recoveryXP} XP`}
         </p>
       </div>
       {!isRecoveredToday && (

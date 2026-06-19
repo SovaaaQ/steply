@@ -47,6 +47,10 @@ _BAD_AI_PHRASES = (
     "места для вечера",
     "вечернее место",
     "уберите барьер",
+    "барьер снижен",
+    "следующий лучший шаг",
+    "спокойные подсказки",
+    "без давления",
 )
 _LEARNING_KEYWORDS = (
     "англий",
@@ -337,7 +341,7 @@ def _normalize_ai_payload(
     payload: dict[str, Any],
     context: dict[str, Any] | None = None,
 ) -> Optional[AIRecommendationDraft]:
-    title = _clip_text(str(payload.get("title") or ""), MAX_TITLE_CHARS)
+    title = _clip_text(str(payload.get("title") or ""), MAX_TITLE_CHARS).rstrip(" ,;:.!?")
     raw_message = _strip_outer_quotes(_clip_text(
         _clip_words(str(payload.get("message") or ""), MAX_MESSAGE_WORDS),
         MAX_MESSAGE_CHARS,
@@ -429,7 +433,7 @@ def _system_instructions() -> str:
         "сегодня: предложи только подготовить следующий повтор или оставить видимую подсказку. "
         "Если тип early_recovery, miss_streak_recovery, risk_recovery, soft_recovery, "
         "risk_ignored_recovery или reset_plan, не повторяй общие фразы про риск: предложи "
-        "снижение барьера, перенос времени, микрошаг или перезапуск условий. "
+        "упрощение старта, перенос времени, микрошаг или перезапуск условий. "
         "Для risk_recovery предотвращай пропуск до того, как он случился. "
         "Для early_recovery помоги закрыть первый разрыв, пока он не стал серией. "
         "Для miss_streak_recovery останови серию пропусков одним минимальным действием. "
@@ -443,7 +447,7 @@ def _system_instructions() -> str:
         "на случай нехватки сил или риска, в 'Готово' - понятный критерий завершения. "
         "Называй реальные предметы обычными словами: 'скакалка', 'кроссовки', 'книга', "
         "'документ'. Не используй слово 'снаряд', канцелярит и машинные фразы вроде "
-        "'место для вечера' или 'уберите барьер'. "
+        "'место для вечера', 'уберите барьер', 'без давления' или 'лучший шаг'. "
         "Если habit.topic_hint равен sport, не предлагай интенсивные действия сразу после еды. "
         "Если habit.topic_hint равен health, не меняй дозировки, назначения и лечение; "
         "совет должен быть про напоминание, подготовку среды или безопасный микрошаг. "

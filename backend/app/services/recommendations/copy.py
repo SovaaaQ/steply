@@ -448,6 +448,12 @@ def _repair_message_naturalness(value: str, habit: Habit | None = None) -> str:
     for pattern, replacement in _AWKWARD_CONTEXT_REPLACEMENTS:
         text = pattern.sub(replacement, text)
 
+    text = re.sub(r"\bследующ(?:ий|его)\s+лучший\s+шаг\b", "следующий шаг", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bспокойные\s+подсказки\b", "подсказки по риску", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bбез\s+давления\b", "без перегруза", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bбарьер\s+снижен\s+до\s+пропуска\b", "риск снижен до минимума", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bуберите\s+барьер\b", "сделайте старт проще", text, flags=re.IGNORECASE)
+
     equipment = _equipment_forms(habit, text)
     if equipment:
         nominative, accusative = equipment
@@ -535,7 +541,7 @@ def _normalize_recommendation_message(value: str, habit: Habit | None = None) ->
 
 
 def _normalize_recommendation(recommendation: Recommendation, habit: Habit | None = None) -> None:
-    recommendation.title = _clean_text(recommendation.title)
+    recommendation.title = _strip_terminal_punctuation(_clean_text(recommendation.title))
     recommendation.message = _normalize_recommendation_message(recommendation.message, habit)
 
 
@@ -628,7 +634,7 @@ def _build_recommendation_text(
                 "Удержать серию",
                 _action_plan_message(
                     (
-                        "закрепите сегодняшнюю отметку и подготовьте следующий повтор: "
+                        "закрепите сегодняшнюю отметку и подготовьте место к следующему повтору: "
                         f"{_setup_fragment(habit)}"
                     ),
                     "только оставьте одну видимую подсказку без нового подхода сегодня",
@@ -722,9 +728,9 @@ def _build_recommendation_text(
             RISK_RECOVERY_RECOMMENDATION_TYPE,
             "Снизить риск",
             _action_plan_message(
-                f"снизьте риск до пропуска: сделайте только легкий вход для «{habit.title}»: {recovery_task}",
+                f"сделайте шаг меньше до пропуска: {recovery_task}",
                 f"{minimum_action} до обычного времени или ближайшего свободного окна",
-                f"барьер снижен до пропуска, отмечен минимум; {completion_criteria}",
+                f"риск снижен, отмечен минимум; {completion_criteria}",
             ),
             "high",
         )

@@ -539,6 +539,28 @@ def test_ai_payload_rejects_completed_today_repeat_action() -> None:
     assert _normalize_ai_payload(payload, context) is None
 
 
+def test_ai_payload_strips_title_period() -> None:
+    context = {
+        "habit": {"title": "Диплом", "description": "Писать диплом"},
+        "risk": {"features": {"completed_today": False}},
+    }
+
+    draft = _normalize_ai_payload(
+        {
+            "title": "Короткий старт.",
+            "message": (
+                "Сегодня: Откройте документ и поправьте один абзац "
+                "Минимум: выделите место следующей правки "
+                "Готово: файл сохранен с одной правкой"
+            ),
+        },
+        context,
+    )
+
+    assert draft is not None
+    assert draft.title == "Короткий старт"
+
+
 def test_ai_payload_repairs_generic_equipment_word() -> None:
     context = {
         "habit": {"title": "Спорт", "description": "Прыгать со скакалкой"},

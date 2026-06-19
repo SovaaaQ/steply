@@ -303,7 +303,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setIsOnboardingOpen(
       Boolean(options?.isNewRegistration) || getOnboardingStatus(response.user.id) === "pending"
     );
-    showNotice("Вы в Steply", "Сегодня можно начать с ближайшей привычки");
+    showNotice("Вы в Steply", "Начните с ближайшей привычки");
     setActiveSection("dashboard");
   }, [setActiveSection, showNotice]);
 

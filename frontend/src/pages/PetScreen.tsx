@@ -84,17 +84,17 @@ export function PetScreen() {
           <div>
             <span className="page-kicker">Питомец</span>
             <h2>
-              Выберите спокойного <span className="marker-highlight">спутника</span>
+              Выберите <span className="marker-highlight">спутника</span>
             </h2>
             <p>
-              Питомец будет давать спокойную обратную связь: регулярность помогает
-              ему расти, а после пропусков появляются подсказки для возвращения
+              Питомец меняет состояние по отметкам: регулярность растит уровень,
+              а после пропусков появляется короткий шаг для возвращения
             </p>
           </div>
         </div>
         <Card className="pet-setup-card">
           <PetSetup
-            description="После выбора можно сразу создать первую привычку: XP, цели и подсказки начнут собираться автоматически"
+            description="После выбора можно сразу создать первую привычку: XP, цели и советы начнут считаться по отметкам"
             pet={pet}
             onSubmit={handlePetSubmit}
           />
@@ -109,11 +109,11 @@ export function PetScreen() {
         <div>
           <span className="page-kicker">Питомец</span>
           <h2>
-            Связь привычек и <span className="hand-underline">поддержки</span>
+            Связь привычек и <span className="hand-underline">прогресса</span>
           </h2>
           <p>
             Когда привычки идут регулярно, питомец набирает XP и растет в уровне,
-            а после пропусков Steply предложит мягкий шаг для возвращения
+            а после пропусков Steply предложит короткий шаг для возвращения
           </p>
         </div>
       </div>

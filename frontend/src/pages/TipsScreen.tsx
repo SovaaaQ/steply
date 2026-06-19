@@ -135,7 +135,7 @@ function getTodayFollowUpAdvice(habit?: Habit) {
 
   return [
     `Сегодня: привычка уже отмечена, подготовьте следующий старт: ${getPersonalSetupAction(habit)}`,
-    "Минимум: просто оставьте подсказку на видном месте без второго подхода сегодня",
+    "Минимум: оставьте подсказку на видном месте без второго подхода сегодня",
     `Готово: сегодняшний результат сохранен, следующий повтор ${nextOccurrence}`
   ].join(" ");
 }
@@ -488,9 +488,9 @@ function getPersonalActionPlan(habit?: Habit, recommendationType = "default") {
       ].join(" ");
     case "risk_recovery":
       return [
-        `Сегодня: снизьте риск до пропуска: ${minimum}`,
+        `Сегодня: сделайте шаг меньше до пропуска: ${minimum}`,
         `Минимум: сделайте это до обычного времени или ближайшего свободного окна`,
-        `Готово: барьер снижен до пропуска, минимум отмечен`
+        `Готово: риск снижен, минимум отмечен`
       ].join(" ");
     case "soft_recovery":
     case "reduce_difficulty":
@@ -649,7 +649,7 @@ function getRecommendationAdvice(recommendation: Recommendation, habit?: Habit) 
     case "after_completion":
       return "Закрепите выполнение и подготовьте следующий повтор";
     case "on_track_support":
-      return "Уберите один барьер, чтобы следующий повтор прошел так же спокойно";
+      return "Сделайте следующий повтор проще и оставьте понятный старт";
     case "streak_maintenance":
     case "streak_support":
       return "Сохраните текущий темп без резкого усложнения";
@@ -864,7 +864,7 @@ export function TipsScreen() {
         <div>
           <span className="page-kicker">Советы</span>
           <h2>Рекомендации на сегодня</h2>
-          <p>Сначала конкретный следующий шаг, затем контекст по рискам и истории</p>
+          <p>Сначала ближайшее действие, затем причины и запасные варианты</p>
         </div>
         <Button
           className="tips-refresh-button"
@@ -881,7 +881,7 @@ export function TipsScreen() {
       {activeHabits.length === 0 ? (
         <section className="tips-section-panel">
           <TipsEmptyState>
-            Создайте первую привычку, и здесь появятся советы по риску и возвращению
+            Создайте первую привычку, здесь появятся советы по риску и возвращению
           </TipsEmptyState>
         </section>
       ) : (
@@ -908,7 +908,7 @@ export function TipsScreen() {
                 />
               ) : (
                 <TipsEmptyState>
-                  Обновите советы после нескольких отметок, и здесь появится следующий шаг
+                  Обновите советы после нескольких отметок, здесь появится следующий шаг
                 </TipsEmptyState>
               )}
             </section>
@@ -916,7 +916,7 @@ export function TipsScreen() {
             <aside className="tips-insight-panel" aria-label="Контекст по привычкам">
               <div className="tips-section-heading">
                 <h2>Контекст</h2>
-                <p>Риски и точность советов без перегруза</p>
+                <p>Риски, история и точность советов</p>
               </div>
               <div className="tips-stat-grid">
                 <div>
@@ -952,7 +952,7 @@ export function TipsScreen() {
                   ))
                 ) : (
                   <TipsEmptyState>
-                    Критичных рисков нет, истории достаточно для обычных советов
+                    Критичных рисков нет, истории хватает для обычных советов
                   </TipsEmptyState>
                 )}
               </div>
@@ -981,7 +981,7 @@ export function TipsScreen() {
                 ))
               ) : (
                 <TipsEmptyState>
-                  Пока достаточно одного главного совета. Новые появятся после отметок
+                  Пока достаточно одного главного совета, новые появятся после отметок
                 </TipsEmptyState>
               )}
             </div>

@@ -89,7 +89,7 @@ export function ProfilePage() {
           <div className="settings-list">
             <span>Аккаунт активен</span>
             <span>Советы обновляются по истории привычек</span>
-            <span>Мягкий режим включается автоматически</span>
+            <span>Режим минимума включается по риску</span>
           </div>
           <Button type="button" variant="ghost" onClick={logout}>
             Выйти из аккаунта

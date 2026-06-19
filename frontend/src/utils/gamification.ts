@@ -70,7 +70,7 @@ export const petTypeLabels: Record<PetType, string> = {
 
 export const petTypeDescriptions: Record<PetType, string> = {
   dog: "бодрый напарник",
-  cat: "спокойный спутник",
+  cat: "тихий спутник",
   parrot: "яркий товарищ",
   hamster: "тихий хранитель ритма"
 };
@@ -89,7 +89,7 @@ export const petStateShortLabels: Record<PetState, string> = {
 
 export const petMiniPhrases: Record<PetState, string> = {
   happy: "Так держать, питомец доволен",
-  neutral: "Отметьте привычку, чтобы поддержать питомца",
+  neutral: "Отметьте привычку, чтобы питомец рос",
   sad: "Можно вернуться одним коротким шагом"
 };
 
