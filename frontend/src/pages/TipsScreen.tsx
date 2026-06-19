@@ -122,12 +122,22 @@ function dedupeRecommendations(recommendations: Recommendation[]) {
 
 function getTodayFollowUpAdvice(habit?: Habit) {
   if (!habit) {
-    return "Сегодня уже отмечено, следующий совет появится после новых отметок";
+    return [
+      "Сегодня: привычка уже отмечена, новых действий на сегодня не нужно",
+      "Минимум: оставьте одну заметку или подсказку для следующего повтора",
+      "Готово: сегодняшний результат сохранен, следующий старт понятен"
+    ].join(" ");
   }
 
-  return `Сегодня уже учтено, ${formatNextScheduledOccurrence(
+  const nextOccurrence = formatNextScheduledOccurrence(
     getNextScheduledOccurrence(habit, new Date(), 1)
-  )}`;
+  );
+
+  return [
+    `Сегодня: привычка уже отмечена, подготовьте следующий старт: ${getPersonalSetupAction(habit)}`,
+    "Минимум: просто оставьте подсказку на видном месте без второго подхода сегодня",
+    `Готово: сегодняшний результат сохранен, следующий повтор ${nextOccurrence}`
+  ].join(" ");
 }
 
 function TipsEmptyState({ children }: { children: string }) {
@@ -142,7 +152,16 @@ function getHabitTitle(habit?: Habit) {
   return habit?.title ?? "Общий совет";
 }
 
-type HabitTopic = "language" | "study" | "code" | "reading" | "smoking" | "sport" | "general";
+type HabitTopic =
+  | "language"
+  | "study"
+  | "code"
+  | "reading"
+  | "smoking"
+  | "sport"
+  | "health"
+  | "leisure"
+  | "general";
 
 function getHabitContextText(habit?: Habit) {
   return `${habit?.title ?? ""} ${habit?.description ?? ""}`.toLowerCase();
@@ -153,7 +172,7 @@ function getHabitTopic(habit?: Habit): HabitTopic {
   if (/(англий|english|слова|язык)/.test(context)) {
     return "language";
   }
-  if (/(диплом|курсов|учеб|проект)/.test(context)) {
+  if (/(диплом|курсов|учеб|проект|курс|урок|лекц|конспект|матем)/.test(context)) {
     return "study";
   }
   if (/(python|пайтон|код|программ)/.test(context)) {
@@ -165,14 +184,60 @@ function getHabitTopic(habit?: Habit): HabitTopic {
   if (/(курен|сигар|никотин)/.test(context)) {
     return "smoking";
   }
-  if (/(спорт|трен|заряд)/.test(context)) {
+  if (/(спорт|трен|заряд|скакал|прыж|пробеж|гантел|йог)/.test(context)) {
     return "sport";
+  }
+  if (/(здоров|сон|спать|засып|вод|лекар|таблет|витамин|питани|завтрак|давлен|самочув|медитац|дыхани)/.test(context)) {
+    return "health";
+  }
+  if (/(отдых|игр|хобби|музык|гитар|рисова|рисун|творч|фильм|сериал|танц|прогул)/.test(context)) {
+    return "leisure";
   }
   return "general";
 }
 
 function getPreferredTimeHint(habit?: Habit) {
   return habit?.preferred_time ? ` в ${habit.preferred_time.slice(0, 5)}` : "";
+}
+
+function getHealthFocus(habit?: Habit) {
+  const context = getHabitContextText(habit);
+  if (/(сон|спать|засып)/.test(context)) {
+    return "sleep";
+  }
+  if (/вод/.test(context)) {
+    return "water";
+  }
+  if (/(лекар|таблет|витамин)/.test(context)) {
+    return "medicine";
+  }
+  if (/(питани|завтрак|обед|ужин)/.test(context)) {
+    return "nutrition";
+  }
+  if (/(медитац|дыхани)/.test(context)) {
+    return "calm";
+  }
+  return "general";
+}
+
+function getLeisureFocus(habit?: Habit) {
+  const context = getHabitContextText(habit);
+  if (/(рисова|рисун|творч)/.test(context)) {
+    return "drawing";
+  }
+  if (/(музык|гитар)/.test(context)) {
+    return "music";
+  }
+  if (/(фильм|сериал)/.test(context)) {
+    return "watching";
+  }
+  if (/(прогул|танц)/.test(context)) {
+    return "movement";
+  }
+  if (/игр/.test(context)) {
+    return "game";
+  }
+  return "general";
 }
 
 function getPersonalPrimaryAction(habit?: Habit) {
@@ -191,6 +256,44 @@ function getPersonalPrimaryAction(habit?: Habit) {
       return "сделайте короткую разминку и завершите на первом легком повторе";
     case "smoking":
       return "отложите первую сигарету, выпейте воды и отметьте момент тяги";
+    case "health": {
+      const focus = getHealthFocus(habit);
+      if (focus === "sleep") {
+        return "подготовьте сон: уберите экран и сделайте комнату чуть спокойнее";
+      }
+      if (focus === "water") {
+        return "налейте стакан воды, выпейте комфортный объем и отметьте привычку";
+      }
+      if (focus === "medicine") {
+        return "сверьтесь со своим напоминанием или назначением и отметьте факт выполнения";
+      }
+      if (focus === "nutrition") {
+        return "подготовьте простой прием пищи без усложнения и отметьте результат";
+      }
+      if (focus === "calm") {
+        return "сделайте одну спокойную минуту дыхания и отметьте паузу";
+      }
+      return "выполните небольшой безопасный шаг для самочувствия и отметьте его";
+    }
+    case "leisure": {
+      const focus = getLeisureFocus(habit);
+      if (focus === "drawing") {
+        return "откройте материалы и сделайте один быстрый набросок без оценки";
+      }
+      if (focus === "music") {
+        return "возьмите инструмент или включите трек и уделите этому одну короткую минуту";
+      }
+      if (focus === "watching") {
+        return "выберите короткий фрагмент для отдыха и остановитесь после него";
+      }
+      if (focus === "movement") {
+        return "выйдите на короткую прогулку или подвигайтесь под один трек";
+      }
+      if (focus === "game") {
+        return "сыграйте один короткий раунд и заранее выберите точку остановки";
+      }
+      return "начните приятное занятие с короткого слота без требования результата";
+    }
     default:
       return `сделайте один короткий шаг для «${title}»`;
   }
@@ -215,6 +318,44 @@ function getPersonalMinimumAction(habit?: Habit) {
       return "две минуты разминки без полной тренировки";
     case "smoking":
       return "пауза без спора с собой: вода, дыхание и запись триггера";
+    case "health": {
+      const focus = getHealthFocus(habit);
+      if (focus === "sleep") {
+        return "только уберите экран и приглушите свет";
+      }
+      if (focus === "water") {
+        return "только поставьте стакан воды рядом";
+      }
+      if (focus === "medicine") {
+        return "только откройте напоминание и проверьте назначение";
+      }
+      if (focus === "nutrition") {
+        return "только подготовьте один простой продукт или тарелку";
+      }
+      if (focus === "calm") {
+        return "только один спокойный вдох и выдох";
+      }
+      return "один безопасный микрошаг без попытки резко менять режим";
+    }
+    case "leisure": {
+      const focus = getLeisureFocus(habit);
+      if (focus === "drawing") {
+        return "только откройте материалы и проведите одну линию";
+      }
+      if (focus === "music") {
+        return "только возьмите инструмент или включите один фрагмент";
+      }
+      if (focus === "watching") {
+        return "только выберите короткий фрагмент без автопродолжения";
+      }
+      if (focus === "movement") {
+        return "только выйдите на несколько минут или включите один трек";
+      }
+      if (focus === "game") {
+        return "только один короткий раунд без продления";
+      }
+      return "пять минут приятного занятия без цели закончить";
+    }
     default:
       return "один видимый шаг без полной версии привычки";
   }
@@ -234,8 +375,84 @@ function getPersonalDoneCriteria(habit?: Habit) {
       return "разминка сделана и отмечена";
     case "smoking":
       return "пауза отмечена и триггер записан; при сильной тяге стоит обратиться к специалисту";
+    case "health": {
+      const focus = getHealthFocus(habit);
+      if (focus === "medicine") {
+        return "назначение проверено, факт выполнения отмечен; дозировки не менялись";
+      }
+      if (focus === "sleep") {
+        return "условия для сна подготовлены и шаг отмечен";
+      }
+      if (focus === "water") {
+        return "вода подготовлена или выпита в комфортном объеме, отметка добавлена";
+      }
+      return "безопасный шаг для самочувствия сделан и отмечен";
+    }
+    case "leisure":
+      return "короткий отдых начат, точка остановки понятна и шаг отмечен";
     default:
       return `шаг для «${getHabitTitle(habit)}» отмечен в приложении`;
+  }
+}
+
+function getPersonalSetupAction(habit?: Habit) {
+  const context = getHabitContextText(habit);
+  switch (getHabitTopic(habit)) {
+    case "language":
+      return "оставьте список слов открытым на первом экране или закладке";
+    case "study":
+      return "откройте документ на нужном месте и оставьте пометку для следующей правки";
+    case "code":
+      return "откройте проект и оставьте рядом одну понятную задачу для следующего запуска";
+    case "reading":
+      return "положите книгу с закладкой на видное место";
+    case "sport":
+      if (/скакал/.test(context)) {
+        return "положите скакалку на видное место для следующей короткой разминки";
+      }
+      if (/кроссов/.test(context)) {
+        return "поставьте кроссовки на видное место для следующего выхода";
+      }
+      if (/коврик/.test(context)) {
+        return "положите коврик на видное место для следующей короткой разминки";
+      }
+      return "подготовьте одежду или инвентарь для следующей короткой разминки";
+    case "smoking":
+      return "запишите триггер и подготовьте воду для следующей паузы";
+    case "health": {
+      const focus = getHealthFocus(habit);
+      if (focus === "sleep") {
+        return "оставьте телефон вне кровати и подготовьте спокойный свет";
+      }
+      if (focus === "water") {
+        return "поставьте стакан или бутылку воды на видное место";
+      }
+      if (focus === "medicine") {
+        return "проверьте напоминание и оставьте его на привычном месте";
+      }
+      if (focus === "nutrition") {
+        return "оставьте простую заготовку или список продуктов на видном месте";
+      }
+      return "оставьте безопасную подсказку для следующего шага самочувствия";
+    }
+    case "leisure": {
+      const focus = getLeisureFocus(habit);
+      if (focus === "drawing") {
+        return "положите материалы на видное место для короткого наброска";
+      }
+      if (focus === "music") {
+        return "оставьте инструмент или плейлист готовым к короткому старту";
+      }
+      if (focus === "watching") {
+        return "выберите короткий фрагмент заранее и отключите автопродолжение";
+      }
+      if (focus === "game") {
+        return "выберите один короткий режим и точку остановки заранее";
+      }
+      return "подготовьте приятное занятие так, чтобы начать без долгого выбора";
+    }
+    default:
+      return "оставьте видимую подсказку для следующего короткого шага";
   }
 }
 
@@ -594,9 +811,9 @@ export function TipsScreen() {
         habit,
         habitTitle: getHabitTitle(habit),
         advice: normalizeAdviceText(
-          recommendation.message || (isDone
+          isDone
             ? getTodayFollowUpAdvice(habit)
-            : getRecommendationAdvice(recommendation, habit))
+            : recommendation.message || getRecommendationAdvice(recommendation, habit)
         ),
         reason: getRecommendationReason(recommendation, stats, prediction, isDone),
         ctaLabel: action.ctaLabel,

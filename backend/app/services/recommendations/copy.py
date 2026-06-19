@@ -29,6 +29,65 @@ _LIST_TAIL_PATTERN = re.compile(r"\b(?:Шаги|Действия)\s*:", re.IGNOR
 _NUMBERED_TAIL_PATTERN = re.compile(r"(?:^|\s)\d+[.)]\s+.*$", re.DOTALL)
 _LONG_DASH_PATTERN = re.compile(r"[—–−]+")
 _WHITESPACE_PATTERN = re.compile(r"\s+")
+_AWKWARD_CONTEXT_REPLACEMENTS = (
+    (
+        re.compile(r"\bрядом с местом для вечера\b", re.IGNORECASE),
+        "на видное место на вечер",
+    ),
+    (re.compile(r"\bместо для вечера\b", re.IGNORECASE), "видное место на вечер"),
+    (re.compile(r"\bместом для вечера\b", re.IGNORECASE), "видным местом на вечер"),
+)
+
+_EQUIPMENT_BY_KEYWORD = (
+    ("скакал", "скакалка", "скакалку"),
+    ("кроссов", "кроссовки", "кроссовки"),
+    ("коврик", "коврик", "коврик"),
+    ("гантел", "гантели", "гантели"),
+    ("резинк", "резинка", "резинку"),
+    ("бутыл", "бутылка воды", "бутылку воды"),
+)
+
+_LEARNING_KEYWORDS = (
+    "диплом",
+    "курсов",
+    "учеб",
+    "проект",
+    "курс",
+    "урок",
+    "лекц",
+    "конспект",
+    "матем",
+)
+_HEALTH_KEYWORDS = (
+    "здоров",
+    "сон",
+    "спать",
+    "засып",
+    "вод",
+    "лекар",
+    "таблет",
+    "витамин",
+    "питани",
+    "завтрак",
+    "давлен",
+    "самочув",
+    "медитац",
+    "дыхани",
+)
+_LEISURE_KEYWORDS = (
+    "отдых",
+    "игр",
+    "хобби",
+    "музык",
+    "гитар",
+    "рисова",
+    "рисун",
+    "творч",
+    "фильм",
+    "сериал",
+    "танц",
+    "прогул",
+)
 
 
 def _clean_text(value: str) -> str:
@@ -78,11 +137,27 @@ def _habit_context_text(habit: Habit) -> str:
     return f"{_habit_text_field(habit, 'title')} {_habit_text_field(habit, 'description')}".lower()
 
 
+def _equipment_forms(habit: Habit | None = None, text: str = "") -> tuple[str, str] | None:
+    context = text.lower()
+    if habit is not None:
+        context = f"{_habit_context_text(habit)} {context}"
+
+    for keyword, nominative, accusative in _EQUIPMENT_BY_KEYWORD:
+        if keyword in context:
+            return nominative, accusative
+
+    return None
+
+
+def _has_any_keyword(context: str, keywords: tuple[str, ...]) -> bool:
+    return any(keyword in context for keyword in keywords)
+
+
 def _habit_topic(habit: Habit) -> str:
     context = _habit_context_text(habit)
     if any(keyword in context for keyword in ("англий", "english", "слова", "язык")):
         return "language"
-    if any(keyword in context for keyword in ("диплом", "курсов", "учеб", "проект")):
+    if _has_any_keyword(context, _LEARNING_KEYWORDS):
         return "study"
     if any(keyword in context for keyword in ("python", "пайтон", "код", "программ")):
         return "code"
@@ -90,8 +165,45 @@ def _habit_topic(habit: Habit) -> str:
         return "reading"
     if any(keyword in context for keyword in ("курен", "сигар", "никотин")):
         return "smoking"
-    if any(keyword in context for keyword in ("спорт", "трен", "заряд")):
+    if any(
+        keyword in context
+        for keyword in ("спорт", "трен", "заряд", "скакал", "прыж", "пробеж", "гантел", "йог")
+    ):
         return "sport"
+    if _has_any_keyword(context, _HEALTH_KEYWORDS):
+        return "health"
+    if _has_any_keyword(context, _LEISURE_KEYWORDS):
+        return "leisure"
+    return "general"
+
+
+def _health_focus(habit: Habit) -> str:
+    context = _habit_context_text(habit)
+    if any(keyword in context for keyword in ("сон", "спать", "засып")):
+        return "sleep"
+    if "вод" in context:
+        return "water"
+    if any(keyword in context for keyword in ("лекар", "таблет", "витамин")):
+        return "medicine"
+    if any(keyword in context for keyword in ("питани", "завтрак", "обед", "ужин")):
+        return "nutrition"
+    if any(keyword in context for keyword in ("медитац", "дыхани")):
+        return "calm"
+    return "general"
+
+
+def _leisure_focus(habit: Habit) -> str:
+    context = _habit_context_text(habit)
+    if any(keyword in context for keyword in ("рисова", "рисун", "творч")):
+        return "drawing"
+    if any(keyword in context for keyword in ("музык", "гитар")):
+        return "music"
+    if any(keyword in context for keyword in ("фильм", "сериал")):
+        return "watching"
+    if any(keyword in context for keyword in ("прогул", "танц")):
+        return "movement"
+    if "игр" in context:
+        return "game"
     return "general"
 
 
@@ -132,6 +244,32 @@ def _recovery_task_fragment(habit: Habit) -> str:
             return "сделайте две минуты разминки без полной тренировки"
         if topic == "smoking":
             return "отложите первую сигарету и запишите, что именно запустило желание"
+        if topic == "health":
+            focus = _health_focus(habit)
+            if focus == "sleep":
+                return "уберите экран и подготовьте место для сна на несколько минут"
+            if focus == "water":
+                return "налейте стакан воды и поставьте его рядом"
+            if focus == "medicine":
+                return "сверьтесь со своим напоминанием или назначением без изменения дозировки"
+            if focus == "nutrition":
+                return "подготовьте один простой прием пищи или полезную заготовку"
+            if focus == "calm":
+                return "сделайте одну спокойную минуту дыхания без оценки результата"
+            return "сделайте один безопасный шаг для самочувствия без резкой нагрузки"
+        if topic == "leisure":
+            focus = _leisure_focus(habit)
+            if focus == "drawing":
+                return "откройте материалы и сделайте один быстрый набросок"
+            if focus == "music":
+                return "возьмите инструмент или откройте трек и начните с одной минуты"
+            if focus == "watching":
+                return "выберите один короткий эпизод или фрагмент без автопродолжения"
+            if focus == "movement":
+                return "выйдите на короткую прогулку или включите один трек для движения"
+            if focus == "game":
+                return "запустите один короткий раунд с заранее понятной остановкой"
+            return "выделите короткий приятный слот без цели сделать идеально"
         return "сделайте самый маленький видимый шаг"
     return _lower_first(getRecoveryTask(habit).strip().rstrip(" ."))
 
@@ -152,6 +290,32 @@ def _primary_action_fragment(habit: Habit) -> str:
         return "сделайте короткую разминку и завершите на первом легком повторе"
     if topic == "smoking":
         return "отложите первую сигарету, выпейте воды и отметьте момент тяги"
+    if topic == "health":
+        focus = _health_focus(habit)
+        if focus == "sleep":
+            return "подготовьте сон: уберите экран и сделайте комнату чуть спокойнее"
+        if focus == "water":
+            return "налейте стакан воды, выпейте комфортный объем и отметьте привычку"
+        if focus == "medicine":
+            return "сверьтесь со своим напоминанием или назначением и отметьте факт выполнения"
+        if focus == "nutrition":
+            return "подготовьте простой прием пищи без усложнения и отметьте результат"
+        if focus == "calm":
+            return "сделайте одну спокойную минуту дыхания и отметьте паузу"
+        return "выполните небольшой безопасный шаг для самочувствия и отметьте его"
+    if topic == "leisure":
+        focus = _leisure_focus(habit)
+        if focus == "drawing":
+            return "откройте материалы и сделайте один быстрый набросок без оценки"
+        if focus == "music":
+            return "возьмите инструмент или включите трек и уделите этому одну короткую минуту"
+        if focus == "watching":
+            return "выберите короткий фрагмент для отдыха и остановитесь после него"
+        if focus == "movement":
+            return "выйдите на короткую прогулку или подвигайтесь под один трек"
+        if focus == "game":
+            return "сыграйте один короткий раунд и заранее выберите точку остановки"
+        return "начните приятное занятие с короткого слота без требования результата"
     return f"сделайте один короткий шаг для {title}"
 
 
@@ -172,6 +336,32 @@ def _minimum_action_fragment(habit: Habit) -> str:
         return "две минуты разминки без полной тренировки"
     if topic == "smoking":
         return "пауза без спора с собой: вода, дыхание и запись триггера"
+    if topic == "health":
+        focus = _health_focus(habit)
+        if focus == "sleep":
+            return "только уберите экран и приглушите свет"
+        if focus == "water":
+            return "только поставьте стакан воды рядом"
+        if focus == "medicine":
+            return "только откройте напоминание и проверьте назначение"
+        if focus == "nutrition":
+            return "только подготовьте один простой продукт или тарелку"
+        if focus == "calm":
+            return "только один спокойный вдох и выдох"
+        return "один безопасный микрошаг без попытки резко менять режим"
+    if topic == "leisure":
+        focus = _leisure_focus(habit)
+        if focus == "drawing":
+            return "только откройте материалы и проведите одну линию"
+        if focus == "music":
+            return "только возьмите инструмент или включите один фрагмент"
+        if focus == "watching":
+            return "только выберите короткий фрагмент без автопродолжения"
+        if focus == "movement":
+            return "только выйдите на несколько минут или включите один трек"
+        if focus == "game":
+            return "только один короткий раунд без продления"
+        return "пять минут приятного занятия без цели закончить"
     return "один видимый шаг без полной версии привычки"
 
 
@@ -193,7 +383,87 @@ def _completion_criteria_fragment(habit: Habit) -> str:
             "пауза отмечена и триггер записан; при сильной тяге стоит обратиться "
             "к специалисту"
         )
+    if topic == "health":
+        focus = _health_focus(habit)
+        if focus == "medicine":
+            return "назначение проверено, факт выполнения отмечен; дозировки не менялись"
+        if focus == "sleep":
+            return "условия для сна подготовлены и шаг отмечен"
+        if focus == "water":
+            return "вода подготовлена или выпита в комфортном объеме, отметка добавлена"
+        return "безопасный шаг для самочувствия сделан и отмечен"
+    if topic == "leisure":
+        return "короткий отдых начат, точка остановки понятна и шаг отмечен"
     return f"шаг для {title} отмечен в приложении"
+
+
+def _setup_fragment(habit: Habit) -> str:
+    topic = _habit_topic(habit)
+    equipment = _equipment_forms(habit)
+
+    if topic == "language":
+        return "оставьте список слов открытым на первом экране или закладке"
+    if topic == "study":
+        return "откройте документ на нужном месте и оставьте пометку для следующей правки"
+    if topic == "code":
+        return "откройте проект и оставьте рядом одну понятную задачу для следующего запуска"
+    if topic == "reading":
+        return "положите книгу с закладкой на видное место"
+    if topic == "sport":
+        if equipment:
+            nominative, accusative = equipment
+            if nominative == "кроссовки":
+                return "поставьте кроссовки на видное место для следующего выхода"
+            return f"положите {accusative} на видное место для следующей короткой разминки"
+        return "подготовьте одежду или инвентарь для следующей короткой разминки"
+    if topic == "smoking":
+        return "запишите триггер и подготовьте воду для следующей паузы"
+    if topic == "health":
+        focus = _health_focus(habit)
+        if focus == "sleep":
+            return "оставьте телефон вне кровати и подготовьте спокойный свет"
+        if focus == "water":
+            return "поставьте стакан или бутылку воды на видное место"
+        if focus == "medicine":
+            return "проверьте напоминание и оставьте его на привычном месте"
+        if focus == "nutrition":
+            return "оставьте простую заготовку или список продуктов на видном месте"
+        return "оставьте безопасную подсказку для следующего шага самочувствия"
+    if topic == "leisure":
+        focus = _leisure_focus(habit)
+        if focus == "drawing":
+            return "положите материалы на видное место для короткого наброска"
+        if focus == "music":
+            return "оставьте инструмент или плейлист готовым к короткому старту"
+        if focus == "watching":
+            return "выберите короткий фрагмент заранее и отключите автопродолжение"
+        if focus == "game":
+            return "выберите один короткий режим и точку остановки заранее"
+        return "подготовьте приятное занятие так, чтобы начать без долгого выбора"
+    return "оставьте видимую подсказку для следующего короткого шага"
+
+
+def _repair_message_naturalness(value: str, habit: Habit | None = None) -> str:
+    text = value
+    for pattern, replacement in _AWKWARD_CONTEXT_REPLACEMENTS:
+        text = pattern.sub(replacement, text)
+
+    equipment = _equipment_forms(habit, text)
+    if equipment:
+        nominative, accusative = equipment
+        text = re.sub(
+            r"\bСнаряд(?=\s+лежит\b)",
+            nominative.capitalize(),
+            text,
+        )
+        text = re.sub(r"\bснаряд(?=\s+лежит\b)", nominative, text)
+        text = re.sub(r"\bСнаряд\b", accusative.capitalize(), text)
+        text = re.sub(r"\bснаряд\b", accusative, text)
+    else:
+        text = re.sub(r"\bСнаряд\b", "Инвентарь", text)
+        text = re.sub(r"\bснаряд\b", "инвентарь", text)
+
+    return text
 
 
 def _strip_terminal_punctuation(value: str) -> str:
@@ -250,10 +520,12 @@ def _strip_outer_quotes(value: str) -> str:
     return text
 
 
-def _normalize_recommendation_message(value: str) -> str:
-    text = _strip_outer_quotes(_clean_text(_strip_list_tail(value)))
+def _normalize_recommendation_message(value: str, habit: Habit | None = None) -> str:
+    text = _strip_outer_quotes(
+        _clean_text(_repair_message_naturalness(_strip_list_tail(value), habit))
+    )
     if not text:
-        text = _strip_outer_quotes(_clean_text(value))
+        text = _strip_outer_quotes(_clean_text(_repair_message_naturalness(value, habit)))
 
     words = text.split()
     if len(words) > MAX_RECOMMENDATION_MESSAGE_WORDS:
@@ -262,9 +534,9 @@ def _normalize_recommendation_message(value: str) -> str:
     return _strip_terminal_punctuation(text)
 
 
-def _normalize_recommendation(recommendation: Recommendation) -> None:
+def _normalize_recommendation(recommendation: Recommendation, habit: Habit | None = None) -> None:
     recommendation.title = _clean_text(recommendation.title)
-    recommendation.message = _normalize_recommendation_message(recommendation.message)
+    recommendation.message = _normalize_recommendation_message(recommendation.message, habit)
 
 
 def _has_configured_pet(user: User) -> bool:
@@ -356,10 +628,10 @@ def _build_recommendation_text(
                 "Удержать серию",
                 _action_plan_message(
                     (
-                        "подготовьте самый простой вход к следующему повтору: "
-                        f"{primary_action}"
+                        "закрепите сегодняшнюю отметку и подготовьте следующий повтор: "
+                        f"{_setup_fragment(habit)}"
                     ),
-                    minimum_action,
+                    "только оставьте одну видимую подсказку без нового подхода сегодня",
                     f"следующий старт понятен заранее, {series_text}",
                 ),
                 "low",
@@ -370,9 +642,9 @@ def _build_recommendation_text(
                 AFTER_COMPLETION_RECOMMENDATION_TYPE,
                 "После отметки",
                 _action_plan_message(
-                    f"оставьте видимую подсказку для следующего выполнения: {primary_action}",
-                    "не повышайте нагрузку, пока привычка не повторится несколько раз",
-                    f"подсказка лежит там, где начнется следующий повтор; {completion_criteria}",
+                    f"оставьте видимую подсказку для следующего выполнения: {_setup_fragment(habit)}",
+                    "не делайте второй подход сегодня, пока привычка только закрепляется",
+                    "сегодняшняя отметка уже засчитана, следующий старт подготовлен",
                 ),
                 "normal",
             )
@@ -382,10 +654,10 @@ def _build_recommendation_text(
             "Идет по плану",
             _action_plan_message(
                 (
-                    "подготовьте первый предмет, файл или место старта для следующего "
-                    f"выполнения: {primary_action}"
+                    "подготовьте первый понятный шаг для следующего выполнения: "
+                    f"{_setup_fragment(habit)}"
                 ),
-                minimum_action,
+                "только оставьте подсказку на видном месте без новой нагрузки сегодня",
                 "следующий повтор можно начать без долгой подготовки",
             ),
             "low",

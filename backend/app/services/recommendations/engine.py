@@ -66,7 +66,7 @@ def _select_current_recommendations(
 
     selected = sorted(latest_by_key.values(), key=_recommendation_display_key)
     for recommendation in selected:
-        _normalize_recommendation(recommendation)
+        _normalize_recommendation(recommendation, getattr(recommendation, "habit", None))
     return selected
 
 
@@ -153,7 +153,7 @@ def _upsert_recommendation(
         active_habit_count,
         previous_type=existing.type if existing else None,
     )
-    message = _normalize_recommendation_message(message)
+    message = _normalize_recommendation_message(message, habit)
     ai_source = "not_requested"
 
     should_use_ai = force_ai or (
@@ -183,7 +183,7 @@ def _upsert_recommendation(
         )
         if ai_draft:
             title = ai_draft.title
-            message = _normalize_recommendation_message(ai_draft.message)
+            message = _normalize_recommendation_message(ai_draft.message, habit)
             ai_source = "bothub"
 
     if existing:

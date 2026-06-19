@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import socket
 import urllib.error
 import urllib.request
@@ -25,6 +26,101 @@ class AIRecommendationDraft:
 MAX_TITLE_CHARS = 70
 MAX_MESSAGE_CHARS = 520
 MAX_MESSAGE_WORDS = 56
+
+_ACTION_PLAN_LABEL_PATTERN = re.compile(
+    r"(?:^|\s)(Сегодня|Минимум|Готово)\s*:\s*",
+    re.IGNORECASE,
+)
+_ACTIVE_TODAY_VERBS_PATTERN = re.compile(
+    r"\b(?:сделайте|выполните|прыг\w*|прыж\w*|напишите|прочитайте|повторите|"
+    r"запустите|позанимайтесь|потренируйтесь)\b",
+    re.IGNORECASE,
+)
+_FOLLOW_UP_WORD_PATTERN = re.compile(
+    r"\b(?:следующ\w*|завтра|подготов\w*|остав\w*|полож\w*|постав\w*|"
+    r"заплан\w*|закреп\w*)\b",
+    re.IGNORECASE,
+)
+_BAD_AI_PHRASES = (
+    "место для вечера",
+    "местом для вечера",
+    "места для вечера",
+    "вечернее место",
+    "уберите барьер",
+)
+_LEARNING_KEYWORDS = (
+    "англий",
+    "english",
+    "слова",
+    "язык",
+    "диплом",
+    "курсов",
+    "учеб",
+    "проект",
+    "курс",
+    "урок",
+    "лекц",
+    "конспект",
+    "python",
+    "пайтон",
+    "код",
+    "программ",
+    "чтен",
+    "книг",
+)
+_SPORT_KEYWORDS = ("спорт", "трен", "заряд", "скакал", "прыж", "пробеж", "гантел", "йог")
+_HEALTH_KEYWORDS = (
+    "здоров",
+    "сон",
+    "спать",
+    "засып",
+    "вод",
+    "лекар",
+    "таблет",
+    "витамин",
+    "питани",
+    "завтрак",
+    "давлен",
+    "самочув",
+    "медитац",
+    "дыхани",
+    "курен",
+    "сигар",
+    "никотин",
+)
+_LEISURE_KEYWORDS = (
+    "отдых",
+    "игр",
+    "хобби",
+    "музык",
+    "гитар",
+    "рисова",
+    "рисун",
+    "творч",
+    "фильм",
+    "сериал",
+    "танц",
+    "прогул",
+)
+_EQUIPMENT_BY_KEYWORD = (
+    ("скакал", "скакалка", "скакалку"),
+    ("кроссов", "кроссовки", "кроссовки"),
+    ("коврик", "коврик", "коврик"),
+    ("гантел", "гантели", "гантели"),
+    ("резинк", "резинка", "резинку"),
+    ("бутыл", "бутылка воды", "бутылку воды"),
+)
+_UNSAFE_HEALTH_ADVICE_PATTERN = re.compile(
+    r"\b(?:измени(?:те)?|увелич(?:ьте|ить)|уменьш(?:ьте|ить)|отмен(?:ите|ить)|"
+    r"назнач(?:ьте|ить)|прекрат(?:ите|ить)|замен(?:ите|ить))\b.{0,40}"
+    r"\b(?:доз\w*|лекар\w*|таблет\w*|препарат\w*|назначени\w*)\b",
+    re.IGNORECASE,
+)
+_FOOD_AND_JUMP_PATTERN = re.compile(
+    r"\b(?:после|сразу после)\s+(?:ужина|обеда|еды|приема пищи)\b.{0,80}"
+    r"\b(?:прыг\w*|прыж\w*|скакал\w*)\b",
+    re.IGNORECASE,
+)
 
 
 def _clean_text(value: str) -> str:
@@ -69,6 +165,146 @@ def _strip_outer_quotes(value: str) -> str:
     return text
 
 
+def _context_text(context: dict[str, Any] | None) -> str:
+    if not context:
+        return ""
+    habit = context.get("habit")
+    if not isinstance(habit, dict):
+        return ""
+    fields = [habit.get("title"), habit.get("description"), habit.get("recovery_task")]
+    return " ".join(str(field or "") for field in fields).lower()
+
+
+def _topic_hint_from_text(text: str) -> str:
+    if any(keyword in text for keyword in _SPORT_KEYWORDS):
+        return "sport"
+    if any(keyword in text for keyword in _HEALTH_KEYWORDS):
+        return "health"
+    if any(keyword in text for keyword in _LEARNING_KEYWORDS):
+        return "learning"
+    if any(keyword in text for keyword in _LEISURE_KEYWORDS):
+        return "leisure"
+    return "general"
+
+
+def _context_topic_hint(context: dict[str, Any] | None) -> str:
+    if not context:
+        return "general"
+    habit = context.get("habit")
+    if isinstance(habit, dict) and isinstance(habit.get("topic_hint"), str):
+        return str(habit["topic_hint"])
+    return _topic_hint_from_text(_context_text(context))
+
+
+def _equipment_forms(context: dict[str, Any] | None, text: str) -> tuple[str, str] | None:
+    source = f"{_context_text(context)} {text}".lower()
+    for keyword, nominative, accusative in _EQUIPMENT_BY_KEYWORD:
+        if keyword in source:
+            return nominative, accusative
+    return None
+
+
+def _has_unsafe_domain_mismatch(message: str, context: dict[str, Any] | None) -> bool:
+    topic_hint = _context_topic_hint(context)
+    if topic_hint == "health" and _UNSAFE_HEALTH_ADVICE_PATTERN.search(message):
+        return True
+    if topic_hint == "sport" and _FOOD_AND_JUMP_PATTERN.search(message):
+        return True
+    return False
+
+
+def _repair_ai_text(value: str, context: dict[str, Any] | None) -> str | None:
+    text = value
+    text = re.sub(
+        r"\bрядом с местом для вечера\b",
+        "на видное место на вечер",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"\bместо для вечера\b",
+        "видное место на вечер",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(
+        r"\bместом для вечера\b",
+        "видным местом на вечер",
+        text,
+        flags=re.IGNORECASE,
+    )
+
+    equipment = _equipment_forms(context, text)
+    has_generic_equipment = re.search(r"\bснаряд\w*\b", text, flags=re.IGNORECASE)
+    if has_generic_equipment and not equipment:
+        return None
+
+    if equipment:
+        nominative, accusative = equipment
+        text = re.sub(
+            r"\bСнаряд(?=\s+лежит\b)",
+            nominative.capitalize(),
+            text,
+        )
+        text = re.sub(r"\bснаряд(?=\s+лежит\b)", nominative, text)
+        text = re.sub(r"\bСнаряд\b", accusative.capitalize(), text)
+        text = re.sub(r"\bснаряд\b", accusative, text)
+
+    return text
+
+
+def _parse_action_plan(value: str) -> dict[str, str] | None:
+    matches = list(_ACTION_PLAN_LABEL_PATTERN.finditer(value))
+    expected_labels = ["сегодня", "минимум", "готово"]
+    if len(matches) != len(expected_labels):
+        return None
+
+    segments: dict[str, str] = {}
+    for index, match in enumerate(matches):
+        label = match.group(1).lower()
+        if label != expected_labels[index]:
+            return None
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(value)
+        segment = _clean_text(value[start:end]).strip(" ,;:.!?")
+        if not segment:
+            return None
+        segments[label] = segment
+
+    return segments
+
+
+def _completed_today(context: dict[str, Any] | None) -> bool:
+    if not context:
+        return False
+    risk = context.get("risk")
+    if not isinstance(risk, dict):
+        return False
+    features = risk.get("features")
+    return isinstance(features, dict) and bool(features.get("completed_today"))
+
+
+def _looks_like_completed_day_follow_up(message: str, context: dict[str, Any] | None) -> bool:
+    if not _completed_today(context):
+        return True
+
+    segments = _parse_action_plan(message)
+    if not segments:
+        return False
+
+    today = segments["сегодня"]
+    has_follow_up = bool(_FOLLOW_UP_WORD_PATTERN.search(today))
+    has_active_habit_action = bool(_ACTIVE_TODAY_VERBS_PATTERN.search(today))
+    return has_follow_up and not has_active_habit_action
+
+
+def _has_bad_ai_phrase(value: str) -> bool:
+    lowered = value.lower()
+    return any(phrase in lowered for phrase in _BAD_AI_PHRASES) or bool(
+        re.search(r"\bснаряд\w*\b", lowered)
+    )
+
+
 def _compact_features(features: dict[str, Any]) -> dict[str, Any]:
     allowed_keys = {
         "total_entries",
@@ -97,14 +333,31 @@ def _compact_features(features: dict[str, Any]) -> dict[str, Any]:
     return {key: features[key] for key in allowed_keys if key in features}
 
 
-def _normalize_ai_payload(payload: dict[str, Any]) -> Optional[AIRecommendationDraft]:
+def _normalize_ai_payload(
+    payload: dict[str, Any],
+    context: dict[str, Any] | None = None,
+) -> Optional[AIRecommendationDraft]:
     title = _clip_text(str(payload.get("title") or ""), MAX_TITLE_CHARS)
-    message = _strip_outer_quotes(_clip_text(
+    raw_message = _strip_outer_quotes(_clip_text(
         _clip_words(str(payload.get("message") or ""), MAX_MESSAGE_WORDS),
         MAX_MESSAGE_CHARS,
     ))
+    repaired_message = _repair_ai_text(raw_message, context)
+    if repaired_message is None:
+        return None
+    message = _strip_outer_quotes(
+        _clip_text(_clip_words(repaired_message, MAX_MESSAGE_WORDS), MAX_MESSAGE_CHARS)
+    )
 
     if not title or not message:
+        return None
+    if _parse_action_plan(message) is None:
+        return None
+    if _has_bad_ai_phrase(message):
+        return None
+    if _has_unsafe_domain_mismatch(message, context):
+        return None
+    if not _looks_like_completed_day_follow_up(message, context):
         return None
 
     return AIRecommendationDraft(title=title, message=message)
@@ -126,6 +379,9 @@ def _build_context(
         "habit": {
             "title": habit.title,
             "description": habit.description,
+            "topic_hint": _topic_hint_from_text(
+                f"{habit.title or ''} {habit.description or ''} {habit.recovery_task or ''}".lower()
+            ),
             "frequency_type": habit.frequency_type,
             "target_per_week": habit.target_per_week,
             "difficulty": habit.difficulty,
@@ -169,6 +425,8 @@ def _system_instructions() -> str:
         "дай стартовый совет для первого выполнения привычки сегодня. "
         "Если тип after_completion, on_track_support, streak_maintenance или streak_support, "
         "поддержи успешное выполнение и предложи, как закрепить ритм без повышения нагрузки. "
+        "Если risk.features.completed_today равен true, не предлагай делать привычку еще раз "
+        "сегодня: предложи только подготовить следующий повтор или оставить видимую подсказку. "
         "Если тип early_recovery, miss_streak_recovery, risk_recovery, soft_recovery, "
         "risk_ignored_recovery или reset_plan, не повторяй общие фразы про риск: предложи "
         "снижение барьера, перенос времени, микрошаг или перезапуск условий. "
@@ -183,6 +441,15 @@ def _system_instructions() -> str:
         "'Сегодня: ... Минимум: ... Готово: ...'. "
         "В 'Сегодня' назови конкретное наблюдаемое действие, в 'Минимум' - облегченный вариант "
         "на случай нехватки сил или риска, в 'Готово' - понятный критерий завершения. "
+        "Называй реальные предметы обычными словами: 'скакалка', 'кроссовки', 'книга', "
+        "'документ'. Не используй слово 'снаряд', канцелярит и машинные фразы вроде "
+        "'место для вечера' или 'уберите барьер'. "
+        "Если habit.topic_hint равен sport, не предлагай интенсивные действия сразу после еды. "
+        "Если habit.topic_hint равен health, не меняй дозировки, назначения и лечение; "
+        "совет должен быть про напоминание, подготовку среды или безопасный микрошаг. "
+        "Если habit.topic_hint равен learning, привязывай совет к файлу, карточкам, примеру, "
+        "странице или конспекту. Если habit.topic_hint равен leisure, сохраняй мягкий тон отдыха "
+        "и заранее называй точку остановки. "
         "Не превращай recovery_minutes в одинаковый таймер для всех привычек; упоминай минуты "
         "только когда они делают совет точнее, иначе опиши предметный облегченный вариант. "
         "title до 4 слов, message 28-52 слова. "
@@ -321,7 +588,7 @@ def _generate_bothub_recommendation(context: dict[str, Any]) -> Optional[AIRecom
         response_text = str(message.get("content") or "").strip()
         if not response_text:
             return None
-        return _normalize_ai_payload(_extract_json_object(response_text))
+        return _normalize_ai_payload(_extract_json_object(response_text), context)
     except (
         json.JSONDecodeError,
         OSError,

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 from app.schemas import RecommendationRead
-from app.services.ai_recommendations import _build_bothub_request
+from app.services.ai_recommendations import _build_bothub_request, _normalize_ai_payload
 from app.services.recommendations import (
     AFTER_COMPLETION_RECOMMENDATION_TYPE,
     EARLY_RECOVERY_RECOMMENDATION_TYPE,
@@ -341,6 +341,44 @@ def test_default_recovery_minutes_do_not_make_same_five_minute_advice() -> None:
     assert len(set(messages)) == len(habits)
 
 
+def test_health_habit_uses_safe_contextual_micro_step() -> None:
+    rec_type, title, message, priority = _build_recommendation_text(
+        make_user(),
+        make_habit("Здоровье", "Пить воду утром"),
+        make_prediction(
+            total_entries=4,
+            risk_level="high",
+            completed_count=2,
+            missed_count=1,
+            consecutive_missed=0,
+        ),
+        active_habit_count=2,
+    )
+
+    assert rec_type == RISK_RECOVERY_RECOMMENDATION_TYPE
+    assert title == "Снизить риск"
+    assert_action_plan(message)
+    assert "стакан воды" in message
+    assert "резкой нагрузки" not in message
+    assert priority == "high"
+
+
+def test_leisure_habit_uses_soft_rest_tone() -> None:
+    rec_type, title, message, priority = _build_recommendation_text(
+        make_user(),
+        make_habit("Отдых", "Рисовать вечером"),
+        make_prediction(total_entries=0),
+        active_habit_count=2,
+    )
+
+    assert rec_type == "data_collection"
+    assert title == "Пока рано считать риск"
+    assert_action_plan(message)
+    assert "набросок" in message
+    assert "короткий отдых" in message
+    assert priority == "normal"
+
+
 def test_after_completion_advice_is_used_for_early_success() -> None:
     rec_type, title, message, priority = _build_recommendation_text(
         make_user(),
@@ -359,6 +397,29 @@ def test_after_completion_advice_is_used_for_early_success() -> None:
     assert title == "После отметки"
     assert_action_plan(message)
     assert "видимую подсказку" in message
+    assert priority == "normal"
+
+
+def test_completed_sport_advice_prepares_next_repeat_without_second_workout() -> None:
+    rec_type, title, message, priority = _build_recommendation_text(
+        make_user(),
+        make_habit("Спорт", "Прыгать со скакалкой"),
+        make_prediction(
+            total_entries=1,
+            completed_count=1,
+            completed_today=True,
+            current_streak=1,
+            completion_rate=1,
+        ),
+        active_habit_count=2,
+    )
+
+    assert rec_type == AFTER_COMPLETION_RECOMMENDATION_TYPE
+    assert title == "После отметки"
+    assert_action_plan(message)
+    assert "положите скакалку" in message
+    assert "не делайте второй подход" in message.lower()
+    assert "выполните" not in message.lower()
     assert priority == "normal"
 
 
@@ -383,7 +444,7 @@ def test_on_track_support_is_used_after_regular_completion() -> None:
     assert rec_type == ON_TRACK_SUPPORT_RECOMMENDATION_TYPE
     assert title == "Идет по плану"
     assert_action_plan(message)
-    assert "предмет, файл или место старта" in message
+    assert "следующего выполнения" in message
     assert priority == "low"
 
 
@@ -440,6 +501,112 @@ def test_normalize_recommendation_message_removes_outer_quotes() -> None:
     assert _normalize_recommendation_message(message) == (
         "Сегодня откройте файл диплома и напишите один короткий абзац"
     )
+
+
+def test_normalize_recommendation_message_repairs_awkward_sport_copy() -> None:
+    message = (
+        "Сегодня: Поставьте скакалку рядом с местом для вечера и после ужина сделайте "
+        "короткую разминку Минимум: подержите снаряд в руках Готово: Снаряд лежит "
+        "на видном месте"
+    )
+
+    normalized = _normalize_recommendation_message(
+        message,
+        make_habit("Спорт", "Прыгать со скакалкой"),
+    )
+
+    assert "местом для вечера" not in normalized
+    assert "снаряд" not in normalized.lower()
+    assert "на видное место на вечер" in normalized
+    assert "скакалку" in normalized
+    assert "Скакалка лежит" in normalized
+
+
+def test_ai_payload_rejects_completed_today_repeat_action() -> None:
+    context = {
+        "habit": {"title": "Спорт", "description": "Прыгать со скакалкой"},
+        "risk": {"features": {"completed_today": True}},
+    }
+    payload = {
+        "title": "Спорт вечером",
+        "message": (
+            "Сегодня: Поставьте скакалку на видное место и после ужина сделайте "
+            "короткую разминку Минимум: подержите скакалку в руках "
+            "Готово: скакалка лежит на видном месте"
+        ),
+    }
+
+    assert _normalize_ai_payload(payload, context) is None
+
+
+def test_ai_payload_repairs_generic_equipment_word() -> None:
+    context = {
+        "habit": {"title": "Спорт", "description": "Прыгать со скакалкой"},
+        "risk": {"features": {"completed_today": False}},
+    }
+
+    draft = _normalize_ai_payload(
+        {
+            "title": "Легкий старт",
+            "message": (
+                "Сегодня: Возьмите снаряд и сделайте десять спокойных прыжков "
+                "Минимум: подержите снаряд в руках и сделайте один прыжок "
+                "Готово: Снаряд лежит на месте, один подход отмечен"
+            ),
+        },
+        context,
+    )
+
+    assert draft is not None
+    assert "снаряд" not in draft.message.lower()
+    assert "скакалку" in draft.message
+    assert "Скакалка лежит" in draft.message
+
+
+def test_ai_payload_rejects_unsafe_health_instruction() -> None:
+    context = {
+        "habit": {
+            "title": "Здоровье",
+            "description": "Принимать лекарство по назначению",
+            "topic_hint": "health",
+        },
+        "risk": {"features": {"completed_today": False}},
+    }
+
+    assert _normalize_ai_payload(
+        {
+            "title": "Проверьте режим",
+            "message": (
+                "Сегодня: Измените дозировку лекарства по самочувствию "
+                "Минимум: уменьшите дозу таблетки "
+                "Готово: назначение изменено"
+            ),
+        },
+        context,
+    ) is None
+
+
+def test_ai_payload_rejects_jumps_right_after_food_for_sport() -> None:
+    context = {
+        "habit": {
+            "title": "Спорт",
+            "description": "Прыгать со скакалкой",
+            "topic_hint": "sport",
+        },
+        "risk": {"features": {"completed_today": False}},
+    }
+
+    assert _normalize_ai_payload(
+        {
+            "title": "Легкий старт",
+            "message": (
+                "Сегодня: Сразу после ужина сделайте минуту прыжков со скакалкой "
+                "Минимум: сделайте один прыжок "
+                "Готово: один подход отмечен"
+            ),
+        },
+        context,
+    ) is None
 
 
 def test_manual_refresh_bothub_request_uses_more_variation() -> None:
