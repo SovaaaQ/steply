@@ -253,6 +253,26 @@ export function HabitCard({
         </div>
       </dl>
 
+      {recommendation && onGoToTips && (
+        <button type="button" className="habit-advice-hint" onClick={onGoToTips}>
+          <span className="habit-advice-kicker">Совет готов</span>
+          <span className="habit-advice-label">
+            Открыть совет для этой привычки
+            <span className="habit-advice-arrow" aria-hidden="true">
+              →
+            </span>
+          </span>
+          <svg
+            className="habit-advice-underline"
+            viewBox="0 0 260 18"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <path d="M4 13 C46 3 120 5 162 5 C205 5 234 7 256 11" />
+          </svg>
+        </button>
+      )}
+
       <details className="habit-details">
         <summary>Подробнее</summary>
         <div className="habit-details-body">
@@ -324,12 +344,6 @@ export function HabitCard({
                 ? riskDescriptions[riskLevel]
                 : "Пока рано считать"}
           </p>
-
-          {recommendation && onGoToTips && (
-            <button type="button" className="habit-advice-hint" onClick={onGoToTips}>
-              Есть совет для этой привычки →
-            </button>
-          )}
         </div>
       </details>
 

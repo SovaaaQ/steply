@@ -1228,28 +1228,103 @@ li {
 }
 
 .habit-advice-hint {
-  background: none;
+  position: relative;
+  display: inline-grid;
+  width: fit-content;
+  max-width: 100%;
+  gap: 2px;
   border: none;
-  padding: 0;
+  border-radius: var(--radius-small);
+  background:
+    linear-gradient(90deg, rgba(199, 241, 40, 0.28), rgba(199, 241, 40, 0.08) 58%, transparent 100%);
+  padding: 9px 14px 13px 12px;
   cursor: pointer;
-  color: var(--color-primary-strong);
-  font-size: var(--type-sm);
-  font-weight: var(--font-medium);
+  color: var(--color-heading);
   text-align: left;
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-underline-offset: 2px;
-  transition: text-decoration-color 0.15s, color 0.15s;
+  transition:
+    background var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
 }
 
 .habit-advice-hint:hover {
-  text-decoration-color: currentColor;
+  background:
+    linear-gradient(90deg, rgba(199, 241, 40, 0.42), rgba(199, 241, 40, 0.12) 62%, transparent 100%);
+  transform: translateY(-1px);
 }
 
 .habit-advice-hint:focus-visible {
   outline: none;
   box-shadow: var(--shadow-focus);
-  border-radius: 2px;
+}
+
+.habit-advice-kicker {
+  color: var(--color-muted-strong);
+  font-size: 11px;
+  font-weight: var(--font-bold);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.habit-advice-label {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+  color: inherit;
+  font-size: 16px;
+  font-weight: var(--font-bold);
+  line-height: 1.2;
+}
+
+.habit-advice-arrow {
+  display: inline-block;
+  flex: 0 0 auto;
+  transition: transform var(--duration-fast) ease;
+}
+
+.habit-advice-hint:hover .habit-advice-arrow {
+  transform: translateX(3px);
+}
+
+.habit-advice-underline {
+  position: absolute;
+  right: 9px;
+  bottom: 5px;
+  left: 11px;
+  z-index: 0;
+  width: calc(100% - 20px);
+  height: 13px;
+  color: var(--color-lime);
+  pointer-events: none;
+}
+
+.habit-advice-underline path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 270;
+  stroke-dashoffset: 270;
+}
+
+.habit-advice-hint .habit-advice-underline path {
+  animation: habit-advice-draw 0.85s cubic-bezier(0.2, 0.7, 0.22, 1) 0.12s both;
+}
+
+@keyframes habit-advice-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .habit-advice-underline path {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
 }
 
 .recovery-suggestion {
