@@ -1807,6 +1807,68 @@ select.field-control {
   padding: 0 var(--item-gap);
 }
 
+input.time-text-field {
+  font-variant-numeric: tabular-nums;
+}
+
+.password-field {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+input.password-field-input {
+  padding-right: 54px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--color-muted-strong);
+  transform: translateY(-50%);
+  transition:
+    background var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
+}
+
+.password-toggle:hover {
+  border-color: rgba(11, 15, 13, 0.12);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--color-heading);
+}
+
+.password-toggle:focus-visible {
+  outline: none;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-focus);
+  color: var(--color-heading);
+}
+
+.password-toggle[aria-pressed="true"] {
+  background: var(--color-lime-faint);
+  color: var(--color-primary-strong);
+}
+
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+}
+
 textarea.field-control {
   resize: vertical;
   padding: var(--item-gap);

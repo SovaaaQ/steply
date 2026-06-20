@@ -1,7 +1,13 @@
 import type { FormEvent } from "react";
 
 import type { Difficulty, FrequencyType, HabitFormState, WeekdayKey } from "../../types/habit";
-import { habitStarterTemplates, weekdayKeys } from "../../utils/habitForm";
+import {
+  completePreferredTimeInput,
+  formatPreferredTimeInput,
+  habitStarterTemplates,
+  preferredTimePattern,
+  weekdayKeys
+} from "../../utils/habitForm";
 import { habitLimits } from "../../utils/formLimits";
 import { Button } from "../ui/Button";
 import { Input, Textarea } from "../ui/Input";
@@ -194,16 +200,31 @@ export function HabitForm({
           <label>
             Удобное время
             <Input
-              type="time"
+              aria-describedby="preferred-time-hint"
+              className="time-text-field"
+              inputMode="numeric"
+              maxLength={5}
+              pattern={preferredTimePattern}
+              placeholder="10:00"
+              title="Введите время в формате 10:00"
+              type="text"
               value={form.preferred_time}
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
-                  preferred_time: event.target.value
+                  preferred_time: formatPreferredTimeInput(event.target.value)
+                }))
+              }
+              onBlur={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  preferred_time: completePreferredTimeInput(event.target.value)
                 }))
               }
             />
-            <span className="field-hint">можно не выбирать</span>
+            <span className="field-hint" id="preferred-time-hint">
+              например 10:00, можно не выбирать
+            </span>
           </label>
         </div>
 

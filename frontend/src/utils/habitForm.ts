@@ -1,6 +1,9 @@
 import type { HabitCreate, HabitFormState, WeekdayKey } from "../types/habit";
 
 export const weekdayKeys: WeekdayKey[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+export const preferredTimePattern = "([01][0-9]|2[0-3]):[0-5][0-9]";
+
+const preferredTimeRegex = new RegExp(`^${preferredTimePattern}$`);
 
 export interface HabitStarterTemplate {
   description: string;
@@ -76,4 +79,49 @@ export function buildHabitPayload(form: HabitFormState): HabitCreate {
     preferred_time: form.preferred_time || undefined,
     schedule_days: scheduleDays
   };
+}
+
+export function formatPreferredTimeInput(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 4);
+
+  if (digits.length <= 2) {
+    return digits;
+  }
+
+  if (digits.length === 3 && Number(digits.slice(0, 2)) > 23) {
+    return `0${digits[0]}:${digits.slice(1)}`;
+  }
+
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+}
+
+export function completePreferredTimeInput(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 4);
+
+  if (!digits) {
+    return "";
+  }
+
+  let hours = "";
+  let minutes = "";
+
+  if (digits.length === 1) {
+    hours = `0${digits}`;
+    minutes = "00";
+  } else if (digits.length === 2) {
+    hours = digits;
+    minutes = "00";
+  } else if (digits.length === 3 && Number(digits.slice(0, 2)) > 23) {
+    hours = `0${digits[0]}`;
+    minutes = digits.slice(1);
+  } else if (digits.length === 3) {
+    hours = digits.slice(0, 2);
+    minutes = `0${digits[2]}`;
+  } else {
+    hours = digits.slice(0, 2);
+    minutes = digits.slice(2);
+  }
+
+  const normalized = `${hours}:${minutes}`;
+  return preferredTimeRegex.test(normalized) ? normalized : "";
 }

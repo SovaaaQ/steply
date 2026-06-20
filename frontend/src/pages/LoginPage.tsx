@@ -5,7 +5,7 @@ import { authApi } from "../services/authApi";
 import { AuthHintCard } from "../components/auth/AuthHintCard";
 import { AuthQrCard } from "../components/auth/AuthQrCard";
 import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
+import { Input, PasswordInput } from "../components/ui/Input";
 import { ErrorState } from "../components/ui/ErrorState";
 import { authLimits } from "../utils/formLimits";
 
@@ -80,8 +80,7 @@ export function LoginPage({
 
           <label>
             Пароль
-            <Input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               minLength={authLimits.passwordMinLength}
