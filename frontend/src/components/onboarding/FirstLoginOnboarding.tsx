@@ -1,7 +1,6 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
 
 import { Button } from "../ui/Button";
-import { SketchArrow } from "../ui/SketchArrow";
 
 interface OnboardingStep {
   label: string;
@@ -20,8 +19,8 @@ const onboardingSteps: OnboardingStep[] = [
   {
     label: "Привычка",
     title: <span className="marker-highlight">Создайте первую привычку</span>,
-    description: "Выберите дни, время и нагрузку",
-    detail: "Начните с шаблона на 5-10 минут, расписание можно уточнить позже"
+    description: "Настройте дату, время и нагрузку под себя",
+    detail: "Начните с короткого шага, а расписание и темп можно менять индивидуально"
   },
   {
     label: "Отметка",
@@ -82,7 +81,6 @@ export function FirstLoginOnboarding({
             <span className="onboarding-step-count">
               Шаг {stepIndex + 1} из {onboardingSteps.length}
             </span>
-            <SketchArrow className="onboarding-sketch-arrow" />
             <h3>{step.title}</h3>
             <p>{step.description}</p>
             <small>{step.detail}</small>
@@ -104,21 +102,6 @@ export function FirstLoginOnboarding({
               );
             })}
           </ol>
-        </div>
-
-        <div className="onboarding-preview" aria-hidden="true">
-          <div className="onboarding-preview-card onboarding-preview-pet">
-            <span>Питомец</span>
-            <strong>Мика</strong>
-          </div>
-          <div className="onboarding-preview-card onboarding-preview-habit">
-            <span>Сегодня</span>
-            <strong>10 минут</strong>
-          </div>
-          <div className="onboarding-preview-card onboarding-preview-xp">
-            <span>После шага</span>
-            <strong>+XP</strong>
-          </div>
         </div>
 
         <div className="onboarding-dots" aria-hidden="true">

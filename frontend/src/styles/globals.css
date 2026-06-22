@@ -2512,7 +2512,7 @@ textarea.field-control {
 }
 
 .onboarding-modal-guided {
-  width: min(760px, 100%);
+  width: min(520px, 100%);
 }
 
 .onboarding-head,
@@ -2623,14 +2623,6 @@ textarea.field-control {
   line-height: 1.45;
 }
 
-.onboarding-sketch-arrow {
-  position: absolute;
-  top: 22px;
-  right: clamp(18px, 5vw, 38px);
-  width: 84px;
-  transform: rotate(7deg);
-}
-
 .onboarding-dots {
   display: flex;
   justify-content: center;
@@ -2653,48 +2645,41 @@ textarea.field-control {
   width: 1px;
 }
 
+.onboarding-actions .button {
+  min-height: 46px;
+  flex: 1;
+}
+
 .onboarding-guided-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(210px, 0.58fr);
-  gap: var(--section-gap);
-  align-items: stretch;
+  grid-template-columns: 1fr;
+  gap: var(--control-gap);
+  align-items: start;
 }
 
 .onboarding-route-list {
   display: grid;
-  gap: var(--control-gap);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--item-gap-tight);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.onboarding-route-list li {
-  position: relative;
-}
-
-.onboarding-route-list li + li::before {
-  content: "";
-  position: absolute;
-  left: 17px;
-  bottom: calc(100% - 3px);
-  width: 2px;
-  height: var(--control-gap);
-  background: rgba(94, 122, 0, 0.22);
-}
-
 .onboarding-route-list button {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 1fr;
   width: 100%;
-  min-height: 74px;
+  min-height: 62px;
   align-items: center;
-  gap: var(--control-gap);
+  justify-items: center;
+  gap: var(--space-1);
   border: 1px solid rgba(11, 15, 13, 0.1);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-small);
   background: rgba(255, 255, 255, 0.7);
   color: var(--color-muted-strong);
   padding: var(--control-gap);
-  text-align: left;
+  text-align: center;
   transition:
     background var(--duration-fast) ease,
     border-color var(--duration-fast) ease,
@@ -2742,60 +2727,22 @@ textarea.field-control {
 .onboarding-route-list strong,
 .onboarding-route-list small {
   display: block;
-  grid-column: 2;
+  grid-column: 1;
+}
+
+.onboarding-route-list strong {
+  min-width: 0;
+  font-size: var(--type-ui);
+  line-height: 1.1;
 }
 
 .onboarding-route-list small {
+  display: none;
   margin-top: 2px;
   color: var(--color-muted);
   font-size: var(--type-xs);
   font-weight: var(--font-semibold);
   line-height: 1.35;
-}
-
-.onboarding-preview {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--control-gap);
-  border: 1px dashed rgba(94, 122, 0, 0.22);
-  border-radius: var(--radius-card);
-  background:
-    linear-gradient(90deg, rgba(199, 241, 40, 0.1), transparent 58%),
-    rgba(246, 251, 220, 0.34);
-  padding: var(--control-gap);
-}
-
-.onboarding-preview-card {
-  display: grid;
-  min-height: 66px;
-  align-content: center;
-  gap: var(--space-1);
-  border: 1px solid rgba(11, 15, 13, 0.1);
-  border-radius: var(--radius-small);
-  background: rgba(255, 255, 255, 0.74);
-  box-shadow: var(--shadow-card);
-  padding: var(--control-gap);
-  animation: onboarding-card-float 3.4s ease-in-out infinite;
-}
-
-.onboarding-preview-habit {
-  animation-delay: 180ms;
-}
-
-.onboarding-preview-xp {
-  animation-delay: 360ms;
-}
-
-.onboarding-preview-card span {
-  color: var(--color-muted);
-  font-size: var(--type-xs);
-  font-weight: var(--font-semibold);
-}
-
-.onboarding-preview-card strong {
-  color: var(--color-heading);
-  font-size: 15px;
-  line-height: 1.1;
 }
 
 .onboarding-checklist {
@@ -2942,16 +2889,6 @@ textarea.field-control {
   from {
     opacity: 0;
     transform: translateY(10px) scale(0.99);
-  }
-}
-
-@keyframes onboarding-card-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-3px);
   }
 }
 
@@ -4767,7 +4704,6 @@ textarea.field-control {
   }
 
   .onboarding-guided-grid,
-  .onboarding-preview,
   .habit-template-grid {
     grid-template-columns: 1fr;
   }
@@ -5030,18 +4966,11 @@ textarea.field-control {
     line-height: 1.35;
   }
 
-  .onboarding-sketch-arrow {
-    top: 14px;
-    right: 12px;
-    width: 54px;
-  }
-
   .onboarding-route-list {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
   }
 
-  .onboarding-route-list li + li::before,
   .onboarding-route-list small {
     display: none;
   }
@@ -5066,10 +4995,6 @@ textarea.field-control {
     grid-column: 1;
     font-size: 12px;
     line-height: 1.1;
-  }
-
-  .onboarding-preview {
-    display: none;
   }
 
   .onboarding-actions {
